@@ -34,16 +34,16 @@ export const useDocumentsStore = defineStore('documents', {
     // 过滤后的文档 (扁平搜索结果)
     filteredDocuments: (state) => {
       if (state.searchQuery.trim()) {
-        return state.searchResults
+        return state.searchResults.filter(doc => !doc.isFolder)
       }
       
       if (state.selectedTags.length > 0) {
         return state.documents.filter(doc =>
-          doc.tags && state.selectedTags.some(tag => doc.tags.includes(tag))
+          !doc.isFolder && doc.tags && state.selectedTags.some(tag => doc.tags.includes(tag))
         )
       }
       
-      return state.documents
+      return state.documents.filter(doc => !doc.isFolder)
     },
 
     // 基于 parentId 构建的文档树结构

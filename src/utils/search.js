@@ -47,14 +47,16 @@ export class SearchEngine {
     if (!Array.isArray(documents)) return
     
     console.log('🔍 Search Engine: Initializing Fuse instance (Main Thread)')
-    const indexedDocs = documents.map(doc => ({
+    // 过滤掉文件夹，只索引真实文档
+    const docsToIndex = documents.filter(doc => !doc.isFolder)
+    const indexedDocs = docsToIndex.map(doc => ({
       ...doc,
       searchText: extractText(doc.content),
       summary: generateSummary(doc.content)
     }))
     
     this.fuse = new Fuse(indexedDocs, fuseOptions)
-    this.documents = documents
+    this.documents = docsToIndex
     console.log('✅ Search Engine: Initialization complete (Main Thread)')
   }
 
