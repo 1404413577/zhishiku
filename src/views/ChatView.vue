@@ -22,6 +22,7 @@
           />
         </el-select>
         <el-button size="small" :icon="Refresh" circle @click="fetchModels" title="刷新模型列表" style="margin-left: 8px" />
+        <el-button size="small" type="success" :icon="Download" @click="archiveToDocument" title="将此对话保存为 Markdown 文档" style="margin-left: 8px" :disabled="messages.length === 0">归档</el-button>
         <el-button size="small" type="primary" :icon="Delete" @click="clearMessages" title="清空对话" style="margin-left: 8px">新对话</el-button>
       </div>
     </div>
@@ -88,24 +89,31 @@
 </template>
 
 <script setup>
-import { ref, onMounted, nextTick, computed } from 'vue'
-import { ChatLineRound, Refresh, MagicStick, User, Monitor, Promotion, Loading, Delete } from '@element-plus/icons-vue'
+import { ref, onMounted, nextTick, computed, watch } from 'vue'
+import { ChatLineRound, Refresh, MagicStick, User, Monitor, Promotion, Loading, Delete, Download } from '@element-plus/icons-vue'
 import { useSettingsStore } from '@/stores/settings'
-import { ElMessage } from 'element-plus'
+import { useDocumentsStore } from '@/stores/documents'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { markdownProcessor } from '@/utils/markdown.js'
 import 'highlight.js/styles/github.css' // 可以改用其他样式
 
 const settings = useSettingsStore()
+const documentsStore = useDocumentsStore()
 
 // 状态
 const availableModels = ref([])
 const selectedModel = ref(settings.ollamaModel || '')
 const loadingModels = ref(false)
-const messages = ref([])
+const messages = ref(JSON.parse(localStorage.getItem('ollama-chat-history') || '[]'))
 const userInput = ref('')
 const isGenerating = ref(false)
 const currentReply = ref('')
 const chatBodyRef = ref(null)
+
+// 监听并保存记录
+watch(messages, (newVal) => {
+  localStorage.setItem('ollama-chat-history', JSON.stringify(newVal))
+}, { deep: true })
 
 // Markdown 渲染
 const renderMarkdown = (text) => {
@@ -162,8 +170,47 @@ const scrollToBottom = () => {
 }
 
 // 清空对话
-const clearMessages = () => {
+const clearMessages = async () => {
+  if (messages.value.length > 0) {
+    try {
+      await ElMessageBox.confirm('确定要清空当前对话记录吗？', '确认', { type: 'warning' })
+    } catch {
+      return
+    }
+  }
   messages.value = []
+  localStorage.removeItem('ollama-chat-history')
+}
+
+// 一键归档到我的文档
+const archiveToDocument = async () => {
+  if (messages.value.length === 0) return
+  
+  let content = `# AI 对话归档 (${new Date().toLocaleString('zh-CN')})\n\n`
+  
+  for (const msg of messages.value) {
+    if (msg.role === 'user') {
+      content += `**🧑 User:**\n${msg.content}\n\n`
+    } else {
+      content += `**🤖 AI (${selectedModel.value || 'Ollama'}):**\n${msg.content}\n\n`
+    }
+  }
+  
+  // 避免标题过长，提取第一句话的前 15 个字作为标题的一部分
+  const firstUserMsg = messages.value.find(m => m.role === 'user')?.content || ''
+  const snippet = firstUserMsg ? ` - ${firstUserMsg.substring(0, 15)}...` : ''
+  const title = `AI 对话归档${snippet}`
+  
+  try {
+    const doc = await documentsStore.createDocument(title, content)
+    ElMessage.success({
+      message: '对话已成功归档到“我的文档”！',
+      duration: 3000
+    })
+  } catch (error) {
+    console.error('归档失败', error)
+    ElMessage.error('归档失败，无法保存到文档库')
+  }
 }
 
 // 键盘快捷键处理
@@ -261,6 +308,7 @@ const sendMessage = async () => {
 
 onMounted(() => {
   fetchModels()
+  scrollToBottom()
 })
 
 </script>
