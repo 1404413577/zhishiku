@@ -111,6 +111,10 @@
         </div>
       </div>
 
+      <div class="context-hint" v-if="messageCount > 8">
+        对话较长时，较早的消息将自动裁剪以适配模型上下文窗口
+      </div>
+
       <div class="chat-footer">
         <el-input
           v-model="userInput"
@@ -233,6 +237,8 @@ const activeSession = computed(() => {
 const messages = computed(() => {
   return activeSession.value ? activeSession.value.messages : []
 })
+
+const messageCount = computed(() => messages.value.length)
 
 // 会话管理操作
 const createNewSession = () => {
@@ -427,6 +433,37 @@ const handleKeydown = (e) => {
   }
 }
 
+// 裁剪对话历史，避免超出模型上下文窗口
+// 安全阈值设为 3000 tokens，为回复预留约 1000 tokens (4096 context window)
+const MAX_HISTORY_TOKENS = 3000
+
+const estimateTokens = (text) => Math.ceil(text.length / 2)
+
+const trimHistory = (messages) => {
+  // 从最新到最旧累加 tokens，超过阈值则丢弃更早的消息
+  // 确保结果以 user 角色开头（模型通常要求首条消息为 user）
+  const selected = []
+  let tokenCount = 0
+
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const msg = messages[i]
+    const tokens = estimateTokens(msg.content || '')
+    if (tokenCount + tokens > MAX_HISTORY_TOKENS && selected.length > 0) break
+    selected.unshift(msg)
+    tokenCount += tokens
+  }
+
+  // 如果第一条是 assistant，往前多取一条 user 消息
+  if (selected.length > 0 && selected[0].role === 'assistant') {
+    const firstIdx = messages.indexOf(selected[0])
+    if (firstIdx > 0) {
+      selected.unshift(messages[firstIdx - 1])
+    }
+  }
+
+  return selected
+}
+
 // 发送消息
 const sendMessage = async () => {
   const text = userInput.value.trim()
@@ -452,8 +489,9 @@ const sendMessage = async () => {
   isGenerating.value = true
   scrollToBottom()
 
-  // 2. 准备对话历史 (不含占位消息)
-  const history = session.messages.map(m => ({ role: m.role, content: m.content }))
+  // 2. 准备对话历史 (裁剪后发送，避免超出上下文窗口)
+  const allHistory = session.messages.map(m => ({ role: m.role, content: m.content }))
+  const history = trimHistory(allHistory)
 
   // 3. 占位 AI 消息
   session.messages.push({ role: 'assistant', content: '' })
@@ -750,6 +788,14 @@ onUnmounted(() => {
 @keyframes typing {
   0%, 80%, 100% { transform: scale(0); }
   40% { transform: scale(1); }
+}
+
+.context-hint {
+  text-align: center;
+  font-size: 12px;
+  color: var(--el-color-warning);
+  padding: 4px 0;
+  margin-bottom: 4px;
 }
 
 .chat-footer {

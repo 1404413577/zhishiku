@@ -3,8 +3,8 @@
     <!-- 桌面端侧边栏 -->
     <el-aside width="300px" class="sidebar hidden-xs-only">
       <div class="sidebar-header">
-        <h2 style="font-size:18px">知识库</h2>
-        <div style="display: flex; gap: 4px; align-items: center;">
+        <h2 style="font-size: 18px">知识库</h2>
+        <div style="display: flex; gap: 4px; align-items: center">
           <el-button
             @click="router.push('/graph')"
             :icon="Share"
@@ -19,11 +19,12 @@
             size="small"
             title="设置"
           />
+
           <el-button
             type="primary"
             @click="createNewDocument(null)"
             :icon="Plus"
-            style="margin-left: 4px;"
+            style="margin-left: 4px"
             round
           >
             新建
@@ -38,19 +39,30 @@
         </div>
       </div>
 
-
-
       <!-- 工作区切换 -->
       <div class="workspace-mode-switcher">
         <template v-if="documentsStore.workspaceMode === 'indexeddb'">
-          <el-button @click="connectWorkspace" type="primary" plain size="small" style="width: 100%;">
+          <el-button
+            @click="connectWorkspace"
+            type="primary"
+            plain
+            size="small"
+            style="width: 100%"
+          >
             <el-icon><FolderOpened /></el-icon> 挂载本地文件夹
           </el-button>
         </template>
         <template v-else>
           <div class="workspace-local-active">
-            <span class="workspace-label"><el-icon><FolderChecked /></el-icon> 已挂载本地目录</span>
-            <el-button @click="disconnectWorkspace" type="danger" text size="small">
+            <span class="workspace-label"
+              ><el-icon><FolderChecked /></el-icon> 已挂载本地目录</span
+            >
+            <el-button
+              @click="disconnectWorkspace"
+              type="danger"
+              text
+              size="small"
+            >
               断开
             </el-button>
           </div>
@@ -64,7 +76,9 @@
           type="warning"
           :closable="false"
         >
-          <el-button @click="reconnectWorkspace" size="small" type="primary">重新授权</el-button>
+          <el-button @click="reconnectWorkspace" size="small" type="primary"
+            >重新授权</el-button
+          >
         </el-alert>
       </div>
 
@@ -135,7 +149,7 @@
                 />
               </div>
             </div>
-            <div class="doc-summary">{{ doc.summary || '暂无内容' }}</div>
+            <div class="doc-summary">{{ doc.summary || "暂无内容" }}</div>
             <div class="doc-tags" v-if="doc.tags && doc.tags.length > 0">
               <el-tag
                 v-for="tag in doc.tags"
@@ -168,11 +182,7 @@
               >
                 删除选中
               </el-button>
-              <el-button
-                size="small"
-                text
-                @click="isBatchMode = false"
-              >
+              <el-button size="small" text @click="isBatchMode = false">
                 取消
               </el-button>
             </div>
@@ -215,7 +225,10 @@
             <template #default="{ node, data }">
               <div
                 class="custom-tree-node"
-                :class="{ 'is-active': isActiveDocument(data.id), 'is-folder': data.isFolder }"
+                :class="{
+                  'is-active': isActiveDocument(data.id),
+                  'is-folder': data.isFolder,
+                }"
               >
                 <div class="node-label">
                   <el-icon class="node-icon">
@@ -224,8 +237,18 @@
                   </el-icon>
                   <span class="title-text">{{ data.title }}</span>
                   <!-- 置顶和收藏的小徽标 -->
-                  <el-icon v-if="data.isPinned" class="badge-icon pin-badge" title="已置顶"><Top /></el-icon>
-                  <el-icon v-if="data.isFavorited" class="badge-icon star-badge" title="已收藏"><StarFilled /></el-icon>
+                  <el-icon
+                    v-if="data.isPinned"
+                    class="badge-icon pin-badge"
+                    title="已置顶"
+                    ><Top
+                  /></el-icon>
+                  <el-icon
+                    v-if="data.isFavorited"
+                    class="badge-icon star-badge"
+                    title="已收藏"
+                    ><StarFilled
+                  /></el-icon>
                 </div>
                 <div class="node-actions" @click.stop v-if="!isBatchMode">
                   <el-button
@@ -307,7 +330,7 @@
       <div class="sidebar mobile-sidebar">
         <div class="sidebar-header">
           <h2>知识库</h2>
-          <div style="display: flex; gap: 4px; align-items: center;">
+          <div style="display: flex; gap: 4px; align-items: center">
             <el-button
               @click="router.push('/graph')"
               :icon="Share"
@@ -323,10 +346,17 @@
               title="设置"
             />
             <el-button
+              @click="router.push('/mindmap')"
+              :icon="Connection"
+              circle
+              size="small"
+              title="思维导图"
+            />
+            <el-button
               type="primary"
               @click="createNewDocument(null)"
               :icon="Plus"
-              style="margin-left: 4px;"
+              style="margin-left: 4px"
               round
             >
               新建
@@ -334,19 +364,30 @@
           </div>
         </div>
 
-
-
         <!-- 移动端工作区切换 -->
         <div class="workspace-mode-switcher">
           <template v-if="documentsStore.workspaceMode === 'indexeddb'">
-            <el-button @click="connectWorkspace" type="primary" plain size="small" style="width: 100%;">
+            <el-button
+              @click="connectWorkspace"
+              type="primary"
+              plain
+              size="small"
+              style="width: 100%"
+            >
               <el-icon><FolderOpened /></el-icon> 挂载本地文件夹
             </el-button>
           </template>
           <template v-else>
             <div class="workspace-local-active">
-              <span class="workspace-label"><el-icon><FolderChecked /></el-icon> 已挂载本地目录</span>
-              <el-button @click="disconnectWorkspace" type="danger" text size="small">
+              <span class="workspace-label"
+                ><el-icon><FolderChecked /></el-icon> 已挂载本地目录</span
+              >
+              <el-button
+                @click="disconnectWorkspace"
+                type="danger"
+                text
+                size="small"
+              >
                 断开
               </el-button>
             </div>
@@ -360,7 +401,9 @@
             type="warning"
             :closable="false"
           >
-            <el-button @click="reconnectWorkspace" size="small" type="primary">重新授权</el-button>
+            <el-button @click="reconnectWorkspace" size="small" type="primary"
+              >重新授权</el-button
+            >
           </el-alert>
         </div>
 
@@ -431,7 +474,7 @@
                   />
                 </div>
               </div>
-              <div class="doc-summary">{{ doc.summary || '暂无内容' }}</div>
+              <div class="doc-summary">{{ doc.summary || "暂无内容" }}</div>
               <div class="doc-tags" v-if="doc.tags && doc.tags.length > 0">
                 <el-tag
                   v-for="tag in doc.tags"
@@ -468,7 +511,10 @@
               class="document-tree"
             >
               <template #default="{ node, data }">
-                <div class="custom-tree-node" :class="{ 'is-active': isActiveDocument(data.id) }">
+                <div
+                  class="custom-tree-node"
+                  :class="{ 'is-active': isActiveDocument(data.id) }"
+                >
                   <div class="node-label">
                     <el-icon class="node-icon">
                       <Folder v-if="data.isFolder" />
@@ -521,10 +567,15 @@
             <el-icon><Search /></el-icon>
             <span>搜索</span>
           </el-menu-item>
-          
+
           <el-menu-item index="/chat">
             <el-icon><ChatLineRound /></el-icon>
             <span>AI 对话</span>
+          </el-menu-item>
+
+          <el-menu-item index="/mindmap">
+            <el-icon><Connection /></el-icon>
+            <span>思维导图</span>
           </el-menu-item>
 
           <el-menu-item index="/about">
@@ -541,7 +592,10 @@
             :active-icon="Moon"
             :inactive-icon="Sunny"
             @change="toggleDark"
-            style="--el-switch-on-color: #2c2c2c; --el-switch-off-color: #f2f2f2"
+            style="
+              --el-switch-on-color: #2c2c2c;
+              --el-switch-off-color: #f2f2f2;
+            "
           />
         </div>
       </div>
@@ -563,8 +617,18 @@
   />
 
   <!-- 快捷笔记对话框 -->
-  <el-dialog v-model="showQuickNote" title="快捷记录" width="500px" :close-on-click-modal="false">
-    <el-input v-model="quickNoteTitle" placeholder="标题（可选）" size="large" style="margin-bottom: 16px" />
+  <el-dialog
+    v-model="showQuickNote"
+    title="快捷记录"
+    width="500px"
+    :close-on-click-modal="false"
+  >
+    <el-input
+      v-model="quickNoteTitle"
+      placeholder="标题（可选）"
+      size="large"
+      style="margin-bottom: 16px"
+    />
     <el-input
       v-model="quickNoteContent"
       type="textarea"
@@ -573,15 +637,29 @@
     />
     <template #footer>
       <el-button @click="showQuickNote = false">取消</el-button>
-      <el-button type="primary" @click="confirmQuickNote" :disabled="!quickNoteContent.trim()">
+      <el-button
+        type="primary"
+        @click="confirmQuickNote"
+        :disabled="!quickNoteContent.trim()"
+      >
         保存
       </el-button>
     </template>
   </el-dialog>
 
   <!-- 新建文档对话框（含模板选择） -->
-  <el-dialog v-model="showNewDocDialog" title="新建文档" width="600px" :close-on-click-modal="false">
-    <el-input v-model="newDocTitle" placeholder="文档标题" size="large" style="margin-bottom: 20px" />
+  <el-dialog
+    v-model="showNewDocDialog"
+    title="新建文档"
+    width="600px"
+    :close-on-click-modal="false"
+  >
+    <el-input
+      v-model="newDocTitle"
+      placeholder="文档标题"
+      size="large"
+      style="margin-bottom: 20px"
+    />
     <div class="template-label">选择模板（可选）</div>
     <div class="template-grid">
       <div
@@ -596,7 +674,11 @@
     </div>
     <template #footer>
       <el-button @click="showNewDocDialog = false">取消</el-button>
-      <el-button type="primary" @click="confirmCreateDocument" :disabled="!newDocTitle.trim()">
+      <el-button
+        type="primary"
+        @click="confirmCreateDocument"
+        :disabled="!newDocTitle.trim()"
+      >
         创建文档
       </el-button>
     </template>
@@ -607,464 +689,503 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
-import { useDocumentsStore } from '@/stores/documents.js'
-import { FSService } from '@/services/fs.js'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import ShortcutsPanel from '@/components/ShortcutsPanel.vue'
-import { Plus, Edit, Delete, Document, Search, House, InfoFilled, ChatLineRound, Menu, Refresh, Moon, Sunny, Folder, DocumentAdd, FolderAdd, Top, Star, StarFilled, Share, Setting, FolderOpened, FolderChecked } from '@element-plus/icons-vue'
-import { useDark, useToggle } from '@vueuse/core'
-import { markdownProcessor } from '@/utils/markdown.js'
-import { templates } from '@/utils/templates.js'
+import { ref, computed, onMounted, watch } from "vue";
+import { useRouter, useRoute } from "vue-router";
+import { useDocumentsStore } from "@/stores/documents.js";
+import { FSService } from "@/services/fs.js";
+import { ElMessage, ElMessageBox } from "element-plus";
+import ShortcutsPanel from "@/components/ShortcutsPanel.vue";
+import {
+  Plus,
+  Edit,
+  Delete,
+  Document,
+  Search,
+  House,
+  InfoFilled,
+  ChatLineRound,
+  Menu,
+  Refresh,
+  Moon,
+  Sunny,
+  Folder,
+  DocumentAdd,
+  FolderAdd,
+  Top,
+  Star,
+  StarFilled,
+  Share,
+  Setting,
+  FolderOpened,
+  FolderChecked,
+  Connection,
+} from "@element-plus/icons-vue";
+import { useDark, useToggle } from "@vueuse/core";
+import { markdownProcessor } from "@/utils/markdown.js";
+import { templates } from "@/utils/templates.js";
 
-const isDark = useDark()
-const _toggleDark = useToggle(isDark)
+const isDark = useDark();
+const _toggleDark = useToggle(isDark);
 
 const toggleDark = (val) => {
   // el-switch 的 @change 会传布尔值进来，直接用传入的值设置暗色模式
-  _toggleDark(val)
-  
+  _toggleDark(val);
+
   // 切换主题后重新渲染可能有颜色依赖的 Mermaid 图表
   setTimeout(() => {
-    markdownProcessor.renderMermaid()
-  }, 100)
-}
+    markdownProcessor.renderMermaid();
+  }, 100);
+};
 
-const router = useRouter()
-const route = useRoute()
-const documentsStore = useDocumentsStore()
-const fileInput = ref(null)
+const router = useRouter();
+const route = useRoute();
+const documentsStore = useDocumentsStore();
+const fileInput = ref(null);
 
 // 快捷笔记
-const showQuickNote = ref(false)
-const quickNoteTitle = ref('')
-const quickNoteContent = ref('')
+const showQuickNote = ref(false);
+const quickNoteTitle = ref("");
+const quickNoteContent = ref("");
 
 // 新建文档对话框（模板选择）
-const showNewDocDialog = ref(false)
-const newDocTitle = ref('')
-const selectedTemplate = ref('blank')
-const pendingParentId = ref(null)
+const showNewDocDialog = ref(false);
+const newDocTitle = ref("");
+const selectedTemplate = ref("blank");
+const pendingParentId = ref(null);
 
 const openQuickNote = () => {
-  quickNoteTitle.value = ''
-  quickNoteContent.value = ''
-  showQuickNote.value = true
-}
+  quickNoteTitle.value = "";
+  quickNoteContent.value = "";
+  showQuickNote.value = true;
+};
 
 const confirmQuickNote = async () => {
-  if (!quickNoteContent.value.trim()) return
+  if (!quickNoteContent.value.trim()) return;
   try {
-    const title = quickNoteTitle.value.trim() || '快捷笔记 ' + new Date().toLocaleString('zh-CN')
-    await documentsStore.createDocument(title, quickNoteContent.value)
-    showQuickNote.value = false
-    ElMessage.success('快捷笔记已保存')
+    const title =
+      quickNoteTitle.value.trim() ||
+      "快捷笔记 " + new Date().toLocaleString("zh-CN");
+    await documentsStore.createDocument(title, quickNoteContent.value);
+    showQuickNote.value = false;
+    ElMessage.success("快捷笔记已保存");
   } catch (err) {
-    ElMessage.error('保存失败')
+    ElMessage.error("保存失败");
   }
-}
-const docTreeRef = ref(null)
+};
+const docTreeRef = ref(null);
 
 // 响应式数据
-const searchQuery = ref('')
-const selectedTags = ref([])
-const drawerVisible = ref(false)
-const showReconnectPrompt = ref(false)
-const isBatchMode = ref(false)
-const allSelected = ref(false)
-const isIndeterminate = ref(false)
+const searchQuery = ref("");
+const selectedTags = ref([]);
+const drawerVisible = ref(false);
+const showReconnectPrompt = ref(false);
+const isBatchMode = ref(false);
+const allSelected = ref(false);
+const isIndeterminate = ref(false);
 
 // 当前激活的导航项
 const activeNav = computed(() => {
-  const path = route.path
-  if (path === '/') return '/'
-  if (path.startsWith('/md-docs')) return '/md-docs'
-  if (path.startsWith('/search')) return '/search'
-  if (path.startsWith('/about')) return '/about'
-  return '/'
-})
+  const path = route.path;
+  if (path === "/") return "/";
+  if (path.startsWith("/md-docs")) return "/md-docs";
+  if (path.startsWith("/search")) return "/search";
+  if (path.startsWith("/about")) return "/about";
+  return "/";
+});
 
 // 计算属性
-const filteredDocuments = computed(() => documentsStore.filteredDocuments)
-const allTags = computed(() => documentsStore.allTags)
-const currentDocument = computed(() => documentsStore.currentDocument)
+const filteredDocuments = computed(() => documentsStore.filteredDocuments);
+const allTags = computed(() => documentsStore.allTags);
+const currentDocument = computed(() => documentsStore.currentDocument);
 
 const userDocumentTree = computed(() => {
-  const tree = documentsStore.documentTree
-  
+  const tree = documentsStore.documentTree;
+
   // 应用搜索和标签过滤（简单平铺展示匹配项，或保留树结构但只对过滤后文档建立树）
   if (searchQuery.value.trim() || selectedTags.value.length > 0) {
     // 若开启搜索，为了方便，这里退回到展示过滤后的平铺列表（将内容包装为树节点形状）
-    const filtered = documentsStore.getUserDocuments().filter(doc => filteredDocuments.value.includes(doc))
-    return filtered.map(doc => ({ ...doc, children: [] }))
+    const filtered = documentsStore
+      .getUserDocuments()
+      .filter((doc) => filteredDocuments.value.includes(doc));
+    return filtered.map((doc) => ({ ...doc, children: [] }));
   }
 
   // 过滤掉预设文档和动态文档
   const filterUserTree = (nodes) => {
-    return nodes.filter(node => !node.isPreset && !node.isDynamic).map(node => {
-      if (node.children) {
-        return { ...node, children: filterUserTree(node.children) }
-      }
-      return node
-    })
-  }
+    return nodes
+      .filter((node) => !node.isPreset && !node.isDynamic)
+      .map((node) => {
+        if (node.children) {
+          return { ...node, children: filterUserTree(node.children) };
+        }
+        return node;
+      });
+  };
 
-  return filterUserTree(tree)
-})
+  return filterUserTree(tree);
+});
 
 // 获取当前路由中的文档ID
 const currentDocumentId = computed(() => {
-  if (route.name === 'Viewer' || route.name === 'Editor') {
-    return route.params.id
+  if (route.name === "Viewer" || route.name === "Editor") {
+    return route.params.id;
   }
-  return null
-})
+  return null;
+});
 
 // 判断文档是否为当前活跃文档
 const isActiveDocument = (docId) => {
-  return currentDocumentId.value === docId
-}
+  return currentDocumentId.value === docId;
+};
 const presetDocuments = computed(() => {
-  const preset = documentsStore.getPresetDocuments()
+  const preset = documentsStore.getPresetDocuments();
   // 应用搜索和标签过滤
   if (searchQuery.value.trim() || selectedTags.value.length > 0) {
-    return preset.filter(doc => filteredDocuments.value.includes(doc))
+    return preset.filter((doc) => filteredDocuments.value.includes(doc));
   }
-  return preset
-})
+  return preset;
+});
 const userDocuments = computed(() => {
-  const user = documentsStore.getUserDocuments()
+  const user = documentsStore.getUserDocuments();
   // 应用搜索和标签过滤
   if (searchQuery.value.trim() || selectedTags.value.length > 0) {
-    return user.filter(doc => filteredDocuments.value.includes(doc))
+    return user.filter((doc) => filteredDocuments.value.includes(doc));
   }
-  return user
-})
+  return user;
+});
 
 // 方法
 const handleSearch = (query) => {
-  console.log('🔍 AppLayout: 处理搜索输入:', query)
-  documentsStore.searchDocuments(query)
-}
+  console.log("🔍 AppLayout: 处理搜索输入:", query);
+  documentsStore.searchDocuments(query);
+};
 
 const toggleBatchMode = () => {
-  isBatchMode.value = !isBatchMode.value
+  isBatchMode.value = !isBatchMode.value;
   if (!isBatchMode.value && docTreeRef.value) {
-    docTreeRef.value.setCheckedKeys([]) // Clear selections when exiting batch mode
-    allSelected.value = false
-    isIndeterminate.value = false
+    docTreeRef.value.setCheckedKeys([]); // Clear selections when exiting batch mode
+    allSelected.value = false;
+    isIndeterminate.value = false;
   }
-}
+};
 
 const handleSelectAllChange = (val) => {
-  if (!docTreeRef.value) return
-  
+  if (!docTreeRef.value) return;
+
   if (val) {
     // 获取所有节点的 ID
     const getAllIds = (nodes) => {
-      let ids = []
-      nodes.forEach(node => {
-        ids.push(node.id)
+      let ids = [];
+      nodes.forEach((node) => {
+        ids.push(node.id);
         if (node.children && node.children.length > 0) {
-          ids = ids.concat(getAllIds(node.children))
+          ids = ids.concat(getAllIds(node.children));
         }
-      })
-      return ids
-    }
-    const allIds = getAllIds(userDocumentTree.value)
-    docTreeRef.value.setCheckedKeys(allIds)
+      });
+      return ids;
+    };
+    const allIds = getAllIds(userDocumentTree.value);
+    docTreeRef.value.setCheckedKeys(allIds);
   } else {
-    docTreeRef.value.setCheckedKeys([])
+    docTreeRef.value.setCheckedKeys([]);
   }
-  isIndeterminate.value = false
-}
+  isIndeterminate.value = false;
+};
 
 const handleTreeCheck = () => {
-  if (!docTreeRef.value) return
-  
-  const checkedCount = docTreeRef.value.getCheckedKeys().length
+  if (!docTreeRef.value) return;
+
+  const checkedCount = docTreeRef.value.getCheckedKeys().length;
   const allNodesCount = (nodes) => {
-    let count = 0
-    nodes.forEach(node => {
-      count++
+    let count = 0;
+    nodes.forEach((node) => {
+      count++;
       if (node.children && node.children.length > 0) {
-        count += allNodesCount(node.children)
+        count += allNodesCount(node.children);
       }
-    })
-    return count
-  }
-  
-  const total = allNodesCount(userDocumentTree.value)
-  allSelected.value = checkedCount === total && total > 0
-  isIndeterminate.value = checkedCount > 0 && checkedCount < total
-}
+    });
+    return count;
+  };
+
+  const total = allNodesCount(userDocumentTree.value);
+  allSelected.value = checkedCount === total && total > 0;
+  isIndeterminate.value = checkedCount > 0 && checkedCount < total;
+};
 
 const handleBatchDelete = async () => {
-  if (!docTreeRef.value) return
-  
-  const checkedKeys = docTreeRef.value.getCheckedKeys()
-  const validIds = checkedKeys.filter(id => id && id !== 'undefined')
+  if (!docTreeRef.value) return;
+
+  const checkedKeys = docTreeRef.value.getCheckedKeys();
+  const validIds = checkedKeys.filter((id) => id && id !== "undefined");
 
   if (validIds.length === 0) {
-    ElMessage.warning('请先选择要删除的项目')
-    return
+    ElMessage.warning("请先选择要删除的项目");
+    return;
   }
 
   try {
     await ElMessageBox.confirm(
       `确定要删除选中的 ${validIds.length} 个项目吗？该操作不可撤销。`,
-      '批量删除确认',
+      "批量删除确认",
       {
-        confirmButtonText: '确定删除',
-        cancelButtonText: '取消',
-        type: 'warning',
-        confirmButtonClass: 'el-button--danger'
-      }
-    )
+        confirmButtonText: "确定删除",
+        cancelButtonText: "取消",
+        type: "warning",
+        confirmButtonClass: "el-button--danger",
+      },
+    );
 
-    await documentsStore.deleteDocuments(validIds)
-    ElMessage.success(`成功删除 ${validIds.length} 个项目`)
-    isBatchMode.value = false
+    await documentsStore.deleteDocuments(validIds);
+    ElMessage.success(`成功删除 ${validIds.length} 个项目`);
+    isBatchMode.value = false;
   } catch (error) {
-    if (error !== 'cancel') {
-      console.error('批量删除失败:', error)
-      ElMessage.error('批量删除过程中发生错误')
+    if (error !== "cancel") {
+      console.error("批量删除失败:", error);
+      ElMessage.error("批量删除过程中发生错误");
     }
   }
-}
+};
 
 // 处理顶部导航选择
 const handleNavSelect = (index) => {
   if (route.path !== index) {
-    router.push(index)
+    router.push(index);
   }
-}
+};
 
 // 工作区切换
 const connectWorkspace = async () => {
-  await documentsStore.connectLocalWorkspace()
-  if (documentsStore.workspaceMode === 'local') {
-    showReconnectPrompt.value = false
-    router.push('/') // 挂载成功后回到首页
+  await documentsStore.connectLocalWorkspace();
+  if (documentsStore.workspaceMode === "local") {
+    showReconnectPrompt.value = false;
+    router.push("/"); // 挂载成功后回到首页
   }
-}
+};
 
 const disconnectWorkspace = async () => {
-  await ElMessageBox.confirm('确定要断开本地文件夹的连接吗？系统将切回到浏览器内建存储。', '断开连接')
-  await documentsStore.switchToIndexedDB()
-  router.push('/')
-}
+  await ElMessageBox.confirm(
+    "确定要断开本地文件夹的连接吗？系统将切回到浏览器内建存储。",
+    "断开连接",
+  );
+  await documentsStore.switchToIndexedDB();
+  router.push("/");
+};
 
 const reconnectWorkspace = async () => {
   try {
-    const handle = await FSService.loadStoredHandle()
+    const handle = await FSService.loadStoredHandle();
     if (handle) {
       if (await FSService.verifyPermission(handle)) {
-        documentsStore.localDirHandle = handle
-        documentsStore.workspaceMode = 'local'
-        await documentsStore.loadDocuments()
-        showReconnectPrompt.value = false
-        ElMessage.success('已恢复本地文件夹访问权限')
-        return
+        documentsStore.localDirHandle = handle;
+        documentsStore.workspaceMode = "local";
+        await documentsStore.loadDocuments();
+        showReconnectPrompt.value = false;
+        ElMessage.success("已恢复本地文件夹访问权限");
+        return;
       }
     }
   } catch (e) {
-    console.error(e)
+    console.error(e);
   }
-  ElMessage.error('恢复失败，请重新尝试挂载或检查浏览器权限')
-}
+  ElMessage.error("恢复失败，请重新尝试挂载或检查浏览器权限");
+};
 
 // 尝试自动恢复
 onMounted(async () => {
-  const storeHandle = await FSService.loadStoredHandle()
+  const storeHandle = await FSService.loadStoredHandle();
   if (storeHandle) {
     // 首次加载因为浏览器安全策略无法静默请求 user gesture 权限，
     // 所以如果是我们之前挂载了 handle 的，显示提示让用户主动点一下
-    showReconnectPrompt.value = true
+    showReconnectPrompt.value = true;
   }
-})
+});
 
 // 树组件节点操作相关方法
 const handleNodeClick = (data, node) => {
   if (data.isFolder) {
     // 文件夹：如果是左击，通常树组件自带展开/折叠，如果配置了 expand-on-click-node = false，我们需要手动
-    node.expanded = !node.expanded
+    node.expanded = !node.expanded;
   } else {
-    selectDocument(data)
+    selectDocument(data);
   }
-}
+};
 
 const handleNodeClickMobile = (data, node) => {
   if (data.isFolder) {
-    node.expanded = !node.expanded
+    node.expanded = !node.expanded;
   } else {
-    selectDocument(data)
+    selectDocument(data);
   }
-}
+};
 
 // 是否允许拖拽放入该节点
 const allowDrop = (draggingNode, dropNode, type) => {
   // 只允许放入文件夹内部，或作为同级元素(type == 'prev'|'next')
-  if (type === 'inner') {
-    return dropNode.data.isFolder
+  if (type === "inner") {
+    return dropNode.data.isFolder;
   }
-  return true
-}
+  return true;
+};
 
 // 处理节点拖拽结束
 const handleNodeDrop = async (draggingNode, dropNode, dropType, ev) => {
   try {
-    const docId = draggingNode.data.id
-    let newParentId = null
+    const docId = draggingNode.data.id;
+    let newParentId = null;
 
-    if (dropType === 'inner') {
-      newParentId = dropNode.data.id
+    if (dropType === "inner") {
+      newParentId = dropNode.data.id;
     } else {
-      newParentId = dropNode.data.parentId || null
+      newParentId = dropNode.data.parentId || null;
     }
 
-    await documentsStore.moveDocument(docId, newParentId)
-    ElMessage.success('移动成功')
+    await documentsStore.moveDocument(docId, newParentId);
+    ElMessage.success("移动成功");
   } catch (err) {
-    ElMessage.error(err.message || '移动失败')
+    ElMessage.error(err.message || "移动失败");
     // 刷新数据以还原UI
-    await documentsStore.loadDocuments()
+    await documentsStore.loadDocuments();
   }
-}
+};
 
 const togglePin = async (data) => {
   try {
-    await documentsStore.togglePin(data.id)
-    ElMessage.success(data.isPinned ? '取消置顶成功' : '置顶成功')
+    await documentsStore.togglePin(data.id);
+    ElMessage.success(data.isPinned ? "取消置顶成功" : "置顶成功");
   } catch (error) {
-    ElMessage.error('操作失败')
+    ElMessage.error("操作失败");
   }
-}
+};
 
 const toggleFavorite = async (data) => {
   try {
-    await documentsStore.toggleFavorite(data.id)
-    ElMessage.success(data.isFavorited ? '取消收藏成功' : '收藏成功')
+    await documentsStore.toggleFavorite(data.id);
+    ElMessage.success(data.isFavorited ? "取消收藏成功" : "收藏成功");
   } catch (error) {
-    ElMessage.error('操作失败')
+    ElMessage.error("操作失败");
   }
-}
+};
 
 const createNewDocument = async (parentId = null) => {
-  newDocTitle.value = ''
-  selectedTemplate.value = 'blank'
-  pendingParentId.value = parentId
-  showNewDocDialog.value = true
-}
+  newDocTitle.value = "";
+  selectedTemplate.value = "blank";
+  pendingParentId.value = parentId;
+  showNewDocDialog.value = true;
+};
 
 const confirmCreateDocument = async () => {
-  if (!newDocTitle.value.trim()) return
+  if (!newDocTitle.value.trim()) return;
   try {
-    const tpl = templates.find(t => t.id === selectedTemplate.value)
-    const content = tpl ? tpl.content : ''
-    const doc = await documentsStore.createDocument(newDocTitle.value.trim(), content, pendingParentId.value)
-    showNewDocDialog.value = false
-    router.push(`/editor/${encodeURIComponent(doc.id)}`)
+    const tpl = templates.find((t) => t.id === selectedTemplate.value);
+    const content = tpl ? tpl.content : "";
+    const doc = await documentsStore.createDocument(
+      newDocTitle.value.trim(),
+      content,
+      pendingParentId.value,
+    );
+    showNewDocDialog.value = false;
+    router.push(`/editor/${encodeURIComponent(doc.id)}`);
   } catch (error) {
-    ElMessage.error('创建文档失败')
+    ElMessage.error("创建文档失败");
   }
-}
+};
 
 const createNewFolder = async (parentId = null) => {
   try {
-    const { value: title } = await ElMessageBox.prompt('请输入文件夹名称', '新建文件夹', {
-      confirmButtonText: '创建',
-      cancelButtonText: '取消',
-      inputPattern: /.+/,
-      inputErrorMessage: '名称不能为空'
-    })
+    const { value: title } = await ElMessageBox.prompt(
+      "请输入文件夹名称",
+      "新建文件夹",
+      {
+        confirmButtonText: "创建",
+        cancelButtonText: "取消",
+        inputPattern: /.+/,
+        inputErrorMessage: "名称不能为空",
+      },
+    );
 
-    await documentsStore.createFolder(title, parentId)
-    ElMessage.success('创建文件夹成功')
+    await documentsStore.createFolder(title, parentId);
+    ElMessage.success("创建文件夹成功");
   } catch (error) {
-    if (error !== 'cancel') {
-      ElMessage.error('创建文件夹失败')
+    if (error !== "cancel") {
+      ElMessage.error("创建文件夹失败");
     }
   }
-}
+};
 
 const selectDocument = async (doc) => {
   try {
     // 先更新当前文档状态
-    await documentsStore.getDocument(doc.id)
+    await documentsStore.getDocument(doc.id);
     // 导航到查看页面
-    await router.push(`/view/${encodeURIComponent(doc.id)}`)
+    await router.push(`/view/${encodeURIComponent(doc.id)}`);
     // 移动端关闭侧边栏抽屉
-    drawerVisible.value = false
+    drawerVisible.value = false;
   } catch (error) {
-    console.error('选择文档失败:', error)
-    ElMessage.error('加载文档失败')
+    console.error("选择文档失败:", error);
+    ElMessage.error("加载文档失败");
   }
-}
+};
 
 const editDocument = (doc) => {
-  router.push(`/editor/${encodeURIComponent(doc.id)}`)
-}
+  router.push(`/editor/${encodeURIComponent(doc.id)}`);
+};
 
 const deleteItem = async (data) => {
   // 预设文档不能删除
   if (data.isPreset) {
-    ElMessage.warning('预设文档不能删除')
-    return
+    ElMessage.warning("预设文档不能删除");
+    return;
   }
 
-  const typeName = data.isFolder ? '文件夹' : '文档'
+  const typeName = data.isFolder ? "文件夹" : "文档";
 
   if (data.isFolder && data.children && data.children.length > 0) {
-    ElMessage.warning('文件夹非空，无法直接删除')
-    return
+    ElMessage.warning("文件夹非空，无法直接删除");
+    return;
   }
 
   try {
     await ElMessageBox.confirm(
       `确定要删除${typeName} "${data.title}" 吗？`,
-      '删除确认',
+      "删除确认",
       {
-        confirmButtonText: '删除',
-        cancelButtonText: '取消',
-        type: 'warning'
-      }
-    )
+        confirmButtonText: "删除",
+        cancelButtonText: "取消",
+        type: "warning",
+      },
+    );
 
-    await documentsStore.deleteDocument(data.id)
-    ElMessage.success(`${typeName}已删除`)
+    await documentsStore.deleteDocument(data.id);
+    ElMessage.success(`${typeName}已删除`);
   } catch (error) {
-    if (error !== 'cancel') {
-      ElMessage.error(`删除${typeName}失败`)
+    if (error !== "cancel") {
+      ElMessage.error(`删除${typeName}失败`);
     }
   }
-}
+};
 
 const reloadPresetDocs = async () => {
   try {
-    await documentsStore.reloadPresetDocs()
-    ElMessage.success('预设文档已重新加载')
+    await documentsStore.reloadPresetDocs();
+    ElMessage.success("预设文档已重新加载");
   } catch (error) {
-    ElMessage.error('重新加载预设文档失败')
+    ElMessage.error("重新加载预设文档失败");
   }
-}
-
-
+};
 
 const formatDate = (dateString) => {
-  return new Date(dateString).toLocaleDateString('zh-CN')
-}
+  return new Date(dateString).toLocaleDateString("zh-CN");
+};
 
 // 监听标签过滤变化
 watch(selectedTags, (tags) => {
-  documentsStore.setTagFilter(tags)
-})
+  documentsStore.setTagFilter(tags);
+});
 
 // 初始化
 onMounted(async () => {
-  await documentsStore.loadDocuments()
-})
+  await documentsStore.loadDocuments();
+});
 </script>
 
 <style scoped>
@@ -1135,7 +1256,6 @@ onMounted(async () => {
   flex: 1;
   overflow-y: auto;
   padding: 0 10px;
-
 }
 
 .document-item {
@@ -1150,7 +1270,7 @@ onMounted(async () => {
 
 .document-item:hover {
   border-color: var(--el-color-primary);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .document-item.active {
@@ -1277,7 +1397,6 @@ onMounted(async () => {
   color: var(--el-color-warning);
 }
 
-
 .main-content {
   padding: 0;
   background: var(--el-bg-color);
@@ -1365,7 +1484,6 @@ onMounted(async () => {
   flex: 1;
 }
 
-
 .section-actions {
   display: flex;
   align-items: center;
@@ -1413,7 +1531,7 @@ onMounted(async () => {
   .hidden-xs-only {
     display: none !important;
   }
-  
+
   .hidden-sm-and-up {
     display: inline-flex !important;
   }

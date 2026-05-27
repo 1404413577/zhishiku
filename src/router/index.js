@@ -54,6 +54,12 @@ const routes = [
     name: 'Settings',
     component: () => import('@/views/SettingsView.vue'),
     meta: { title: '设置' }
+  },
+  {
+    path: '/mindmap',
+    name: 'MindMap',
+    component: () => import('@/views/MindMapView.vue'),
+    meta: { title: '思维导图' }
   }
 ]
 
