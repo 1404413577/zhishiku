@@ -1,11 +1,12 @@
 <template>
   <div class="chat-layout">
     <!-- 左侧会话列表侧边栏 -->
-    <div class="chat-sidebar">
+    <div :class="['chat-sidebar', { 'sidebar-open': isSidebarOpen }]">
       <div class="sidebar-header">
         <el-button type="primary" :icon="Plus" class="new-chat-btn" @click="createNewSession">
           创建新对话
         </el-button>
+        <el-button class="sidebar-close-btn" :icon="Close" circle size="small" @click="isSidebarOpen = false" />
       </div>
       <el-scrollbar class="session-list">
         <div 
@@ -31,10 +32,13 @@
       </el-scrollbar>
     </div>
 
+    <div v-if="isSidebarOpen" class="sidebar-overlay" @click="isSidebarOpen = false"></div>
+
     <!-- 右侧主对话界面 -->
     <div class="chat-page">
       <div class="chat-header">
         <div class="header-left">
+          <el-button class="menu-toggle" :icon="Menu" circle @click="isSidebarOpen = true" />
           <h2><el-icon><ChatLineRound /></el-icon> AI 对话</h2>
         </div>
         <div class="header-right">
@@ -136,7 +140,7 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted, nextTick, computed, watch } from 'vue'
-import { ChatLineRound, Refresh, MagicStick, User, Monitor, Promotion, Loading, Delete, Download, Plus, ChatDotRound } from '@element-plus/icons-vue'
+import { ChatLineRound, Refresh, MagicStick, User, Monitor, Promotion, Loading, Delete, Download, Plus, ChatDotRound, Close, Menu } from '@element-plus/icons-vue'
 import { useSettingsStore } from '@/stores/settings'
 import { useDocumentsStore } from '@/stores/documents'
 import { AIService } from '@/services/ai'
@@ -165,6 +169,7 @@ const safeJsonParse = (str, fallback = []) => {
 // 多会话状态
 const sessions = ref(safeJsonParse(localStorage.getItem('ollama-chat-sessions'), []))
 const activeSessionId = ref(localStorage.getItem('ollama-active-session') || null)
+const isSidebarOpen = ref(false)
 
 // 兼容迁移旧版的单一历史记录
 if (sessions.value.length === 0) {
@@ -765,5 +770,139 @@ onUnmounted(() => {
 .hint-text {
   font-size: 12px;
   color: var(--el-text-color-secondary);
+}
+
+/* 移动端适配 */
+@media (max-width: 768px) {
+  .chat-sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 280px;
+    height: 100%;
+    z-index: 1000;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+    box-shadow: none;
+  }
+
+  .chat-sidebar.sidebar-open {
+    transform: translateX(0);
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.15);
+  }
+
+  .sidebar-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .new-chat-btn {
+    flex: 1;
+  }
+
+  .sidebar-close-btn {
+    display: inline-flex;
+  }
+
+  .session-title {
+    max-width: 140px;
+  }
+
+  .sidebar-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.4);
+    z-index: 999;
+  }
+
+  .menu-toggle {
+    display: inline-flex;
+    margin-right: 8px;
+    flex-shrink: 0;
+  }
+
+  .chat-page {
+    padding: 12px 12px;
+    max-width: 100%;
+  }
+
+  .chat-header {
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 12px;
+    padding-bottom: 10px;
+  }
+
+  .chat-header h2 {
+    font-size: 16px;
+  }
+
+  .header-right {
+    flex-wrap: wrap;
+    gap: 6px;
+    width: 100%;
+  }
+
+  .header-right .model-label {
+    font-size: 12px;
+    margin-right: 4px;
+  }
+
+  .chat-body {
+    padding: 10px 12px;
+    margin-bottom: 12px;
+  }
+
+  .message-wrapper {
+    max-width: 92%;
+  }
+
+  .message-content {
+    font-size: 14px;
+    padding: 10px 12px;
+  }
+
+  .avatar {
+    width: 34px;
+    height: 34px;
+    font-size: 16px;
+  }
+
+  .chat-footer {
+    padding: 10px;
+  }
+
+  .chat-footer .el-textarea__inner {
+    font-size: 14px;
+  }
+
+  .action-bar {
+    flex-direction: column;
+    gap: 8px;
+    align-items: flex-end;
+  }
+
+  .hint-text {
+    display: none;
+  }
+}
+
+/* 桌面端：隐藏移动端按钮 */
+@media (min-width: 769px) {
+  .menu-toggle {
+    display: none;
+  }
+
+  .sidebar-close-btn {
+    display: none;
+  }
+
+  .sidebar-overlay {
+    display: none;
+  }
 }
 </style>

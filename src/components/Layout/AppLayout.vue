@@ -3,7 +3,7 @@
     <!-- 桌面端侧边栏 -->
     <el-aside width="300px" class="sidebar hidden-xs-only">
       <div class="sidebar-header">
-        <h2>知识库</h2>
+        <h2 style="font-size:18px">知识库</h2>
         <div style="display: flex; gap: 4px; align-items: center;">
           <el-button
             @click="router.push('/graph')"
@@ -579,6 +579,29 @@
     </template>
   </el-dialog>
 
+  <!-- 新建文档对话框（含模板选择） -->
+  <el-dialog v-model="showNewDocDialog" title="新建文档" width="600px" :close-on-click-modal="false">
+    <el-input v-model="newDocTitle" placeholder="文档标题" size="large" style="margin-bottom: 20px" />
+    <div class="template-label">选择模板（可选）</div>
+    <div class="template-grid">
+      <div
+        v-for="tpl in templates"
+        :key="tpl.id"
+        :class="['template-card', { active: selectedTemplate === tpl.id }]"
+        @click="selectedTemplate = tpl.id"
+      >
+        <span class="template-icon">{{ tpl.icon }}</span>
+        <span class="template-name">{{ tpl.name }}</span>
+      </div>
+    </div>
+    <template #footer>
+      <el-button @click="showNewDocDialog = false">取消</el-button>
+      <el-button type="primary" @click="confirmCreateDocument" :disabled="!newDocTitle.trim()">
+        创建文档
+      </el-button>
+    </template>
+  </el-dialog>
+
   <!-- 快捷键面板 -->
   <ShortcutsPanel />
 </template>
@@ -593,6 +616,7 @@ import ShortcutsPanel from '@/components/ShortcutsPanel.vue'
 import { Plus, Edit, Delete, Document, Search, House, InfoFilled, ChatLineRound, Menu, Refresh, Moon, Sunny, Folder, DocumentAdd, FolderAdd, Top, Star, StarFilled, Share, Setting, FolderOpened, FolderChecked } from '@element-plus/icons-vue'
 import { useDark, useToggle } from '@vueuse/core'
 import { markdownProcessor } from '@/utils/markdown.js'
+import { templates } from '@/utils/templates.js'
 
 const isDark = useDark()
 const _toggleDark = useToggle(isDark)
@@ -616,6 +640,12 @@ const fileInput = ref(null)
 const showQuickNote = ref(false)
 const quickNoteTitle = ref('')
 const quickNoteContent = ref('')
+
+// 新建文档对话框（模板选择）
+const showNewDocDialog = ref(false)
+const newDocTitle = ref('')
+const selectedTemplate = ref('blank')
+const pendingParentId = ref(null)
 
 const openQuickNote = () => {
   quickNoteTitle.value = ''
@@ -922,20 +952,22 @@ const toggleFavorite = async (data) => {
 }
 
 const createNewDocument = async (parentId = null) => {
-  try {
-    const { value: title } = await ElMessageBox.prompt('请输入文档标题', '新建文档', {
-      confirmButtonText: '创建',
-      cancelButtonText: '取消',
-      inputPattern: /.+/,
-      inputErrorMessage: '标题不能为空'
-    })
+  newDocTitle.value = ''
+  selectedTemplate.value = 'blank'
+  pendingParentId.value = parentId
+  showNewDocDialog.value = true
+}
 
-    const doc = await documentsStore.createDocument(title, '', parentId)
+const confirmCreateDocument = async () => {
+  if (!newDocTitle.value.trim()) return
+  try {
+    const tpl = templates.find(t => t.id === selectedTemplate.value)
+    const content = tpl ? tpl.content : ''
+    const doc = await documentsStore.createDocument(newDocTitle.value.trim(), content, pendingParentId.value)
+    showNewDocDialog.value = false
     router.push(`/editor/${encodeURIComponent(doc.id)}`)
   } catch (error) {
-    if (error !== 'cancel') {
-      ElMessage.error('创建文档失败')
-    }
+    ElMessage.error('创建文档失败')
   }
 }
 
@@ -1421,5 +1453,50 @@ onMounted(async () => {
 .mobile-sidebar {
   height: 100%;
   border-right: none;
+}
+
+/* 模板选择对话框 */
+.template-label {
+  font-size: 14px;
+  color: var(--el-text-color-secondary);
+  margin-bottom: 12px;
+}
+
+.template-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.template-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 16px 8px;
+  border: 2px solid var(--el-border-color-light);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.template-card:hover {
+  border-color: var(--el-color-primary-light-3);
+  background: var(--el-color-primary-light-9);
+}
+
+.template-card.active {
+  border-color: var(--el-color-primary);
+  background: var(--el-color-primary-light-9);
+}
+
+.template-icon {
+  font-size: 28px;
+  margin-bottom: 6px;
+}
+
+.template-name {
+  font-size: 13px;
+  color: var(--el-text-color-regular);
 }
 </style>

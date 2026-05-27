@@ -101,16 +101,18 @@
         >
           随便看看
         </el-button>
-      </div>
-      <div class="action-buttons" style="margin-top: 12px" v-if="stats.total > 0">
+
+            
         <el-button
-          size="small"
+          size="large"
+          v-if="stats.total > 0"
           @click="toggleSelectMode"
           :type="selectMode ? 'warning' : 'default'"
           :icon="Select"
         >
           {{ selectMode ? '退出批量操作' : '批量操作' }}
         </el-button>
+
       </div>
     </div>
 
