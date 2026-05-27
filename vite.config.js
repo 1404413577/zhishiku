@@ -131,14 +131,31 @@ export default defineConfig({
         ]
       },
       workbox: {
-        maximumFileSizeToCacheInBytes: 15 * 1024 * 1024, // 15MB 允许缓存大文件
+        // 新版本 SW 立即激活并接管所有页面，避免旧缓存导致 JS 404
+        skipWaiting: true,
+        clientsClaim: true,
+        maximumFileSizeToCacheInBytes: 15 * 1024 * 1024,
         globPatterns: ['**/*.{js,css,html,ico,png,svg,md,woff2}'],
-
-        // 1. 新增：忽略超大的 mathjax 渲染文件，跳过 2MB 体积检查
         globIgnores: ['**/tex-svg-full-*.js'],
 
         runtimeCaching: [
-          // 2. 新增：将这个超大文件改为运行时按需缓存 (CacheFirst 策略)
+          // 导航请求走 NetworkFirst，确保始终获取最新 index.html
+          {
+            urlPattern: ({ request }) => request.mode === 'navigate',
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'pages-cache',
+              networkTimeoutSeconds: 3,
+              expiration: {
+                maxEntries: 10,
+                maxAgeSeconds: 60 * 60 * 24
+              },
+              cacheableResponse: {
+                statuses: [0, 200]
+              }
+            }
+          },
+          // 超大 mathjax 文件运行时按需缓存
           {
             urlPattern: /tex-svg-full-.*\.js$/i,
             handler: 'CacheFirst',
@@ -146,14 +163,14 @@ export default defineConfig({
               cacheName: 'math-renderer-cache',
               expiration: {
                 maxEntries: 5,
-                maxAgeSeconds: 60 * 60 * 24 * 30 // 缓存 30 天
+                maxAgeSeconds: 60 * 60 * 24 * 30
               },
               cacheableResponse: {
                 statuses: [0, 200]
               }
             }
           },
-          // 下面是你原本就有的 Google 字体缓存配置，保持不变即可
+          // Google 字体缓存
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
             handler: 'CacheFirst',
