@@ -28,6 +28,31 @@
       </div>
     </div>
 
+    <!-- 数据分析图表 -->
+    <div class="charts-section" v-if="stats.total > 0">
+      <h2>数据分析</h2>
+      <div class="charts-grid">
+        <el-card class="chart-card">
+          <template #header><span>标签分布</span></template>
+          <div class="chart-container" ref="tagChartRef"></div>
+          <div v-if="tagDistributionData.length === 0" class="chart-empty">暂无标签数据</div>
+        </el-card>
+        <el-card class="chart-card">
+          <template #header><span>文档类型</span></template>
+          <div class="chart-container" ref="typeChartRef"></div>
+        </el-card>
+        <el-card class="chart-card">
+          <template #header><span>月度新增趋势</span></template>
+          <div class="chart-container" ref="trendChartRef"></div>
+          <div v-if="monthlyCreationData.xAxis.length === 0" class="chart-empty">暂无数据</div>
+        </el-card>
+        <el-card class="chart-card">
+          <template #header><span>内容长度分布</span></template>
+          <div class="chart-container" ref="lengthChartRef"></div>
+        </el-card>
+      </div>
+    </div>
+
     <div class="stats-section">
       <h2>活跃统计</h2>
       <el-card class="heatmap-card shadow-sm">
@@ -154,10 +179,19 @@ usePageSEO({
 
 const fileInput = ref(null)
 const heatmapRef = ref(null)
+const tagChartRef = ref(null)
+const typeChartRef = ref(null)
+const trendChartRef = ref(null)
+const lengthChartRef = ref(null)
 const isDark = useDark()
 let heatmapInstance = null
+let tagChartInstance = null
+let typeChartInstance = null
+let trendChartInstance = null
+let lengthChartInstance = null
+const allChartInstances = () => [heatmapInstance, tagChartInstance, typeChartInstance, trendChartInstance, lengthChartInstance].filter(Boolean)
 
-const handleResize = () => heatmapInstance?.resize()
+const handleResize = () => allChartInstances().forEach(i => i.resize())
 
 // 计算属性
 const stats = computed(() => documentsStore.stats)
@@ -167,6 +201,71 @@ const recentDocs = computed(() =>
     .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)) // 按更新时间排序
     .slice(0, 6)
 )
+
+// 图表数据 — 标签分布
+const tagDistributionData = computed(() => {
+  const counts = {}
+  documentsStore.documents.forEach(doc => {
+    if (doc.tags) {
+      doc.tags.forEach(tag => { counts[tag] = (counts[tag] || 0) + 1 })
+    }
+  })
+  return Object.entries(counts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 15)
+})
+
+// 图表数据 — 文档类型
+const docTypeData = computed(() => {
+  let folders = 0, normal = 0, preset = 0, dynamic = 0
+  documentsStore.documents.forEach(doc => {
+    if (doc.isFolder) folders++
+    else if (doc.isPreset) preset++
+    else if (doc.isDynamic) dynamic++
+    else normal++
+  })
+  return [
+    { name: '普通文档', value: normal },
+    { name: '文件夹', value: folders },
+    { name: '预设文档', value: preset },
+    { name: '动态文档', value: dynamic }
+  ].filter(d => d.value > 0)
+})
+
+// 图表数据 — 月度新增趋势
+const monthlyCreationData = computed(() => {
+  const months = {}
+  documentsStore.documents.forEach(doc => {
+    const date = doc.createdAt || doc.updatedAt
+    if (date) {
+      const month = date.substring(0, 7)
+      months[month] = (months[month] || 0) + 1
+    }
+  })
+  const sorted = Object.entries(months).sort()
+  return {
+    xAxis: sorted.map(([m]) => m),
+    data: sorted.map(([, c]) => c)
+  }
+})
+
+// 图表数据 — 内容长度分布
+const contentLengthData = computed(() => {
+  const buckets = { '0-500字': 0, '500-2000字': 0, '2000-5000字': 0, '5000-10000字': 0, '10000+字': 0 }
+  documentsStore.documents.forEach(doc => {
+    const len = (doc.content || '').length
+    if (len === 0) return
+    if (len < 500) buckets['0-500字']++
+    else if (len < 2000) buckets['500-2000字']++
+    else if (len < 5000) buckets['2000-5000字']++
+    else if (len < 10000) buckets['5000-10000字']++
+    else buckets['10000+字']++
+  })
+  return {
+    xAxis: Object.keys(buckets),
+    data: Object.values(buckets)
+  }
+})
 
 // 方法
 const createNewDocument = async () => {
@@ -298,6 +397,139 @@ const renderHeatmap = () => {
   heatmapInstance.setOption(option)
 }
 
+const makeChartOption = (baseOption) => ({
+  backgroundColor: 'transparent',
+  animationDuration: 800,
+  animationEasing: 'cubicOut',
+  tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+  grid: { top: 10, right: 20, bottom: 30, left: 50 },
+  ...baseOption
+})
+
+const renderTagChart = () => {
+  if (!tagChartRef.value) return
+  if (!tagChartInstance) tagChartInstance = echarts.init(tagChartRef.value, isDark.value ? 'dark' : 'light')
+
+  const data = tagDistributionData.value
+  if (data.length === 0) { tagChartInstance.clear(); return }
+
+  const textColor = isDark.value ? '#c9d1d9' : '#333'
+  tagChartInstance.setOption(makeChartOption({
+    tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+    grid: { top: 10, right: 30, bottom: 20, left: 100 },
+    xAxis: { type: 'value', axisLabel: { color: textColor } },
+    yAxis: { type: 'category', data: data.map(d => d[0]).reverse(), axisLabel: { color: textColor }, inverse: true },
+    series: [{
+      type: 'bar',
+      data: data.map(d => d[1]).reverse(),
+      itemStyle: {
+        color: new echarts.graphic.LinearGradient(0, 0, 1, 0, [
+          { offset: 0, color: '#409eff' },
+          { offset: 1, color: '#79bbff' }
+        ]),
+        borderRadius: [0, 4, 4, 0]
+      },
+      barMaxWidth: 30,
+      label: { show: true, position: 'right', color: textColor }
+    }]
+  }))
+}
+
+const renderTypeChart = () => {
+  if (!typeChartRef.value) return
+  if (!typeChartInstance) typeChartInstance = echarts.init(typeChartRef.value, isDark.value ? 'dark' : 'light')
+
+  const data = docTypeData.value
+  const colors = ['#409eff', '#e6a23c', '#909399', '#67c23a']
+  typeChartInstance.setOption({
+    backgroundColor: 'transparent',
+    animationDuration: 800,
+    tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
+    legend: { orient: 'vertical', right: 10, top: 'center', textStyle: { color: isDark.value ? '#c9d1d9' : '#333' } },
+    series: [{
+      type: 'pie',
+      radius: ['45%', '75%'],
+      center: ['40%', '55%'],
+      avoidLabelOverlap: false,
+      label: { show: false },
+      emphasis: { label: { show: true, fontSize: 16, fontWeight: 'bold' } },
+      data: data.map((d, i) => ({ ...d, itemStyle: { color: colors[i % colors.length] } }))
+    }]
+  })
+}
+
+const renderTrendChart = () => {
+  if (!trendChartRef.value) return
+  if (!trendChartInstance) trendChartInstance = echarts.init(trendChartRef.value, isDark.value ? 'dark' : 'light')
+
+  const { xAxis, data } = monthlyCreationData.value
+  if (xAxis.length === 0) { trendChartInstance.clear(); return }
+
+  const textColor = isDark.value ? '#c9d1d9' : '#333'
+  trendChartInstance.setOption(makeChartOption({
+    tooltip: { trigger: 'axis' },
+    grid: { top: 20, right: 20, bottom: 30, left: 50 },
+    xAxis: { type: 'category', data: xAxis, axisLabel: { color: textColor, rotate: 45 } },
+    yAxis: { type: 'value', minInterval: 1, axisLabel: { color: textColor } },
+    series: [{
+      type: 'line',
+      data,
+      smooth: true,
+      symbol: 'circle',
+      symbolSize: 6,
+      lineStyle: { color: '#409eff', width: 2 },
+      itemStyle: { color: '#409eff' },
+      areaStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 0.6, [
+        { offset: 0, color: 'rgba(64,158,255,0.25)' },
+        { offset: 1, color: 'rgba(64,158,255,0.02)' }
+      ])}
+    }]
+  }))
+}
+
+const renderLengthChart = () => {
+  if (!lengthChartRef.value) return
+  if (!lengthChartInstance) lengthChartInstance = echarts.init(lengthChartRef.value, isDark.value ? 'dark' : 'light')
+
+  const { xAxis, data } = contentLengthData.value
+  const textColor = isDark.value ? '#c9d1d9' : '#333'
+  lengthChartInstance.setOption(makeChartOption({
+    tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+    grid: { top: 10, right: 20, bottom: 20, left: 40 },
+    xAxis: { type: 'category', data: xAxis, axisLabel: { color: textColor } },
+    yAxis: { type: 'value', minInterval: 1, axisLabel: { color: textColor } },
+    series: [{
+      type: 'bar',
+      data,
+      barMaxWidth: 40,
+      itemStyle: {
+        color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+          { offset: 0, color: '#67c23a' },
+          { offset: 1, color: '#b3e19d' }
+        ]),
+        borderRadius: [4, 4, 0, 0]
+      }
+    }]
+  }))
+}
+
+const renderAllCharts = () => {
+  renderHeatmap()
+  renderTagChart()
+  renderTypeChart()
+  renderTrendChart()
+  renderLengthChart()
+}
+
+const disposeAllCharts = () => {
+  allChartInstances().forEach(i => i.dispose())
+  heatmapInstance = null
+  tagChartInstance = null
+  typeChartInstance = null
+  trendChartInstance = null
+  lengthChartInstance = null
+}
+
 // 初始化
 onMounted(async () => {
   if (documentsStore.documents.length === 0) {
@@ -312,22 +544,19 @@ onMounted(async () => {
   }
 
   nextTick(() => {
-    renderHeatmap()
+    renderAllCharts()
     window.addEventListener('resize', handleResize)
   })
 })
 
 onUnmounted(() => {
   window.removeEventListener('resize', handleResize)
-  heatmapInstance?.dispose()
+  disposeAllCharts()
 })
 
 watch([() => documentsStore.documents, isDark], () => {
-  if (heatmapInstance) {
-    heatmapInstance.dispose()
-    heatmapInstance = null
-    renderHeatmap()
-  }
+  disposeAllCharts()
+  nextTick(() => renderAllCharts())
 }, { deep: true })
 </script>
 
@@ -381,6 +610,55 @@ watch([() => documentsStore.documents, isDark], () => {
 .stat-label {
   color: #666;
   font-size: 0.9em;
+}
+
+.charts-section {
+  margin-bottom: 40px;
+}
+
+.charts-section h2 {
+  margin-bottom: 20px;
+  color: #333;
+  font-size: 1.5em;
+}
+
+.charts-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+}
+
+.chart-card {
+  border-radius: 8px;
+}
+
+.chart-card :deep(.el-card__header) {
+  padding: 14px 20px;
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--el-text-color-primary);
+  border-bottom: 1px solid var(--el-border-color-lighter);
+}
+
+.chart-card :deep(.el-card__body) {
+  padding: 16px 12px 8px;
+  position: relative;
+}
+
+.chart-container {
+  height: 260px;
+  width: 100%;
+  position: relative;
+}
+
+.chart-empty {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: var(--el-text-color-placeholder);
+  font-size: 14px;
+  pointer-events: none;
 }
 
 .stats-section {
@@ -518,6 +796,14 @@ watch([() => documentsStore.documents, isDark], () => {
 @media (max-width: 768px) {
   .home-page {
     padding: 15px;
+  }
+
+  .charts-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .chart-container {
+    height: 220px;
   }
   
   .welcome-section h1 {
