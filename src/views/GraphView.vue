@@ -10,7 +10,17 @@
         <el-button @click="refreshGraph" :icon="Refresh" circle title="重新布局" style="margin-left: 12px;"></el-button>
       </div>
     </div>
-    <div class="graph-content" ref="chartRef"></div>
+    <div class="graph-content" ref="chartRef">
+      <div v-if="graphMode === 'tag' && graphDataSource === 'empty'" class="graph-empty-state">
+        <el-icon class="empty-icon"><Connection /></el-icon>
+        <p>暂无标签数据</p>
+        <p class="empty-hint">在文档编辑器中为文档添加标签，或在文档内容中使用 [[双向链接]]，即可在此看到标签关系图谱。</p>
+      </div>
+      <div v-else-if="graphMode === 'tag' && graphDataSource === 'wikilinks'" class="graph-source-hint">
+        <el-icon><InfoFilled /></el-icon>
+        <span>当前基于文档中的 [[双向链接]] 生成关系图（尚无手动标签）</span>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -18,7 +28,7 @@
 import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useDocumentsStore } from '@/stores/documents'
-import { Refresh } from '@element-plus/icons-vue'
+import { Refresh, Connection, InfoFilled } from '@element-plus/icons-vue'
 import * as echarts from 'echarts'
 import { useDark } from '@vueuse/core'
 
@@ -27,6 +37,7 @@ const router = useRouter()
 const documentsStore = useDocumentsStore()
 const isDark = useDark()
 const graphMode = ref('document')
+const graphDataSource = ref('tag') // 'tag' | 'wikilinks' | 'empty'
 
 let chartInstance = null
 let resizeObserver = null
@@ -43,16 +54,69 @@ const extractWikiLinks = (content) => {
   return [...new Set(links)]
 }
 
+// 从文档 [[WikiLinks]] 构建标签模式数据 (当手动标签为空时的回退方案)
+const buildWikiLinkTagData = () => {
+  const documents = documentsStore.documents
+  const linkCounts = {}
+  const cooccurrence = {}
+  const linkSet = new Set()
+
+  documents.forEach(doc => {
+    if (!doc.content) return
+    const links = extractWikiLinks(doc.content)
+    if (links.length > 0) {
+      links.forEach(link => {
+        linkSet.add(link)
+        linkCounts[link] = (linkCounts[link] || 0) + 1
+      })
+
+      for (let i = 0; i < links.length; i++) {
+        for (let j = i + 1; j < links.length; j++) {
+          const pair = [links[i], links[j]].sort().join('|')
+          cooccurrence[pair] = (cooccurrence[pair] || 0) + 1
+        }
+      }
+    }
+  })
+
+  const nodes = Array.from(linkSet).map(link => ({
+    id: link,
+    name: link,
+    value: linkCounts[link],
+    symbolSize: Math.min(Math.max(linkCounts[link] * 8, 20), 80),
+    category: 0,
+    label: { show: true }
+  }))
+
+  const links = Object.entries(cooccurrence).map(([pair, count]) => {
+    const [source, target] = pair.split('|')
+    return {
+      source,
+      target,
+      value: count,
+      lineStyle: { width: Math.min(count * 2, 8), opacity: 0.4 }
+    }
+  })
+
+  return { nodes, links }
+}
+
 // 构建节点和连线数据
 const buildGraphData = () => {
   if (graphMode.value === 'tag') {
-    const data = documentsStore.getTagCooccurrenceData
-    console.log('🌌 GraphView: Tag Data:', data)
-    
+    let data = documentsStore.getTagCooccurrenceData
+    graphDataSource.value = 'tag'
+
+    // 标签为空时，回退到 [[WikiLinks]] 作为隐含标签
+    if (!data.nodes || data.nodes.length === 0) {
+      data = buildWikiLinkTagData()
+      graphDataSource.value = data.nodes.length > 0 ? 'wikilinks' : 'empty'
+    }
+
     // 给标签节点添加样式 (使用 hex 颜色以保证 ECharts 渲染稳定)
-    const activeColor = '#409eff'
-    const activeColorLight = '#79bbff'
-    
+    const activeColor = graphDataSource.value === 'wikilinks' ? '#67c23a' : '#409eff'
+    const activeColorLight = graphDataSource.value === 'wikilinks' ? '#95d475' : '#79bbff'
+
     data.nodes.forEach(node => {
       node.itemStyle = {
         color: new echarts.graphic.RadialGradient(0.5, 0.5, 0.5, [
@@ -60,7 +124,9 @@ const buildGraphData = () => {
           { offset: 1, color: activeColor }
         ]),
         shadowBlur: 10,
-        shadowColor: 'rgba(64, 158, 255, 0.5)'
+        shadowColor: graphDataSource.value === 'wikilinks'
+          ? 'rgba(103, 194, 58, 0.5)'
+          : 'rgba(64, 158, 255, 0.5)'
       }
     })
     return data
@@ -159,8 +225,12 @@ const renderChart = () => {
             router.push(`/view/${doc.id}`)
           }
         } else {
-          // 标签模式点击：过滤标签
-          router.push({ path: '/search', query: { tags: [params.data.name] } })
+          // 标签/链接模式点击
+          if (graphDataSource.value === 'wikilinks') {
+            router.push({ path: '/search', query: { q: params.data.name } })
+          } else {
+            router.push({ path: '/search', query: { tags: [params.data.name] } })
+          }
         }
       }
     })
@@ -181,14 +251,17 @@ const renderChart = () => {
             const doc = params.data.docData
             return `${doc.isFolder ? '📁 ' : '📄 '} ${doc.title}`
           } else {
-            return `🏷️ 标签: ${params.data.name}<br/>关联次数: ${params.data.value}`
+            const label = graphDataSource.value === 'wikilinks' ? '🔗 双向链接' : '🏷️ 标签'
+            return `${label}: ${params.data.name}<br/>关联次数: ${params.data.value}`
           }
         }
         return null
       }
     },
     legend: [{
-      data: graphMode.value === 'document' ? ['普通文档', '文件夹', '预设/动态生成'] : ['标签'],
+      data: graphMode.value === 'document'
+        ? ['普通文档', '文件夹', '预设/动态生成']
+        : [graphDataSource.value === 'wikilinks' ? '双向链接' : '标签'],
       textStyle: {
         color: isDark.value ? '#ccc' : '#333'
       }
@@ -199,9 +272,9 @@ const renderChart = () => {
         layout: 'force',
         data: nodes,
         links: links,
-        categories: graphMode.value === 'document' 
+        categories: graphMode.value === 'document'
           ? [ { name: '普通文档' }, { name: '文件夹' }, { name: '预设/动态生成' } ]
-          : [ { name: '标签' } ],
+          : [ { name: graphDataSource.value === 'wikilinks' ? '双向链接' : '标签' } ],
         roam: true,
         label: {
           show: true,
@@ -303,5 +376,54 @@ watch([() => documentsStore.documents, isDark], () => {
 .graph-content {
   flex: 1;
   width: 100%;
+  position: relative;
+}
+
+.graph-empty-state {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  color: var(--el-text-color-secondary);
+  z-index: 10;
+  pointer-events: none;
+}
+
+.graph-empty-state .empty-icon {
+  font-size: 48px;
+  margin-bottom: 12px;
+  color: var(--el-text-color-placeholder);
+}
+
+.graph-empty-state p {
+  margin: 4px 0;
+  font-size: 15px;
+}
+
+.graph-empty-state .empty-hint {
+  font-size: 13px;
+  max-width: 360px;
+  line-height: 1.6;
+  opacity: 0.7;
+}
+
+.graph-source-hint {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 16px;
+  background: var(--el-color-success-light-9);
+  border: 1px solid var(--el-color-success-light-5);
+  border-radius: 6px;
+  font-size: 13px;
+  color: var(--el-color-success-dark-2);
+  z-index: 10;
+  pointer-events: none;
+  white-space: nowrap;
 }
 </style>
