@@ -1,10 +1,14 @@
 <template>
-  <div class="editor-page" :class="{ 'preview-only': !isEditing }">
+  <div class="editor-page" :class="{
+    'preview-only': editorMode === 'preview',
+    'split-view': editorMode === 'split',
+    'focus-mode': isFocusMode
+  }">
     <!-- 预览区阅读进度条 -->
-    <div v-show="!isEditing" class="reading-progress-bar" :style="{ width: readingProgress + '%' }"></div>
-    
+    <div v-show="editorMode === 'preview'" class="reading-progress-bar" :style="{ width: readingProgress + '%' }"></div>
+
     <!-- 工具栏 -->
-    <div class="toolbar">
+    <div class="toolbar" v-show="!isFocusMode">
       <div class="toolbar-left">
         <el-button
           v-if="canGoBack"
@@ -43,17 +47,35 @@
           AI帮写
         </el-button>
       </div>
-      
+
       <div class="toolbar-right">
         <el-button
-          @click="toggleEditMode"
-          :type="isEditing ? 'primary' : 'default'"
-          :icon="Edit"
+          @click="toggleTablePicker"
+          :icon="Grid"
+          size="small"
+          plain
+          title="插入表格"
+        >
+          表格
+        </el-button>
+
+        <el-button
+          @click="cycleEditorMode"
+          :type="editorMode !== 'preview' ? 'primary' : 'default'"
+          :icon="editorMode === 'split' ? View : editorMode === 'preview' ? Reading : Edit"
           size="small"
           plain
         >
-          {{ isEditing ? '编辑模式' : '预览模式' }}
+          {{ editorMode === 'edit' ? '编辑模式' : editorMode === 'split' ? '分屏模式' : '预览模式' }}
         </el-button>
+
+        <el-button
+          @click="toggleFocusMode"
+          :icon="FullScreen"
+          size="small"
+          plain
+          title="专注模式 (Ctrl+Shift+F)"
+        />
 
         <el-button
           @click="$router.push(`/view/${documentId}`)"
@@ -67,7 +89,7 @@
     </div>
 
     <!-- 标签编辑 -->
-    <div class="tags-section">
+    <div class="tags-section" v-show="!isFocusMode">
       <el-tag
         v-for="tag in documentTags"
         :key="tag"
@@ -77,7 +99,7 @@
       >
         {{ tag }}
       </el-tag>
-      
+
       <el-input
         v-if="inputVisible"
         ref="inputRef"
@@ -87,7 +109,7 @@
         @keyup.enter="handleInputConfirm"
         @blur="handleInputConfirm"
       />
-      
+
       <el-button
         v-else
         size="small"
@@ -100,10 +122,10 @@
       </el-button>
     </div>
 
-    <!-- 编辑器区域 -->
+    <!-- 编辑器 + 预览 + TOC 区域 -->
     <div class="editor-container">
       <!-- 左侧编辑器 -->
-      <div v-show="isEditing" class="editor-panel">
+      <div v-show="editorMode !== 'preview'" class="editor-panel" :class="{ split: editorMode === 'split' }">
         <editor-content
           v-if="editor"
           :editor="editor"
@@ -116,13 +138,13 @@
             <el-button size="small" @click="editor.chain().focus().toggleHeading({ level: 2 }).run()" :type="editor.isActive('heading', { level: 2 }) ? 'primary' : 'default'">H2</el-button>
             <el-button size="small" @click="editor.chain().focus().toggleHeading({ level: 3 }).run()" :type="editor.isActive('heading', { level: 3 }) ? 'primary' : 'default'">H3</el-button>
             <el-button size="small" @click="editor.chain().focus().toggleBulletList().run()" :type="editor.isActive('bulletList') ? 'primary' : 'default'">
-               列表
+              列表
             </el-button>
             <el-button size="small" @click="editor.chain().focus().toggleTaskList().run()" :type="editor.isActive('taskList') ? 'primary' : 'default'">
-               待办
+              待办
             </el-button>
             <el-button size="small" @click="editor.chain().focus().toggleCodeBlock().run()" :type="editor.isActive('codeBlock') ? 'primary' : 'default'">
-               代码
+              代码
             </el-button>
           </el-button-group>
         </floating-menu>
@@ -139,23 +161,65 @@
       </div>
 
       <!-- 右侧预览区 -->
-      <div v-show="!isEditing" ref="previewRef" class="preview-panel">
+      <div v-show="editorMode !== 'edit'" ref="previewRef" class="preview-panel" :class="{ split: editorMode === 'split' }" @scroll="handleTocScroll">
         <el-scrollbar class="content-scrollbar" @scroll="handlePreviewScroll">
-          <div 
-            class="markdown-preview markdown-body" 
+          <div
+            class="markdown-preview markdown-body"
             v-html="renderedContent"
             @click="handlePreviewClick"
           ></div>
         </el-scrollbar>
       </div>
+
+      <!-- TOC 侧边栏 -->
+      <div v-if="tocHeadings.length > 0 && !isFocusMode" class="toc-sidebar">
+        <div class="toc-title">目录</div>
+        <div class="toc-list">
+          <div
+            v-for="(h, i) in tocHeadings"
+            :key="i"
+            :class="['toc-item', `toc-level-${h.level}`, { active: i === tocActiveIndex }]"
+            @click="scrollToHeading(h)"
+          >
+            {{ h.text }}
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- 状态栏 -->
-    <div class="status-bar">
+    <div class="status-bar" v-show="!isFocusMode">
       <span>字符数: {{ documentContent.length }}</span>
       <span>行数: {{ lineCount }}</span>
+      <span v-if="estimatedReadTime > 0">预计阅读: {{ estimatedReadTime }}</span>
       <span v-if="lastSaved">最后保存: {{ formatTime(lastSaved) }}</span>
     </div>
+
+    <!-- 专注模式退出按钮 -->
+    <div v-if="isFocusMode" class="focus-exit-bar" @click="toggleFocusMode">
+      <el-icon><Close /></el-icon>
+      <span>退出专注模式 (Esc)</span>
+    </div>
+
+    <!-- 表格插入选择器 -->
+    <teleport to="body">
+      <div v-if="showTablePicker" class="table-picker-overlay" @click="showTablePicker = false">
+        <div class="table-picker-popover" @click.stop>
+          <div class="table-picker-label">{{ tablePickerRows }} x {{ tablePickerCols }} 表格</div>
+          <div class="table-picker-grid">
+            <div v-for="row in 8" :key="row" class="table-picker-row">
+              <div
+                v-for="col in 8"
+                :key="col"
+                :class="['table-picker-cell', { active: row <= tablePickerRows && col <= tablePickerCols }]"
+                @mouseenter="tablePickerRows = row; tablePickerCols = col"
+                @click="insertTable"
+              ></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </teleport>
   </div>
 </template>
 
@@ -167,7 +231,7 @@ import { markdownProcessor } from '@/utils/markdown.js'
 import { AIService } from '@/services/ai.js'
 import { ImageService } from '@/services/image.js'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Document, Plus, Edit, Reading, ArrowLeft, MagicStick } from '@element-plus/icons-vue'
+import { Document, Plus, Edit, Reading, ArrowLeft, MagicStick, Grid, View, FullScreen, Close } from '@element-plus/icons-vue'
 
 // Tiptap imports
 import { EditorContent, useEditor, mergeAttributes } from '@tiptap/vue-3'
@@ -198,11 +262,12 @@ const documentId = ref(route.params.id)
 const documentTitle = ref('')
 const documentContent = ref('')
 const documentTags = ref([])
-const isEditing = ref(true) // 控制编辑/预览模式
+const editorMode = ref('edit') // 'edit' | 'split' | 'preview'
+const isFocusMode = ref(false)
 const saving = ref(false)
 const lastSaved = ref(null)
 const titleInputRef = ref(null)
-const readingProgress = ref(0) // 预览区阅读进度
+const readingProgress = ref(0)
 
 // 标签输入
 const inputVisible = ref(false)
@@ -210,17 +275,25 @@ const inputValue = ref('')
 const inputRef = ref(null)
 
 // 编辑器引用
-const previewRef = ref(null) 
+const previewRef = ref(null)
 
 const aiLoading = ref(false)
 const aiWritingLoading = ref(false)
+
+// TOC
+const tocActiveIndex = ref(0)
+
+// 表格选择器
+const showTablePicker = ref(false)
+const tablePickerRows = ref(3)
+const tablePickerCols = ref(3)
 
 // 自定义支持异步加载的 Tiptap 图片扩展
 const LazyImage = Image.extend({
   renderHTML({ HTMLAttributes }) {
     const { src, ...rest } = HTMLAttributes
     const isLazy = src && !src.startsWith('http://') && !src.startsWith('https://') && !src.startsWith('data:')
-    
+
     return ['img', mergeAttributes(this.options.HTMLAttributes, rest, {
       src: isLazy ? 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7' : src,
       'data-src': isLazy ? src : null,
@@ -247,7 +320,6 @@ const editor = useEditor({
       linkify: true,
       breaks: true,
       nodes: {
-        // 关键：确保这里的 key 'excalidraw' 与 ExcalidrawExtension 的 name 一致
         excalidraw: {
           serialize: (state, node) => {
             state.write('```excalidraw\n')
@@ -264,7 +336,6 @@ const editor = useEditor({
                 md.renderer.rules.fence = (tokens, idx, options, env, self) => {
                   const token = tokens[idx]
                   if (token.info === 'excalidraw') {
-                    // 渲染为能被 Tiptap 或 Viewer 识别的格式
                     return `<div data-type="excalidraw" data-data="${md.utils.escapeHtml(token.content)}"></div>`
                   }
                   return defaultRender(tokens, idx, options, env, self)
@@ -304,7 +375,7 @@ const editor = useEditor({
     handlePaste(view, event, slice) {
       const items = event.clipboardData?.items
       if (!items) return false
-      
+
       let hasImage = false
       for (let i = 0; i < items.length; i++) {
         if (items[i].type.indexOf('image') !== -1) {
@@ -319,13 +390,11 @@ const editor = useEditor({
     }
   },
   onUpdate: ({ editor }) => {
-    // 同步到 documentContent
     const markdown = editor.storage.markdown.getMarkdown()
     if (documentContent.value !== markdown) {
       documentContent.value = markdown
       handleContentChange()
     }
-    // 处理刚输入或粘帖进来的图片
     nextTick(() => {
       resolveEditorImages()
     })
@@ -344,6 +413,27 @@ const resolveEditorImages = async () => {
   }
 }
 
+// TOC 标题提取
+const tocHeadings = computed(() => {
+  const content = documentContent.value
+  if (!content) return []
+  const headingRegex = /^(#{1,3})\s+(.+)$/gm
+  const headings = []
+  let match
+  while ((match = headingRegex.exec(content)) !== null) {
+    const level = match[1].length
+    const text = match[2].trim()
+    const anchor = text
+      .toLowerCase()
+      .replace(/[^\w一-龥\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '')
+    headings.push({ level, text, anchor })
+  }
+  return headings
+})
+
 // 计算属性
 const renderedContent = computed(() => {
   return markdownProcessor.render(documentContent.value)
@@ -353,10 +443,17 @@ const lineCount = computed(() => {
   return documentContent.value.split('\n').length
 })
 
+const estimatedReadTime = computed(() => {
+  const len = documentContent.value.length
+  if (len === 0) return 0
+  // 中文阅读速度约 400字/分钟
+  const minutes = Math.ceil(len / 400)
+  return minutes <= 1 ? '1 分钟' : `${minutes} 分钟`
+})
+
 // 方法
 const loadDocument = async () => {
   if (!documentId.value) {
-    // 新文档
     documentTitle.value = '新文档'
     documentContent.value = ''
     documentTags.value = []
@@ -369,8 +466,7 @@ const loadDocument = async () => {
       documentTitle.value = doc.title
       documentContent.value = doc.content || ''
       documentTags.value = doc.tags || []
-      
-      // 更新 Tiptap 内容
+
       if (editor.value) {
         editor.value.commands.setContent(documentContent.value)
         nextTick(() => {
@@ -386,7 +482,7 @@ const loadDocument = async () => {
 
 const handleAIPolish = async () => {
   if (!editor.value) return
-  
+
   const { empty, from, to } = editor.value.state.selection
   if (empty) {
     ElMessage.warning('请先选中文本')
@@ -399,12 +495,11 @@ const handleAIPolish = async () => {
   aiLoading.value = true
   try {
     const polishedText = await AIService.polishText(
-      selectedText, 
+      selectedText,
       '请润色并优化这段文字，使其更加通顺、专业，修正错别字。',
-      null // 这里暂时不使用流式输出，直接等待完整结果
+      null
     )
-    
-    // 替换选中的文本
+
     editor.value.chain().focus().insertContent(polishedText).run()
     ElMessage.success('润色完成')
   } catch (err) {
@@ -414,9 +509,8 @@ const handleAIPolish = async () => {
   }
 }
 
-// AI 帮写：输入标题自动生成文档
+// AI 帮写
 const handleAIWrite = async () => {
-  // 如果当前有内容，先确认是否覆盖
   const currentContent = editor.value?.storage.markdown.getMarkdown() || ''
   if (currentContent.trim()) {
     try {
@@ -442,7 +536,6 @@ const handleAIWrite = async () => {
     documentTitle.value = title.trim()
     aiWritingLoading.value = true
 
-    // 清空编辑器
     editor.value?.commands.setContent('')
     documentContent.value = ''
 
@@ -476,7 +569,7 @@ const handleAIWrite = async () => {
 
 const saveDocument = async () => {
   if (saving.value) return
-  
+
   saving.value = true
   try {
     const updates = {
@@ -492,7 +585,7 @@ const saveDocument = async () => {
       documentId.value = doc.id
       router.replace(`/editor/${doc.id}`)
     }
-    
+
     lastSaved.value = new Date()
     ElMessage.success('保存成功')
   } catch (error) {
@@ -509,14 +602,13 @@ const handleImageUpload = async (file) => {
       if (!documentTitle.value || documentTitle.value === '新文档') {
         documentTitle.value = defaultTitle
       }
-      await saveDocument() // 强制保存当前文档以获取 ID
-      if (!documentId.value) return // 保存失败
+      await saveDocument()
+      if (!documentId.value) return
     }
 
     const mode = documentsStore.workspaceMode
     const handle = documentsStore.localDirHandle
-    
-    // 显示上传中提示 (这里简单用 ElMessage，也可做个局部 loading)
+
     const uploadMessage = ElMessage({
       message: '图片保存中...',
       type: 'info',
@@ -525,8 +617,7 @@ const handleImageUpload = async (file) => {
 
     const imagePath = await ImageService.saveImage(file, documentId.value, mode, handle)
     uploadMessage.close()
-    
-    // 如果保存成功，插入到编辑器光标位置
+
     if (editor.value && imagePath) {
       const markdownImage = `\n![](${imagePath})\n`
       editor.value.chain().focus().insertContent(markdownImage).run()
@@ -539,17 +630,14 @@ const handleImageUpload = async (file) => {
 }
 
 const handleContentChange = () => {
-  // 清除之前的定时器
   if (autoSaveTimer) {
     clearTimeout(autoSaveTimer)
   }
-  
-  // 设置新的自动保存定时器（3秒后保存）
+
   autoSaveTimer = setTimeout(() => {
     saveDocument()
   }, 3000)
 
-  // 延迟渲染 Mermaid 和解析图片
   setTimeout(() => {
     markdownProcessor.renderMermaid()
     if (previewRef.value) {
@@ -563,10 +651,12 @@ const handleContentChange = () => {
   }, 100)
 }
 
-const toggleEditMode = () => {
-  isEditing.value = !isEditing.value
-  if (!isEditing.value) {
-    // 进入预览模式时，确保渲染
+// 编辑器模式切换 (edit → split → preview → edit)
+const cycleEditorMode = () => {
+  const modes = ['edit', 'split', 'preview']
+  const idx = modes.indexOf(editorMode.value)
+  editorMode.value = modes[(idx + 1) % 3]
+  if (editorMode.value !== 'edit') {
     nextTick(() => {
       markdownProcessor.renderMermaid()
       if (previewRef.value) {
@@ -579,6 +669,85 @@ const toggleEditMode = () => {
       }
     })
   }
+}
+
+// 专注模式
+const toggleFocusMode = () => {
+  isFocusMode.value = !isFocusMode.value
+}
+
+// 表格选择器
+const toggleTablePicker = () => {
+  if (!editor.value) return
+  showTablePicker.value = !showTablePicker.value
+  tablePickerRows.value = 3
+  tablePickerCols.value = 3
+}
+
+const insertTable = () => {
+  if (!editor.value) return
+  const rows = tablePickerRows.value
+  const cols = tablePickerCols.value
+
+  // 构建 Markdown 表格
+  let md = '\n'
+  // 表头
+  md += '|' + ' 列 |'.repeat(cols) + '\n'
+  // 分隔行
+  md += '|' + ' --- |'.repeat(cols) + '\n'
+  // 数据行
+  for (let i = 1; i < rows; i++) {
+    md += '|' + '  |'.repeat(cols) + '\n'
+  }
+
+  editor.value.chain().focus().insertContent(md).run()
+  showTablePicker.value = false
+}
+
+// TOC 导航
+const scrollToHeading = (heading) => {
+  if (editorMode.value !== 'edit') {
+    // 在预览区查找并滚动
+    const previewEl = previewRef.value
+    if (!previewEl) return
+    const allHeadings = previewEl.querySelectorAll('h1, h2, h3')
+    for (const h of allHeadings) {
+      if (h.textContent?.trim() === heading.text) {
+        h.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        return
+      }
+    }
+  }
+  // 在编辑器中查找
+  if (editor.value) {
+    const content = editor.value.storage.markdown.getMarkdown()
+    const headingLine = new RegExp(`^#{1,3}\\s+${heading.text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'm')
+    const match = content.match(headingLine)
+    if (match) {
+      const pos = match.index
+      editor.value.commands.setTextSelection(Math.min(pos + 1, content.length))
+      editor.value.commands.scrollIntoView()
+    }
+  }
+}
+
+const handleTocScroll = () => {
+  if (editorMode.value === 'edit' || tocHeadings.value.length === 0) return
+
+  const previewEl = previewRef.value
+  if (!previewEl) return
+  const allHeadings = previewEl.querySelectorAll('h1, h2, h3')
+  if (allHeadings.length === 0) return
+
+  const containerTop = previewEl.getBoundingClientRect().top
+  let activeIndex = 0
+  for (let i = 0; i < allHeadings.length; i++) {
+    const rect = allHeadings[i].getBoundingClientRect()
+    if (rect.top <= containerTop + 100) {
+      activeIndex = i
+    }
+  }
+  tocActiveIndex.value = activeIndex
 }
 
 // 标签管理
@@ -603,13 +772,6 @@ const handleInputConfirm = () => {
   inputValue.value = ''
 }
 
-// 滚动同步 (仅在编辑模式下，且预览面板可见时)
-const syncScroll = () => {
-  // This function is for editor scroll, no longer directly syncing with previewRef
-  // as preview now uses el-scrollbar and has its own scroll handler.
-  // If a split view is re-introduced, this would need adjustment.
-}
-
 const formatTime = (date) => {
   return date.toLocaleTimeString('zh-CN')
 }
@@ -617,49 +779,42 @@ const formatTime = (date) => {
 const handlePreviewScroll = ({ scrollTop }) => {
   const scrollWrap = document.querySelector('.preview-panel .el-scrollbar__wrap')
   if (!scrollWrap) return
-  
+
   const scrollHeight = scrollWrap.scrollHeight
   const clientHeight = scrollWrap.clientHeight
-  
+
   if (scrollHeight <= clientHeight) {
     readingProgress.value = 0
     return
   }
-  
+
   const percent = (scrollTop / (scrollHeight - clientHeight)) * 100
   readingProgress.value = Math.min(100, Math.max(0, percent))
 }
 
-// 处理预览区点击（事件代理用于代码复制、复选框同步、双向链接等）
 const handlePreviewClick = async (event) => {
-  // 处理代码复制
   markdownProcessor.handleCopyClick(event)
 
   const target = event.target
 
-  // 处理双向链接点击
   if (target && target.tagName === 'A' && target.classList.contains('obsidian-link')) {
     event.preventDefault()
     const docTitle = target.getAttribute('data-doc-title')
     if (!docTitle) return
 
-    // 在 store 中按标题查找文档（模糊或精确匹配均可，这里用精确匹配）
     const allDocs = documentsStore.documents
     const targetDoc = allDocs.find(d => d.title === docTitle && !d.isFolder)
 
     if (targetDoc) {
-      // 存在，则保存当前进度并跳转过去阅读
-      handleContentChange() // 手动保存当前
+      handleContentChange()
       router.push(`/view/${encodeURIComponent(targetDoc.id)}`)
     } else {
-      // 不存在，询问是否创建
       try {
         await ElMessageBox.confirm(
           `文档 "[[${docTitle}]]" 尚不存在，是否立即创建？`,
           '发现新链接',
           { confirmButtonText: '创建', cancelButtonText: '取消', type: 'info' }
         )
-        // 创建新文档
         const newDoc = await documentsStore.createDocument(docTitle)
         router.push(`/editor/${encodeURIComponent(newDoc.id)}`)
       } catch (e) {
@@ -669,15 +824,12 @@ const handlePreviewClick = async (event) => {
     return
   }
 
-  // 处理待办事项复选框点击
   if (target && target.tagName === 'INPUT' && target.type === 'checkbox' && target.classList.contains('task-list-item-checkbox')) {
     const newMarkdown = markdownProcessor.syncCheckboxUpdate(documentContent.value, target)
     if (newMarkdown !== null) {
       documentContent.value = newMarkdown
-      // 触发自动保存
       handleContentChange()
     } else {
-      // 还原 checkbox 状态，因为同步失败
       target.checked = !target.checked
       ElMessage.warning('未能同步待办事项状态')
     }
@@ -690,7 +842,14 @@ const handleKeydown = (event) => {
     if (event.key === 's') {
       event.preventDefault()
       saveDocument()
+    } else if (event.key === 'F' && event.shiftKey) {
+      event.preventDefault()
+      toggleFocusMode()
     }
+  }
+
+  if (event.key === 'Escape' && isFocusMode.value) {
+    toggleFocusMode()
   }
 }
 
@@ -704,9 +863,7 @@ const handleEditorAiAction = (event) => {
       return
     }
     aiLoading.value = true
-    AIService.generateSummary(content, (chunk, fullText) => {
-      // 流式更新在 ElMessageBox 中无法实时显示，使用 loading 等待
-    }).then((summary) => {
+    AIService.generateSummary(content, (_chunk, _fullText) => {}).then((summary) => {
       ElMessageBox.alert(
         `<div class="markdown-body">${markdownProcessor.render(summary)}</div>`,
         'AI 总结',
@@ -728,7 +885,6 @@ onMounted(async () => {
   document.addEventListener('keydown', handleKeydown)
   window.addEventListener('editor-ai-action', handleEditorAiAction)
 
-  // 设置编辑模式
   documentsStore.setEditMode(true)
 
   setTimeout(() => {
@@ -743,7 +899,6 @@ onUnmounted(() => {
     clearTimeout(autoSaveTimer)
   }
 
-  // 退出编辑模式
   documentsStore.setEditMode(false)
 })
 
@@ -759,6 +914,7 @@ watch(() => route.params.id, async (newId) => {
   height: 100vh;
   display: flex;
   flex-direction: column;
+  transition: background 0.3s;
 }
 
 .reading-progress-bar {
@@ -778,6 +934,7 @@ watch(() => route.params.id, async (newId) => {
   padding: 10px 20px;
   border-bottom: 1px solid #e0e0e0;
   background: #f9f9f9;
+  flex-shrink: 0;
 }
 
 .toolbar-left {
@@ -802,6 +959,7 @@ watch(() => route.params.id, async (newId) => {
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
+  flex-shrink: 0;
 }
 
 .tag-item {
@@ -816,18 +974,20 @@ watch(() => route.params.id, async (newId) => {
   flex: 1;
   display: flex;
   overflow: hidden;
+  position: relative;
 }
 
-/* Removed split-view class as it's now controlled by v-show */
-/* .editor-container.split-view .editor-panel {
-  width: 50%;
-  border-right: 1px solid #e0e0e0;
-} */
-
+/* ---- 编辑面板 ---- */
 .editor-panel {
-  flex: 1; /* Occupy full width when visible */
+  flex: 1;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
+}
+
+.editor-panel.split {
+  flex: 0 0 50%;
+  border-right: 1px solid var(--el-border-color-lighter);
 }
 
 .tiptap-editor {
@@ -883,10 +1043,15 @@ watch(() => route.params.id, async (newId) => {
   border: 1px solid var(--el-border-color-light);
 }
 
+/* ---- 预览面板 ---- */
 .preview-panel {
-  flex: 1; /* Occupy full width when visible */
+  flex: 1;
   background: var(--el-bg-color);
-  overflow: hidden; /* el-scrollbar handles its own overflow */
+  overflow: hidden;
+}
+
+.preview-panel.split {
+  flex: 0 0 50%;
 }
 
 .markdown-preview {
@@ -894,9 +1059,62 @@ watch(() => route.params.id, async (newId) => {
   max-width: 800px;
   margin: 0 auto;
   line-height: 1.6;
-  /* height: 100%; el-scrollbar handles height */
-  /* overflow-y: auto; el-scrollbar handles overflow */
 }
+
+/* ---- TOC 侧边栏 ---- */
+.toc-sidebar {
+  width: 200px;
+  border-left: 1px solid var(--el-border-color-lighter);
+  background: var(--el-bg-color-page);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.toc-title {
+  padding: 14px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--el-text-color-secondary);
+  border-bottom: 1px solid var(--el-border-color-extra-light);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.toc-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 0;
+}
+
+.toc-item {
+  padding: 5px 16px;
+  font-size: 13px;
+  color: var(--el-text-color-regular);
+  cursor: pointer;
+  border-left: 2px solid transparent;
+  transition: all 0.15s;
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.toc-item:hover {
+  color: var(--el-color-primary);
+  background: var(--el-fill-color-light);
+}
+
+.toc-item.active {
+  color: var(--el-color-primary);
+  border-left-color: var(--el-color-primary);
+  background: var(--el-color-primary-light-9);
+}
+
+.toc-level-1 { padding-left: 16px; font-weight: 600; }
+.toc-level-2 { padding-left: 28px; }
+.toc-level-3 { padding-left: 40px; font-size: 12px; }
 
 .status-bar {
   padding: 8px 20px;
@@ -906,6 +1124,102 @@ watch(() => route.params.id, async (newId) => {
   gap: 20px;
   font-size: 12px;
   color: #666;
+  flex-shrink: 0;
+}
+
+/* ---- 专注模式 ---- */
+.editor-page.focus-mode {
+  background: var(--el-bg-color);
+}
+
+.focus-mode .editor-container {
+  max-width: 720px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.focus-mode .tiptap-editor {
+  padding: 60px 40px;
+}
+
+.focus-exit-bar {
+  position: fixed;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 20px;
+  background: var(--el-bg-color-overlay);
+  border: 1px solid var(--el-border-color);
+  border-top: none;
+  border-radius: 0 0 8px 8px;
+  font-size: 13px;
+  color: var(--el-text-color-secondary);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.3s;
+  z-index: 100;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+
+.focus-exit-bar:hover {
+  opacity: 1;
+}
+
+/* ---- 表格选择器 ---- */
+.table-picker-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 9999;
+}
+
+.table-picker-popover {
+  position: fixed;
+  background: var(--el-bg-color);
+  border: 1px solid var(--el-border-color);
+  border-radius: 8px;
+  padding: 12px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.table-picker-label {
+  text-align: center;
+  font-size: 13px;
+  color: var(--el-text-color-secondary);
+  margin-bottom: 8px;
+}
+
+.table-picker-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.table-picker-row {
+  display: flex;
+  gap: 2px;
+}
+
+.table-picker-cell {
+  width: 24px;
+  height: 24px;
+  border: 1px solid var(--el-border-color-lighter);
+  border-radius: 2px;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.table-picker-cell.active {
+  background: var(--el-color-primary-light-5);
+  border-color: var(--el-color-primary);
 }
 
 /* Markdown 预览样式 */
@@ -973,43 +1287,46 @@ watch(() => route.params.id, async (newId) => {
 }
 
 @media (max-width: 768px) {
-  .editor-container.split-view {
-    flex-direction: column;
-  }
-  
-  .editor-container.split-view .editor-panel {
-    width: 100%;
+  .editor-panel.split {
+    flex: 0 0 100%;
     height: 50%;
     border-right: none;
     border-bottom: 1px solid #e0e0e0;
   }
-  
-  .preview-panel {
-    width: 100%;
+
+  .preview-panel.split {
+    flex: 0 0 100%;
     height: 50%;
   }
-  
+
+  .toc-sidebar {
+    display: none;
+  }
+
   .toolbar {
     flex-direction: column;
     gap: 10px;
   }
-  
+
   .title-input {
     width: 100%;
   }
+
+  .editor-page.focus-mode .editor-container {
+    max-width: 100%;
+  }
 }
 
-/* 工具栏布局 */
 .toolbar-right {
   display: flex;
   gap: 8px;
 }
-/* Excalidraw 渲染容器样式 (Viewer 模式) */
+
 :deep(.excalidraw-render-container) {
   margin: 1.5rem 0;
   border: 1px solid var(--el-border-color-lighter);
   border-radius: 8px;
-  background: #fff; /* Excalidraw 默认背景 */
+  background: #fff;
   overflow: hidden;
   min-height: 100px;
   display: flex;
