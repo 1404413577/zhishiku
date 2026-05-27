@@ -126,6 +126,7 @@ import { ref, onMounted, nextTick, computed, watch } from 'vue'
 import { ChatLineRound, Refresh, MagicStick, User, Monitor, Promotion, Loading, Delete, Download, Plus, ChatDotRound } from '@element-plus/icons-vue'
 import { useSettingsStore } from '@/stores/settings'
 import { useDocumentsStore } from '@/stores/documents'
+import { AIService } from '@/services/ai'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { markdownProcessor } from '@/utils/markdown.js'
 import 'highlight.js/styles/github.css'
@@ -268,27 +269,19 @@ const renderMarkdown = (text) => {
 
 // 获取模型列表
 const fetchModels = async () => {
-  const baseUrl = settings.ollamaBaseUrl.replace(/\/$/, '')
-  if (!baseUrl) {
+  if (!settings.ollamaBaseUrl) {
     ElMessage.warning('请先在设置中配置 Ollama 地址')
     return
   }
 
   loadingModels.value = true
   try {
-    const response = await fetch(`${baseUrl}/api/tags`)
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`)
-    }
-    const data = await response.json()
-    availableModels.value = data.models || []
-    
-    // 如果没有选中模型，且列表不为空，则默认选第一个
+    availableModels.value = await AIService.listOllamaModels()
+
     if (availableModels.value.length > 0 && !selectedModel.value) {
       selectedModel.value = availableModels.value[0].name
       settings.ollamaModel = selectedModel.value
     } else if (selectedModel.value) {
-      // 验证当前选择的模型是否还在列表中
       const exists = availableModels.value.some(m => m.name === selectedModel.value)
       if (!exists && availableModels.value.length > 0) {
          selectedModel.value = availableModels.value[0].name
@@ -362,78 +355,38 @@ const sendMessage = async () => {
   if (!session) return
 
   // 1. 添加用户消息
-  session.messages.push({
-    role: 'user',
-    content: text
-  })
-  
-  // 如果是新的空会话，自动生成简短的提问作为菜单标题
+  session.messages.push({ role: 'user', content: text })
+
   if (session.messages.length <= 2) {
     session.title = text.length > 15 ? text.substring(0, 15) + '...' : text
   }
-  
+
   session.updatedAt = Date.now()
   userInput.value = ''
   currentReply.value = ''
   isGenerating.value = true
   scrollToBottom()
 
-  // 2. 准备请求 Ollama
-  const baseUrl = settings.ollamaBaseUrl.replace(/\/$/, '')
+  // 2. 准备对话历史 (不含占位消息)
   const history = session.messages.map(m => ({ role: m.role, content: m.content }))
-  
-  // 先占位助理消息
-  session.messages.push({
-    role: 'assistant',
-    content: ''
-  })
+
+  // 3. 占位 AI 消息
+  session.messages.push({ role: 'assistant', content: '' })
   const assistantMsgIndex = session.messages.length - 1
 
   try {
-    const response = await fetch(`${baseUrl}/api/chat`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
+    await AIService.chatCompletion(
+      history,
+      (_delta, fullText) => {
+        currentReply.value = fullText
+        session.messages[assistantMsgIndex].content = fullText
+        scrollToBottom()
       },
-      body: JSON.stringify({
-        model: selectedModel.value,
-        messages: history,
-        stream: true
-      })
-    })
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`)
-    }
-
-    // 3. 处理流式输出 (NDJSON)
-    const reader = response.body.getReader()
-    const decoder = new TextDecoder('utf-8')
-
-    while (true) {
-      const { done, value } = await reader.read()
-      if (done) break
-
-      const chunk = decoder.decode(value, { stream: true })
-      const lines = chunk.split('\n')
-      
-      for (const line of lines) {
-        if (!line.trim()) continue
-        try {
-          const parsed = JSON.parse(line)
-          if (parsed.message && parsed.message.content) {
-            currentReply.value += parsed.message.content
-            // 增量更新消息
-            session.messages[assistantMsgIndex].content = currentReply.value
-            scrollToBottom()
-          }
-        } catch (e) {
-          console.warn('解析 JSON 失败:', line, e)
-        }
-      }
-    }
+      null,
+      { model: selectedModel.value }
+    )
   } catch (error) {
-    console.error('调用 Ollama 失败:', error)
+    console.error('调用 AI 失败:', error)
     if (session.messages[assistantMsgIndex].content === '') {
        session.messages[assistantMsgIndex].content = '请求失败，请检查 Ollama 服务及网络状况。'
     } else {
@@ -447,6 +400,7 @@ const sendMessage = async () => {
 }
 
 onMounted(() => {
+  settings.aiEngine = 'ollama'
   fetchModels()
   scrollToBottom()
 })
