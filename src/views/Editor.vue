@@ -32,6 +32,16 @@
         >
           保存
         </el-button>
+        <el-button
+          type="success"
+          :icon="MagicStick"
+          @click="handleAIWrite"
+          :loading="aiWritingLoading"
+          size="small"
+          round
+        >
+          AI帮写
+        </el-button>
       </div>
       
       <div class="toolbar-right">
@@ -203,6 +213,7 @@ const inputRef = ref(null)
 const previewRef = ref(null) 
 
 const aiLoading = ref(false)
+const aiWritingLoading = ref(false)
 
 // 自定义支持异步加载的 Tiptap 图片扩展
 const LazyImage = Image.extend({
@@ -400,6 +411,66 @@ const handleAIPolish = async () => {
     ElMessage.error(err.message || 'AI 润色失败')
   } finally {
     aiLoading.value = false
+  }
+}
+
+// AI 帮写：输入标题自动生成文档
+const handleAIWrite = async () => {
+  // 如果当前有内容，先确认是否覆盖
+  const currentContent = editor.value?.storage.markdown.getMarkdown() || ''
+  if (currentContent.trim()) {
+    try {
+      await ElMessageBox.confirm(
+        '当前文档已有内容，AI 帮写将覆盖现有内容，是否继续？',
+        'AI 帮写',
+        { confirmButtonText: '继续', cancelButtonText: '取消', type: 'warning' }
+      )
+    } catch {
+      return
+    }
+  }
+
+  try {
+    const { value: title } = await ElMessageBox.prompt(
+      '请输入文档标题，AI 将根据标题自动生成文档内容',
+      'AI 帮写',
+      { confirmButtonText: '开始生成', cancelButtonText: '取消', inputPlaceholder: '输入标题...' }
+    )
+
+    if (!title || !title.trim()) return
+
+    documentTitle.value = title.trim()
+    aiWritingLoading.value = true
+
+    // 清空编辑器
+    editor.value?.commands.setContent('')
+    documentContent.value = ''
+
+    const systemPrompt = `你是一个专业的文档撰写助手。请根据用户提供的标题，撰写一篇完整、结构清晰的Markdown文档。要求：
+1. 使用适当的标题层级（##、###）
+2. 包含段落、列表、代码块等丰富的内容结构
+3. 内容专业、准确、有条理
+4. 直接返回Markdown内容，不要包含"好的"、"以下是"等开头语`
+
+    await AIService.chatCompletion(
+      [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: `标题：${title}` }
+      ],
+      (_delta, fullText) => {
+        editor.value?.commands.setContent(fullText)
+        documentContent.value = fullText
+      }
+    )
+
+    await saveDocument()
+    ElMessage.success('AI 帮写完成')
+  } catch (err) {
+    if (err !== 'cancel' && err !== 'close') {
+      ElMessage.error(err.message || 'AI 帮写失败')
+    }
+  } finally {
+    aiWritingLoading.value = false
   }
 }
 
