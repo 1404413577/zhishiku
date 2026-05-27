@@ -14,12 +14,6 @@ if (import.meta.env.PROD) {
   registerSW({ immediate: true })
 }
 
-// 在开发环境中引入调试工具
-if (import.meta.env.DEV) {
-  import('./utils/debugStorage.js')
-  import('./utils/searchDebug.js')
-}
-
 const app = createApp(App)
 const pinia = createPinia()
 
@@ -28,6 +22,12 @@ app.use(router)
 app.use(ElementPlus)
 
 app.mount('#app')
+
+// 在 Pinia 安装后再加载开发调试工具
+if (import.meta.env.DEV) {
+  import('./utils/debugStorage.js')
+  import('./utils/searchDebug.js')
+}
 
 // 初始化性能监控
 if (import.meta.env.PROD) {

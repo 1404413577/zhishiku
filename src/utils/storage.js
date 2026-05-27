@@ -166,7 +166,12 @@ export class DocumentStorage {
 
   // 删除文档
   async deleteDocument(id) {
-    await this.store.removeItem(id)
+    try {
+      await this.store.removeItem(id)
+    } catch (error) {
+      console.error('删除文档失败:', error)
+      throw error
+    }
   }
 
   // 创建新文档
@@ -216,9 +221,9 @@ export class DocumentStorage {
     try {
       const documents = JSON.parse(jsonData)
       const results = []
-      
+
       for (const doc of documents) {
-        const id = doc.id || Date.now().toString() + Math.random()
+        const id = String(doc.id || `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`)
         delete doc.id
         const savedDoc = await this.saveDocument(id, doc)
         results.push(savedDoc)
@@ -232,7 +237,12 @@ export class DocumentStorage {
 
   // 清空所有数据
   async clearAll() {
-    await this.store.clear()
+    try {
+      await this.store.clear()
+    } catch (error) {
+      console.error('清空数据失败:', error)
+      throw error
+    }
   }
 }
 

@@ -10,7 +10,7 @@ import { ImageService } from '@/services/image.js'
 mermaid.initialize({
   startOnLoad: false,
   theme: 'default',
-  securityLevel: 'loose',
+  securityLevel: 'strict',
 })
 
 // 配置 markdown-it

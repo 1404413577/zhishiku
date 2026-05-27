@@ -1,5 +1,6 @@
 import localforage from 'localforage'
-import { v4 as uuidv4 } from 'uuid'
+
+const generateId = () => crypto.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`
 
 // Dedicated IndexedDB store for images
 const imagesStore = localforage.createInstance({
@@ -45,7 +46,7 @@ export class ImageService {
       // IndexedDB mode
       // Store blob directly in localforage
       // We use a custom protocol prefix to identify internal images: zhishiku://
-      const imageId = `zhishiku://images/${uuidv4()}-${timestamp}.${ext}`
+      const imageId = `zhishiku://images/${generateId()}-${timestamp}.${ext}`
       await imagesStore.setItem(imageId, blob)
       return imageId
     }

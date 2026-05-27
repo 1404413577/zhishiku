@@ -142,13 +142,18 @@ const isGenerating = ref(false)
 const currentReply = ref('')
 const chatBodyRef = ref(null)
 
+// 安全解析 localStorage 中的 JSON
+const safeJsonParse = (str, fallback = []) => {
+  try { return JSON.parse(str) } catch { return fallback }
+}
+
 // 多会话状态
-const sessions = ref(JSON.parse(localStorage.getItem('ollama-chat-sessions') || '[]'))
+const sessions = ref(safeJsonParse(localStorage.getItem('ollama-chat-sessions'), []))
 const activeSessionId = ref(localStorage.getItem('ollama-active-session') || null)
 
 // 兼容迁移旧版的单一历史记录
 if (sessions.value.length === 0) {
-  const oldHistory = JSON.parse(localStorage.getItem('ollama-chat-history') || '[]')
+  const oldHistory = safeJsonParse(localStorage.getItem('ollama-chat-history'), [])
   if (oldHistory.length > 0) {
     sessions.value.push({
       id: Date.now().toString(),

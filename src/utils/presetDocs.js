@@ -17,7 +17,7 @@ export class PresetDocsLoader {
       // 生产环境：从构建时生成的 JSON 文件加载
       if (import.meta.env.PROD) {
         console.log('🏭 生产环境：从 preset-docs.json 加载文档')
-        const response = await fetch('/preset-docs.json')
+        const response = await fetch(`${import.meta.env.BASE_URL}preset-docs.json`)
         if (response.ok) {
           docs = await response.json()
           console.log(`📚 从 JSON 文件加载了 ${docs.length} 个文档`)

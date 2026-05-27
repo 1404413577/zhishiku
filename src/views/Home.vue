@@ -157,6 +157,8 @@ const heatmapRef = ref(null)
 const isDark = useDark()
 let heatmapInstance = null
 
+const handleResize = () => heatmapInstance?.resize()
+
 // 计算属性
 const stats = computed(() => documentsStore.stats)
 const recentDocs = computed(() =>
@@ -311,12 +313,12 @@ onMounted(async () => {
 
   nextTick(() => {
     renderHeatmap()
-    window.addEventListener('resize', () => heatmapInstance?.resize())
+    window.addEventListener('resize', handleResize)
   })
 })
 
 onUnmounted(() => {
-  window.removeEventListener('resize', () => heatmapInstance?.resize())
+  window.removeEventListener('resize', handleResize)
   heatmapInstance?.dispose()
 })
 

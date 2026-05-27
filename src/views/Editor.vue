@@ -129,7 +129,7 @@
       </div>
 
       <!-- 右侧预览区 -->
-      <div v-show="!isEditing" class="preview-panel">
+      <div v-show="!isEditing" ref="previewRef" class="preview-panel">
         <el-scrollbar class="content-scrollbar" @scroll="handlePreviewScroll">
           <div 
             class="markdown-preview markdown-body" 
@@ -157,7 +157,7 @@ import { markdownProcessor } from '@/utils/markdown.js'
 import { AIService } from '@/services/ai.js'
 import { ImageService } from '@/services/image.js'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Document, Plus, Edit, Delete, Folder, ArrowRight, View, Reading, ArrowLeft, MagicStick } from '@element-plus/icons-vue'
+import { Document, Plus, Edit, Reading, ArrowLeft, MagicStick } from '@element-plus/icons-vue'
 
 // Tiptap imports
 import { EditorContent, useEditor, mergeAttributes } from '@tiptap/vue-3'

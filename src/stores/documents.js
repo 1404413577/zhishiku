@@ -337,7 +337,7 @@ export const useDocumentsStore = defineStore('documents', {
           await this.saveDocument(document.id, document)
         } else {
           this.documents = [document, ...this.documents]
-          searchEngine.initialize([...this.documents])
+          await searchEngine.initialize([...this.documents])
         }
         
         return document
@@ -622,7 +622,7 @@ export const useDocumentsStore = defineStore('documents', {
     },
 
     // 添加动态文档
-    addDynamicDocuments(dynamicDocs) {
+    async addDynamicDocuments(dynamicDocs) {
       console.log(`📚 添加 ${dynamicDocs.length} 个动态文档`)
 
       // 移除现有的动态文档
@@ -632,9 +632,7 @@ export const useDocumentsStore = defineStore('documents', {
       this.documents.push(...dynamicDocs)
 
       // 重新初始化搜索引擎
-      if (this.searchEngine) {
-        this.searchEngine.initialize(this.documents)
-      }
+      await searchEngine.initialize([...this.documents])
 
       console.log(`✅ 动态文档已更新，当前总文档数: ${this.documents.length}`)
     },

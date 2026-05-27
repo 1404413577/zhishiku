@@ -6,24 +6,32 @@ export class WebDAVClient {
     this.baseUrl = config.url.endsWith('/') ? config.url : config.url + '/'
     this.username = config.username
     this.password = config.password
-    this.authHeader = 'Basic ' + btoa(this.username + ':' + this.password)
+    // 使用 TextEncoder 处理非 Latin1 字符（如中文密码）
+    const encoder = new TextEncoder()
+    const bytes = encoder.encode(`${this.username}:${this.password}`)
+    this.authHeader = 'Basic ' + btoa(String.fromCharCode(...bytes))
   }
 
   async request(method, path, body = null, headers = {}) {
     const url = new URL(path, this.baseUrl).toString()
-    const response = await fetch(url, {
-      method,
-      headers: {
-        'Authorization': this.authHeader,
-        ...headers
-      },
-      body
-    })
+    try {
+      const response = await fetch(url, {
+        method,
+        headers: {
+          'Authorization': this.authHeader,
+          ...headers
+        },
+        body
+      })
 
-    if (!response.ok && response.status !== 207) {
-      throw new Error(`WebDAV请求失败: ${response.status} ${response.statusText}`)
+      if (!response.ok && response.status !== 207) {
+        throw new Error(`WebDAV请求失败: ${response.status} ${response.statusText}`)
+      }
+      return response
+    } catch (e) {
+      if (e.message.startsWith('WebDAV')) throw e
+      throw new Error(`WebDAV 网络请求失败: ${e.message}`)
     }
-    return response
   }
 
   // 创建目录 (递归)

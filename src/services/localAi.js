@@ -6,9 +6,8 @@ env.allowLocalModels = true; // 启用本地模型加载
 env.allowRemoteModels = true; // 同时也允许远程（作为备选）
 env.useBrowserCache = true;   // 启用浏览器缓存
 
-// 设置本地模型路径：指向项目的 public/models 目录
-// 由于 Vite 的 base 是 /shizhiku/，路径需要包含基础路径
-env.localModelPath = '/shizhiku/models/';
+// 设置本地模型路径：使用 Vite 的 BASE_URL 动态构建路径
+env.localModelPath = `${import.meta.env.BASE_URL}models/`;
 
 // 强制不发送凭证
 env.fetch_options = {

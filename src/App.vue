@@ -5,7 +5,7 @@
 </template>
 
 <script setup>
-import { watchEffect, onMounted } from 'vue'
+import { watchEffect, onMounted, onUnmounted } from 'vue'
 import AppLayout from '@/components/Layout/AppLayout.vue'
 import { useSettingsStore } from '@/stores/settings.js'
 
@@ -55,12 +55,17 @@ onMounted(async () => {
   }
 
   // 定期自动备份逻辑 (每10分钟)
-  setInterval(() => {
+  const backupInterval = setInterval(() => {
     if (settings.autoBackup) {
       console.log('⏰ 正在执行定期自动备份...')
       performSync()
     }
   }, 10 * 60 * 1000)
+
+  // 组件卸载时清理定时器
+  onUnmounted(() => {
+    clearInterval(backupInterval)
+  })
 })
 </script>
 

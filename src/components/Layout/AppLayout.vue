@@ -1052,7 +1052,7 @@ onMounted(async () => {
   flex: 1;
   overflow-y: auto;
   padding: 0 10px;
-  -webkit-overflow-scrolling: touch;
+
 }
 
 .document-item {
@@ -1066,13 +1066,13 @@ onMounted(async () => {
 }
 
 .document-item:hover {
-  border-color: #409eff;
+  border-color: var(--el-color-primary);
   box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
 .document-item.active {
-  border-color: #409eff;
-  background: #ecf5ff;
+  border-color: var(--el-color-primary);
+  background: var(--el-color-primary-light-9);
 }
 
 .doc-title {
@@ -1162,7 +1162,7 @@ onMounted(async () => {
 }
 
 .custom-tree-node.is-folder .node-icon {
-  color: #e6a23c;
+  color: var(--el-color-warning);
 }
 
 .node-actions {
@@ -1191,24 +1191,9 @@ onMounted(async () => {
 }
 
 .star-badge {
-  color: #e6a23c;
+  color: var(--el-color-warning);
 }
 
-.sidebar-footer {
-  padding: 20px;
-  border-top: 1px solid var(--el-border-color);
-}
-
-.footer-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.footer-actions .el-button {
-  width: 100%;
-  justify-content: flex-start;
-}
 
 .main-content {
   padding: 0;
@@ -1243,12 +1228,12 @@ onMounted(async () => {
 }
 
 .nav-menu .el-menu-item:hover {
-  background-color: var(--color-bg-secondary);
+  background-color: var(--el-fill-color-light);
 }
 
 .nav-menu .el-menu-item.is-active {
-  color: var(--color-primary);
-  border-bottom-color: var(--color-primary);
+  color: var(--el-color-primary);
+  border-bottom-color: var(--el-color-primary);
 }
 
 .nav-menu .el-menu-item .el-icon {
@@ -1297,10 +1282,6 @@ onMounted(async () => {
   flex: 1;
 }
 
-.section-count {
-  color: var(--el-text-color-secondary);
-  font-weight: normal;
-}
 
 .section-actions {
   display: flex;
@@ -1313,22 +1294,22 @@ onMounted(async () => {
 }
 
 .preset-doc {
-  border-left: 3px solid #67c23a;
-  background: #f0f9ff;
+  border-left: 3px solid var(--el-color-success);
+  background: var(--el-color-info-light-9);
 }
 
 .preset-doc:hover {
-  border-color: #67c23a;
-  background: #ecf5ff;
+  border-color: var(--el-color-success);
+  background: var(--el-color-primary-light-9);
 }
 
 .preset-doc.active {
-  border-color: #67c23a;
-  background: #e1f3d8;
+  border-color: var(--el-color-success);
+  background: var(--el-color-success-light-9);
 }
 
 .preset-icon {
-  color: #67c23a;
+  color: var(--el-color-success);
   margin-right: 5px;
 }
 

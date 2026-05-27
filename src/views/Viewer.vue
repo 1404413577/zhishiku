@@ -219,8 +219,8 @@ import { useRoute, useRouter } from 'vue-router'
 import { useDocumentsStore } from '@/stores/documents.js'
 import { markdownProcessor } from '@/utils/markdown.js'
 import { AIService } from '@/services/ai.js'
-import { ElMessage } from 'element-plus'
-import { Edit, Download, Share, Expand, Fold, InfoFilled, ArrowLeft, MagicStick } from '@element-plus/icons-vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { Edit, Download, Share, Expand, Fold, ArrowLeft, MagicStick } from '@element-plus/icons-vue'
 import { saveAs } from 'file-saver'
 
 // 在开发环境中引入调试工具
@@ -407,7 +407,7 @@ const handleContentClick = async (e) => {
     if (newMarkdown !== null) {
       try {
         currentDoc.value.content = newMarkdown
-        await documentsStore.saveDocument(currentDoc.value)
+        await documentsStore.saveDocument(currentDoc.value.id, { content: newMarkdown })
       } catch (error) {
         console.error('Failed to save document:', error)
         target.checked = !target.checked // 还原状态
@@ -659,7 +659,7 @@ const addHeadingIds = () => {
   align-items: flex-start;
   margin-bottom: 30px;
   padding-bottom: 20px;
-  border-bottom: 1px solid #e0e0e0;
+  border-bottom: 1px solid var(--el-border-color-lighter);
 }
 
 .header-content {
@@ -668,7 +668,7 @@ const addHeadingIds = () => {
 
 .document-title {
   font-size: 2.5em;
-  color: #333;
+  color: var(--el-text-color-primary);
   margin: 0 0 15px 0;
   line-height: 1.2;
 }
@@ -680,7 +680,7 @@ const addHeadingIds = () => {
 }
 
 .meta-item {
-  color: #666;
+  color: var(--el-text-color-secondary);
   font-size: 0.9em;
 }
 
@@ -703,8 +703,8 @@ const addHeadingIds = () => {
   right: 20px;
   width: 280px;
   max-height: calc(100vh - 160px);
-  background: white;
-  border: 1px solid #e0e0e0;
+  background: var(--el-bg-color);
+  border: 1px solid var(--el-border-color-lighter);
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   z-index: 100;
@@ -721,13 +721,13 @@ const addHeadingIds = () => {
   justify-content: space-between;
   align-items: center;
   padding: 15px 20px;
-  border-bottom: 1px solid #e0e0e0;
-  background: #f8f9fa;
+  border-bottom: 1px solid var(--el-border-color-lighter);
+  background: var(--el-fill-color-light);
 }
 
 .toc-header h3 {
   margin: 0;
-  color: #333;
+  color: var(--el-text-color-primary);
   font-size: 16px;
 }
 
@@ -752,7 +752,7 @@ const addHeadingIds = () => {
 }
 
 .toc-link {
-  color: #666;
+  color: var(--el-text-color-secondary);
   text-decoration: none;
   display: block;
   padding: 6px 20px;
@@ -763,8 +763,8 @@ const addHeadingIds = () => {
 }
 
 .toc-link:hover {
-  color: #409eff;
-  background: #f0f7ff;
+  color: var(--el-color-primary);
+  background: var(--el-color-primary-light-9);
 }
 
 @media (max-width: 768px) {
@@ -774,9 +774,9 @@ const addHeadingIds = () => {
 }
 
 .toc-item.toc-active .toc-link {
-  color: #409eff;
-  background: #e6f4ff;
-  border-left-color: #409eff;
+  color: var(--el-color-primary);
+  background: var(--el-color-primary-light-9);
+  border-left-color: var(--el-color-primary);
   font-weight: 500;
 }
 
@@ -804,14 +804,14 @@ const addHeadingIds = () => {
 .toc-level-6 .toc-link {
   padding-left: 60px;
   font-size: 12px;
-  color: #999;
+  color: var(--el-text-color-placeholder);
 }
 
 /* 目录提示样式 */
 .toc-tip {
   padding: 10px 20px;
-  border-top: 1px solid #f0f0f0;
-  background: #fafafa;
+  border-top: 1px solid var(--el-border-color-lighter);
+  background: var(--el-fill-color-lighter);
 }
 
 .tip-text {
@@ -819,7 +819,7 @@ const addHeadingIds = () => {
   align-items: center;
   gap: 6px;
   font-size: 12px;
-  color: #999;
+  color: var(--el-text-color-placeholder);
 }
 
 .tip-text .el-icon {
@@ -871,7 +871,7 @@ const addHeadingIds = () => {
   content: '#';
   position: absolute;
   left: -25px;
-  color: #409eff;
+  color: var(--el-color-primary);
   font-weight: normal;
   opacity: 0.7;
 }
@@ -912,18 +912,18 @@ html {
   margin-bottom: 16px;
   font-weight: 600;
   line-height: 1.25;
-  color: #333;
+  color: var(--el-text-color-primary);
 }
 
 .markdown-content :deep(h1) {
   font-size: 2em;
-  border-bottom: 1px solid #eaecef;
+  border-bottom: 1px solid var(--el-border-color-lighter);
   padding-bottom: 10px;
 }
 
 .markdown-content :deep(h2) {
   font-size: 1.5em;
-  border-bottom: 1px solid #eaecef;
+  border-bottom: 1px solid var(--el-border-color-lighter);
   padding-bottom: 8px;
 }
 
@@ -946,7 +946,7 @@ html {
 }
 
 .markdown-content :deep(code) {
-  background: #f6f8fa;
+  background: var(--el-fill-color-light);
   padding: 2px 6px;
   border-radius: 3px;
   font-size: 85%;
@@ -954,7 +954,7 @@ html {
 }
 
 .markdown-content :deep(pre) {
-  background: #f6f8fa;
+  background: var(--el-fill-color-light);
   padding: 16px;
   border-radius: 6px;
   overflow-x: auto;
@@ -967,9 +967,9 @@ html {
 }
 
 .markdown-content :deep(blockquote) {
-  border-left: 4px solid #dfe2e5;
+  border-left: 4px solid var(--el-border-color);
   padding-left: 16px;
-  color: #6a737d;
+  color: var(--el-text-color-secondary);
   margin: 16px 0;
   font-style: italic;
 }
@@ -978,18 +978,18 @@ html {
   border-collapse: collapse;
   width: 100%;
   margin: 16px 0;
-  border: 1px solid #dfe2e5;
+  border: 1px solid var(--el-border-color);
 }
 
 .markdown-content :deep(th),
 .markdown-content :deep(td) {
-  border: 1px solid #dfe2e5;
+  border: 1px solid var(--el-border-color);
   padding: 12px 16px;
   text-align: left;
 }
 
 .markdown-content :deep(th) {
-  background: #f6f8fa;
+  background: var(--el-fill-color-light);
   font-weight: 600;
 }
 
@@ -1001,7 +1001,7 @@ html {
 }
 
 .markdown-content :deep(a) {
-  color: #409eff;
+  color: var(--el-color-primary);
   text-decoration: none;
 }
 
