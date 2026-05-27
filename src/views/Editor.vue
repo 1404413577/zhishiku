@@ -623,14 +623,43 @@ const handleKeydown = (event) => {
   }
 }
 
+// 斜杠命令 AI 动作处理
+const handleEditorAiAction = (event) => {
+  const { type } = event.detail
+  if (type === 'summary') {
+    const content = editor.value?.storage.markdown.getMarkdown() || ''
+    if (!content.trim()) {
+      ElMessage.warning('文档内容为空，无法生成总结')
+      return
+    }
+    aiLoading.value = true
+    AIService.generateSummary(content, (chunk, fullText) => {
+      // 流式更新在 ElMessageBox 中无法实时显示，使用 loading 等待
+    }).then((summary) => {
+      ElMessageBox.alert(
+        `<div class="markdown-body">${markdownProcessor.render(summary)}</div>`,
+        'AI 总结',
+        { dangerouslyUseHTMLString: true, confirmButtonText: '关闭' }
+      )
+    }).catch((err) => {
+      ElMessage.error(err.message || 'AI 总结失败')
+    }).finally(() => {
+      aiLoading.value = false
+    })
+  } else if (type === 'polish') {
+    handleAIPolish()
+  }
+}
+
 // 生命周期
 onMounted(async () => {
   await loadDocument()
   document.addEventListener('keydown', handleKeydown)
-  
+  window.addEventListener('editor-ai-action', handleEditorAiAction)
+
   // 设置编辑模式
   documentsStore.setEditMode(true)
-  
+
   setTimeout(() => {
     markdownProcessor.renderMermaid()
   }, 300)
@@ -638,10 +667,11 @@ onMounted(async () => {
 
 onUnmounted(() => {
   document.removeEventListener('keydown', handleKeydown)
+  window.removeEventListener('editor-ai-action', handleEditorAiAction)
   if (autoSaveTimer) {
     clearTimeout(autoSaveTimer)
   }
-  
+
   // 退出编辑模式
   documentsStore.setEditMode(false)
 })

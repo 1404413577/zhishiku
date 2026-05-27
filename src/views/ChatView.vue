@@ -38,10 +38,23 @@
           <h2><el-icon><ChatLineRound /></el-icon> AI 对话</h2>
         </div>
         <div class="header-right">
-          <span class="model-label">Ollama 模型:</span>
+          <span class="model-label">AI 引擎:</span>
+          <el-select 
+            v-model="selectedEngine" 
+            placeholder="选择引擎" 
+            size="small" 
+            style="width: 120px"
+            @change="onEngineChange"
+          >
+            <el-option label="在线 API" value="online" />
+            <el-option label="本地模型" value="local" />
+            <el-option label="Ollama" value="ollama" />
+          </el-select>
+
+          <span class="model-label" style="margin-left: 16px">模型:</span>
           <el-select 
             v-model="selectedModel" 
-            placeholder="正在加载模型..." 
+            :placeholder="modelPlaceholder" 
             size="small" 
             style="width: 200px"
             :loading="loadingModels"
@@ -49,9 +62,9 @@
           >
             <el-option
               v-for="model in availableModels"
-              :key="model.name"
-              :label="model.name"
-              :value="model.name"
+              :key="model.value || model.name"
+              :label="model.label || model.name"
+              :value="model.value || model.name"
             />
           </el-select>
           <el-button size="small" :icon="Refresh" circle @click="fetchModels" title="刷新模型列表" style="margin-left: 8px" />
@@ -122,7 +135,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, nextTick, computed, watch } from 'vue'
+import { ref, onMounted, onUnmounted, nextTick, computed, watch } from 'vue'
 import { ChatLineRound, Refresh, MagicStick, User, Monitor, Promotion, Loading, Delete, Download, Plus, ChatDotRound } from '@element-plus/icons-vue'
 import { useSettingsStore } from '@/stores/settings'
 import { useDocumentsStore } from '@/stores/documents'
@@ -135,8 +148,9 @@ const settings = useSettingsStore()
 const documentsStore = useDocumentsStore()
 
 // AI 模型状态
+const selectedEngine = ref(settings.aiEngine || 'ollama')
 const availableModels = ref([])
-const selectedModel = ref(settings.ollamaModel || '')
+const selectedModel = ref('')
 const loadingModels = ref(false)
 const userInput = ref('')
 const isGenerating = ref(false)
@@ -196,6 +210,15 @@ watch(activeSessionId, (newVal) => {
 // 计算属性
 const sortedSessions = computed(() => {
   return [...sessions.value].sort((a, b) => b.updatedAt - a.updatedAt)
+})
+
+const modelPlaceholder = computed(() => {
+  const placeholders = {
+    'online': '选择模型 (例如: gpt-3.5-turbo)',
+    'local': '选择本地模型',
+    'ollama': '正在加载模型...'
+  }
+  return placeholders[selectedEngine.value] || '选择模型'
 })
 
 const activeSession = computed(() => {
@@ -269,35 +292,88 @@ const renderMarkdown = (text) => {
 
 // 获取模型列表
 const fetchModels = async () => {
-  if (!settings.ollamaBaseUrl) {
-    ElMessage.warning('请先在设置中配置 Ollama 地址')
-    return
-  }
-
   loadingModels.value = true
+  availableModels.value = []
+  
   try {
-    availableModels.value = await AIService.listOllamaModels()
-
-    if (availableModels.value.length > 0 && !selectedModel.value) {
-      selectedModel.value = availableModels.value[0].name
-      settings.ollamaModel = selectedModel.value
-    } else if (selectedModel.value) {
-      const exists = availableModels.value.some(m => m.name === selectedModel.value)
-      if (!exists && availableModels.value.length > 0) {
-         selectedModel.value = availableModels.value[0].name
-         settings.ollamaModel = selectedModel.value
+    if (selectedEngine.value === 'online') {
+      // 在线 API 模式：显示配置的模型
+      availableModels.value = []
+      if (settings.aiModel) {
+        availableModels.value.push({
+          label: settings.aiModel,
+          value: settings.aiModel
+        })
+        selectedModel.value = settings.aiModel
+      } else {
+        ElMessage.info('请先在设置中配置在线 API 模型')
+      }
+    } else if (selectedEngine.value === 'local') {
+      // 本地模型模式：根据类型显示本地模型
+      const localType = settings.localAiType || 'gpu'
+      if (localType === 'gpu') {
+        availableModels.value = [
+          { label: 'SmolLM2-135M (轻量)', value: 'SmolLM2-135M-Instruct-q0f32-MLC' },
+          { label: 'Llama-3.2-1B (中量)', value: 'Llama-3.2-1B-Instruct-q4f16_1-MLC' }
+        ]
+        selectedModel.value = settings.localModelId || availableModels.value[0].value
+      } else {
+        availableModels.value = [
+          { label: 'Qwen1.5-0.5B-Chat (0.5B / 中文支持好)', value: 'Xenova/Qwen1.5-0.5B-Chat' },
+          { label: 'TinyLlama-1.1B-Chat (1.1B / 通用对话)', value: 'Xenova/TinyLlama-1.1B-Chat-v1.0' }
+        ]
+        selectedModel.value = settings.localCpuModelId || availableModels.value[0].value
+      }
+    } else if (selectedEngine.value === 'ollama') {
+      // Ollama 模式
+      if (!settings.ollamaBaseUrl) {
+        ElMessage.warning('请先在设置中配置 Ollama 地址')
+        loadingModels.value = false
+        return
+      }
+      availableModels.value = await AIService.listOllamaModels()
+      
+      if (availableModels.value.length > 0 && !selectedModel.value) {
+        selectedModel.value = availableModels.value[0].name
+        settings.ollamaModel = selectedModel.value
+      } else if (selectedModel.value) {
+        const exists = availableModels.value.some(m => m.name === selectedModel.value)
+        if (!exists && availableModels.value.length > 0) {
+          selectedModel.value = availableModels.value[0].name
+          settings.ollamaModel = selectedModel.value
+        }
       }
     }
   } catch (error) {
-    console.error('获取 Ollama 模型失败:', error)
-    ElMessage.error('无法获取 Ollama 模型，请检查服务是否运行或是否存在跨域问题')
+    console.error('获取模型失败:', error)
+    ElMessage.error('无法获取模型列表，请检查配置')
   } finally {
     loadingModels.value = false
   }
 }
 
+const onEngineChange = (val) => {
+  selectedEngine.value = val
+  settings.aiEngine = val
+  selectedModel.value = ''
+  availableModels.value = []
+  fetchModels()
+}
+
 const onModelChange = (val) => {
-  settings.ollamaModel = val
+  selectedModel.value = val
+  if (selectedEngine.value === 'online') {
+    settings.aiModel = val
+  } else if (selectedEngine.value === 'local') {
+    const localType = settings.localAiType || 'gpu'
+    if (localType === 'gpu') {
+      settings.localModelId = val
+    } else {
+      settings.localCpuModelId = val
+    }
+  } else if (selectedEngine.value === 'ollama') {
+    settings.ollamaModel = val
+  }
 }
 
 const scrollToBottom = () => {
@@ -312,13 +388,13 @@ const scrollToBottom = () => {
 const archiveToDocument = async () => {
   if (messages.value.length === 0) return
   
-  let content = `# AI 对话归档 (${new Date().toLocaleString('zh-CN')})\n\n`
+  let content = `# AI 对话归档 (${new Date().toLocaleString('zh-CN')})\n\n**AI 引擎**: ${selectedEngine.value} | **模型**: ${selectedModel.value}\n\n---\n\n`
   
   for (const msg of messages.value) {
     if (msg.role === 'user') {
       content += `**🧑 User:**\n${msg.content}\n\n`
     } else {
-      content += `**🤖 AI (${selectedModel.value || 'Ollama'}):**\n${msg.content}\n\n`
+      content += `**🤖 AI:**\n${msg.content}\n\n`
     }
   }
   
@@ -354,6 +430,10 @@ const sendMessage = async () => {
   let session = activeSession.value
   if (!session) return
 
+  // 临时保存当前引擎，发送后恢复
+  const previousEngine = settings.aiEngine
+  settings.aiEngine = selectedEngine.value
+
   // 1. 添加用户消息
   session.messages.push({ role: 'user', content: text })
 
@@ -375,34 +455,63 @@ const sendMessage = async () => {
   const assistantMsgIndex = session.messages.length - 1
 
   try {
-    await AIService.chatCompletion(
-      history,
-      (_delta, fullText) => {
-        currentReply.value = fullText
-        session.messages[assistantMsgIndex].content = fullText
-        scrollToBottom()
-      },
-      null,
-      { model: selectedModel.value }
-    )
+    // 根据引擎类型调用对应 AI 服务
+    if (selectedEngine.value === 'local') {
+      // 本地模型需要通过 localAiService
+      const { localAiService } = await import('@/services/localAi')
+      const localType = settings.localAiType || 'gpu'
+      const modelId = selectedModel.value
+      await localAiService.chatCompletion(
+        modelId,
+        localType,
+        history,
+        (_delta, fullText) => {
+          currentReply.value = fullText
+          session.messages[assistantMsgIndex].content = fullText
+          scrollToBottom()
+        }
+      )
+    } else {
+      // 在线 API 和 Ollama 都通过 AIService
+      await AIService.chatCompletion(
+        history,
+        (_delta, fullText) => {
+          currentReply.value = fullText
+          session.messages[assistantMsgIndex].content = fullText
+          scrollToBottom()
+        },
+        null,
+        { model: selectedModel.value }
+      )
+    }
   } catch (error) {
     console.error('调用 AI 失败:', error)
     if (session.messages[assistantMsgIndex].content === '') {
-       session.messages[assistantMsgIndex].content = '请求失败，请检查 Ollama 服务及网络状况。'
+       session.messages[assistantMsgIndex].content = '请求失败: ' + (error.message || '请检查配置及网络状况。')
     } else {
-       session.messages[assistantMsgIndex].content += '\n\n**[请求中断或发生错误]**'
+       session.messages[assistantMsgIndex].content += '\n\n**[请求中断或发生错误: ' + (error.message || '未知错误') + ']**'
     }
   } finally {
     isGenerating.value = false
     session.updatedAt = Date.now()
+    settings.aiEngine = previousEngine
     scrollToBottom()
   }
 }
 
+const previousAiEngine = ref(null)
+
 onMounted(() => {
-  settings.aiEngine = 'ollama'
+  previousAiEngine.value = settings.aiEngine
+  selectedEngine.value = settings.aiEngine || 'ollama'
   fetchModels()
   scrollToBottom()
+})
+
+onUnmounted(() => {
+  if (previousAiEngine.value && previousAiEngine.value !== selectedEngine.value) {
+    settings.aiEngine = previousAiEngine.value
+  }
 })
 
 </script>

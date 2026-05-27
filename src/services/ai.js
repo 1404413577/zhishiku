@@ -1,6 +1,17 @@
 import { useSettingsStore } from '@/stores/settings'
 import { localAiService } from './localAi'
 
+const DEFAULT_TIMEOUT_MS = 120000 // 2 分钟超时
+
+/**
+ * 创建一个带超时的 AbortSignal
+ */
+function createTimeoutSignal(timeoutMs = DEFAULT_TIMEOUT_MS) {
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(new Error('AI 请求超时，请检查网络或服务状态')), timeoutMs)
+  return { signal: controller.signal, clear: () => clearTimeout(timer) }
+}
+
 /**
  * 通用 AI 服务 — 统一调度 online / local / ollama 三种引擎
  */
@@ -39,10 +50,15 @@ export class AIService {
    */
   static async listOllamaModels() {
     const { baseUrl } = this.getConfigs()
-    const response = await fetch(`${baseUrl}/api/tags`)
-    if (!response.ok) throw new Error(`Ollama 请求失败: ${response.status}`)
-    const data = await response.json()
-    return data.models || []
+    const { signal, clear } = createTimeoutSignal(15000)
+    try {
+      const response = await fetch(`${baseUrl}/api/tags`, { signal })
+      if (!response.ok) throw new Error(`Ollama 请求失败: ${response.status}`)
+      const data = await response.json()
+      return data.models || []
+    } finally {
+      clear()
+    }
   }
 
   /**
@@ -50,7 +66,7 @@ export class AIService {
    * @param {Array} messages - 消息列表 [{ role, content }]
    * @param {Function} onChunk - 流式回调 (delta, fullText)
    * @param {Function} onProgress - 本地模型加载进度回调 (仅 local 模式)
-   * @param {Object} options - { model } 覆盖默认模型 (ollama 场景常用)
+   * @param {Object} options - { model, signal } 覆盖模型或传入 AbortSignal
    * @returns {Promise<string>} - 完整回复文本
    */
   static async chatCompletion(messages, onChunk = null, onProgress = null, options = {}) {
@@ -73,56 +89,63 @@ export class AIService {
       ? `${configs.baseUrl}chat/completions`
       : `${configs.baseUrl}/chat/completions`
 
-    const requestBody = {
-      model: configs.model,
-      messages,
-      stream: !!onChunk
-    }
+    const { signal, clear } = options.signal
+      ? { signal: options.signal, clear: () => {} }
+      : createTimeoutSignal()
 
-    const response = await fetch(apiUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${configs.apiKey}`
-      },
-      body: JSON.stringify(requestBody)
-    })
+    try {
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${configs.apiKey}`
+        },
+        body: JSON.stringify({
+          model: configs.model,
+          messages,
+          stream: !!onChunk
+        }),
+        signal
+      })
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}))
-      throw new Error(errorData.error?.message || `请求失败，状态码: ${response.status}`)
-    }
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.error?.message || `请求失败，状态码: ${response.status}`)
+      }
 
-    if (!onChunk) {
-      const data = await response.json()
-      return data.choices?.[0]?.message?.content || ''
-    }
+      if (!onChunk) {
+        const data = await response.json()
+        return data.choices?.[0]?.message?.content || ''
+      }
 
-    // SSE 流式处理
-    const reader = response.body.getReader()
-    const decoder = new TextDecoder('utf-8')
-    let fullText = ''
+      // SSE 流式处理
+      const reader = response.body.getReader()
+      const decoder = new TextDecoder('utf-8')
+      let fullText = ''
 
-    while (true) {
-      const { done, value } = await reader.read()
-      if (done) break
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
 
-      const chunk = decoder.decode(value, { stream: true })
-      const lines = chunk.split('\n')
-      for (const line of lines) {
-        if (line.startsWith('data: ') && line !== 'data: [DONE]') {
-          try {
-            const data = JSON.parse(line.slice(6))
-            const delta = data.choices[0]?.delta?.content || ''
-            fullText += delta
-            if (delta) onChunk(delta, fullText)
-          } catch (e) {
-            console.warn('SSE 解析异常', e)
+        const chunk = decoder.decode(value, { stream: true })
+        const lines = chunk.split('\n')
+        for (const line of lines) {
+          if (line.startsWith('data: ') && line !== 'data: [DONE]') {
+            try {
+              const data = JSON.parse(line.slice(6))
+              const delta = data.choices[0]?.delta?.content || ''
+              fullText += delta
+              if (delta) onChunk(delta, fullText)
+            } catch (e) {
+              console.warn('SSE 解析异常', e)
+            }
           }
         }
       }
+      return fullText
+    } finally {
+      clear()
     }
-    return fullText
   }
 
   /**
@@ -132,60 +155,69 @@ export class AIService {
     const model = options.model || configs.model
     if (!model) throw new Error('请先在右上角选择 Ollama 模型')
 
-    const response = await fetch(`${configs.baseUrl}/api/chat`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model, messages, stream: !!onChunk })
-    })
+    const { signal, clear } = options.signal
+      ? { signal: options.signal, clear: () => {} }
+      : createTimeoutSignal()
 
-    if (!response.ok) {
-      throw new Error(`Ollama 请求失败: ${response.status}`)
-    }
+    try {
+      const response = await fetch(`${configs.baseUrl}/api/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ model, messages, stream: !!onChunk }),
+        signal
+      })
 
-    if (!onChunk) {
-      const data = await response.json()
-      return data.message?.content || ''
-    }
+      if (!response.ok) {
+        throw new Error(`Ollama 请求失败: ${response.status}`)
+      }
 
-    // NDJSON 流式
-    const reader = response.body.getReader()
-    const decoder = new TextDecoder('utf-8')
-    let fullText = ''
-    let buffer = ''
+      if (!onChunk) {
+        const data = await response.json()
+        return data.message?.content || ''
+      }
 
-    while (true) {
-      const { done, value } = await reader.read()
-      if (done) break
+      // NDJSON 流式
+      const reader = response.body.getReader()
+      const decoder = new TextDecoder('utf-8')
+      let fullText = ''
+      let buffer = ''
 
-      buffer += decoder.decode(value, { stream: true })
-      const lines = buffer.split('\n')
-      buffer = lines.pop() || ''
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
 
-      for (const line of lines) {
-        if (!line.trim()) continue
+        buffer += decoder.decode(value, { stream: true })
+        const lines = buffer.split('\n')
+        buffer = lines.pop() || ''
+
+        for (const line of lines) {
+          if (!line.trim()) continue
+          try {
+            const parsed = JSON.parse(line)
+            if (parsed.message?.content) {
+              fullText += parsed.message.content
+              onChunk(parsed.message.content, fullText)
+            }
+          } catch (e) {
+            console.warn('Ollama NDJSON 解析失败:', line, e)
+          }
+        }
+      }
+
+      if (buffer.trim()) {
         try {
-          const parsed = JSON.parse(line)
+          const parsed = JSON.parse(buffer)
           if (parsed.message?.content) {
             fullText += parsed.message.content
             onChunk(parsed.message.content, fullText)
           }
-        } catch (e) {
-          console.warn('Ollama NDJSON 解析失败:', line, e)
-        }
+        } catch {}
       }
-    }
 
-    if (buffer.trim()) {
-      try {
-        const parsed = JSON.parse(buffer)
-        if (parsed.message?.content) {
-          fullText += parsed.message.content
-          onChunk(parsed.message.content, fullText)
-        }
-      } catch {}
+      return fullText
+    } finally {
+      clear()
     }
-
-    return fullText
   }
 
   /**
