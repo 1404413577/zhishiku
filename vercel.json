@@ -4,7 +4,7 @@
   "framework": "vite",
   "rewrites": [
     {
-      "source": "/shizhiku/(?!assets/|.*\\.\\w+$)(.*)",
+      "source": "/shizhiku/((?!assets/).*)",
       "destination": "/index.html"
     }
   ],
