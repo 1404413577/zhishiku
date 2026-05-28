@@ -1,90 +1,132 @@
-import Fuse from 'fuse.js'
+import FlexSearch from 'flexsearch'
 
-console.log('👷 Search Worker: Starting up...')
+console.log('👷 Search Worker: Booting up in background thread...')
 
-// 简化的文本提取逻辑
+// --- 纯文本提取逻辑 (移入后台，不抢占 UI 算力) ---
 function extractText(content) {
   if (!content) return ''
   return String(content)
-    .replace(/```[\s\S]*?```/g, '')
-    .replace(/`[^`]*`/g, '')
+    .replace(/```[\s\S]*?```/g, '') 
+    .replace(/`[^`]*`/g, '')        
     .replace(/!\[.*?\]\(.*?\)/g, '')
-    .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
-    .replace(/[#*_~`]/g, '')
-    .replace(/\n+/g, ' ')
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1') 
+    .replace(/[#*_~`]/g, '')        
+    .replace(/\n+/g, ' ')           
     .trim()
 }
 
-function generateSummary(content, maxLength = 200) {
+// --- 动态高亮摘要提取 ---
+function generateHighlightedSummary(content, query = '', maxLength = 120) {
   const text = extractText(content)
-  return text.length > maxLength 
-    ? text.substring(0, maxLength) + '...'
-    : text
+  if (!query) return text.length > maxLength ? text.substring(0, maxLength) + '...' : text
+
+  const lowerText = text.toLowerCase()
+  const lowerQuery = query.toLowerCase()
+  const matchIndex = lowerText.indexOf(lowerQuery)
+
+  if (matchIndex === -1) return text.length > maxLength ? text.substring(0, maxLength) + '...' : text
+
+  const start = Math.max(0, matchIndex - 30)
+  const end = Math.min(text.length, matchIndex + query.length + 60)
+  let snippet = text.substring(start, end)
+  
+  const safeQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const highlightRegex = new RegExp(`(${safeQuery})`, 'gi')
+  snippet = snippet.replace(highlightRegex, '<mark class="search-highlight">$1</mark>')
+
+  return (start > 0 ? '...' : '') + snippet + (end < text.length ? '...' : '')
 }
 
-let fuse = null
+// 全局实例
+let index = null
 let documents = []
 
+// 监听主线程发来的消息
 self.onmessage = function(e) {
   const { type, payload, requestId } = e.data
 
-  switch (type) {
-    case 'initialize':
-      try {
+  try {
+    switch (type) {
+      case 'initialize':
         const rawDocs = payload || []
-        documents = rawDocs.map(doc => ({
-          ...doc,
-          searchText: extractText(doc.content),
-          summary: generateSummary(doc.content)
-        }))
+        const docsToIndex = rawDocs.filter(doc => !doc.isFolder)
+        documents = docsToIndex
 
-        const options = {
-          keys: [
-            { name: 'title', weight: 0.4 },
-            { name: 'searchText', weight: 0.3 },
-            { name: 'tags', weight: 0.2 },
-            { name: 'summary', weight: 0.1 }
-          ],
-          threshold: 0.3,
-          includeScore: true,
-          includeMatches: true,
-          minMatchCharLength: 2
-        }
+        index = new FlexSearch.Document({
+          document: {
+            id: "id",
+            index: [
+              { field: "title", tokenize: "full", resolution: 9 },
+              { field: "searchText", tokenize: "full", resolution: 5 },
+              { field: "tags", tokenize: "forward", resolution: 7 }
+            ],
+            store: true
+          },
+          encode: function(str) {
+            const lower = str.toLowerCase()
+            const words = lower.match(/[a-z0-9]+/g) || [] 
+            const chars = lower.match(/[\u4e00-\u9fa5]/g) || [] 
+            return words.concat(chars)
+          }
+        })
 
-        fuse = new Fuse(documents, options)
+        docsToIndex.forEach(doc => {
+          index.add({
+            id: doc.id,
+            title: doc.title,
+            searchText: extractText(doc.content),
+            tags: doc.tags ? doc.tags.join(' ') : '',
+            rawDoc: doc 
+          })
+        })
         self.postMessage({ type: 'initialized', payload: { count: documents.length }, requestId })
-      } catch (error) {
-        self.postMessage({ type: 'error', payload: error.message, requestId })
-      }
-      break
+        break
 
-    case 'search':
-      try {
+      case 'search':
         const query = (payload || '').trim()
-        let results = []
-        
-        if (!fuse) {
-          results = []
-        } else if (!query) {
-          results = documents.map(doc => ({ item: doc, score: 0 }))
-        } else {
-          results = fuse.search(query)
+        if (!index) {
+          self.postMessage({ type: 'searchResult', payload: [], requestId })
+          return
         }
-        
-        self.postMessage({ type: 'searchResult', payload: results, requestId })
-      } catch (error) {
-        self.postMessage({ type: 'error', payload: error.message, requestId })
-      }
-      break
 
-    case 'getAllTags':
-      const tags = new Set()
-      documents.forEach(doc => {
-        if (doc.tags) {
-          doc.tags.forEach(tag => tags.add(tag))
+        if (!query) {
+          const defaultResults = documents.map(doc => ({ 
+            item: { ...doc, highlightedSummary: generateHighlightedSummary(doc.content, '') }, 
+            score: 0 
+          }))
+          self.postMessage({ type: 'searchResult', payload: defaultResults, requestId })
+          return
         }
-      })
-      self.postMessage({ type: 'tags', payload: Array.from(tags).sort(), requestId })
-      break
+
+        const flexResults = index.search(query, { enrich: true })
+        const uniqueResults = new Map()
+
+        flexResults.forEach(fieldResult => {
+          fieldResult.result.forEach(res => {
+            if (!uniqueResults.has(res.id)) {
+              const highlightedDoc = {
+                ...res.doc.rawDoc,
+                highlightedSummary: generateHighlightedSummary(res.doc.rawDoc.content, query)
+              }
+              uniqueResults.set(res.id, { item: highlightedDoc, score: 1 })
+            }
+          })
+        })
+
+        self.postMessage({ type: 'searchResult', payload: Array.from(uniqueResults.values()), requestId })
+        break
+
+      case 'getAllTags':
+        const tags = new Set()
+        documents.forEach(doc => {
+          if (doc.tags) doc.tags.forEach(tag => tags.add(tag))
+        })
+        self.postMessage({ type: 'tags', payload: Array.from(tags).sort(), requestId })
+        break
+
+      // 高级搜索可在这里补充逻辑（类似主线程，不再赘述）
+    }
+  } catch (error) {
+    self.postMessage({ type: 'error', payload: error.message, requestId })
   }
 }
