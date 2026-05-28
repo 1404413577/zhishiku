@@ -1,5 +1,9 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
 
+/**
+ * 路由配置表
+ * 全部采用 () => import() 动态导入，配合 Vite 实现极致的代码分割和懒加载
+ */
 const routes = [
   {
     path: '/',
@@ -64,13 +68,14 @@ const routes = [
 ]
 
 const router = createRouter({
+  // 使用 Hash 模式，非常适合部署到 GitHub Pages 或无需服务端配置的环境
   history: createWebHashHistory(import.meta.env.BASE_URL),
   routes
 })
 
-// 路由守卫
+// 全局前置路由守卫
 router.beforeEach((to, from, next) => {
-  // 设置页面标题
+  // 动态设置浏览器标签页标题
   if (to.meta.title) {
     document.title = `${to.meta.title} - 知识库`
   }

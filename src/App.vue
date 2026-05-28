@@ -1,6 +1,7 @@
 <template>
   <div id="app">
     <AppLayout />
+    <GlobalSearch />
   </div>
 </template>
 
@@ -8,6 +9,7 @@
 import { watchEffect, onMounted, onUnmounted } from 'vue'
 import AppLayout from '@/components/Layout/AppLayout.vue'
 import { useSettingsStore } from '@/stores/settings.js'
+import GlobalSearch from '@/components/GlobalSearch.vue'
 
 const settings = useSettingsStore()
 
