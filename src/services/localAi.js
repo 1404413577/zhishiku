@@ -1,18 +1,33 @@
-import * as webllm from "@mlc-ai/web-llm";
-import { pipeline, env } from "@xenova/transformers";
+// 延迟加载 AI 库，防止主 bundle 过大
+let webllm = null;
+let transformersPipeline = null;
+let transformersEnv = null;
 
-// 配置 Transformers.js 环境
-env.allowLocalModels = true; // 启用本地模型加载
-env.allowRemoteModels = true; // 同时也允许远程（作为备选）
-env.useBrowserCache = true;   // 启用浏览器缓存
+async function initTransformersEnv() {
+  if (transformersEnv) return transformersEnv;
+  const mod = await import("@xenova/transformers");
+  transformersEnv = mod.env;
+  transformersEnv.allowLocalModels = true;
+  transformersEnv.allowRemoteModels = true;
+  transformersEnv.useBrowserCache = true;
+  transformersEnv.localModelPath = `${import.meta.env.BASE_URL}models/`;
+  transformersEnv.fetch_options = { credentials: 'omit' };
+  return transformersEnv;
+}
 
-// 设置本地模型路径：使用 Vite 的 BASE_URL 动态构建路径
-env.localModelPath = `${import.meta.env.BASE_URL}models/`;
+async function getWebLLM() {
+  if (webllm) return webllm;
+  webllm = await import("@mlc-ai/web-llm");
+  return webllm;
+}
 
-// 强制不发送凭证
-env.fetch_options = {
-  credentials: 'omit'
-};
+async function getPipeline() {
+  if (transformersPipeline) return transformersPipeline;
+  const mod = await import("@xenova/transformers");
+  transformersPipeline = mod.pipeline;
+  await initTransformersEnv();
+  return transformersPipeline;
+}
 
 /**
  * 本地 AI 服务，支持 WebLLM (GPU) 和 Transformers.js (CPU)
@@ -51,7 +66,8 @@ export class LocalAIService {
     try {
       if (type === 'gpu') {
         this.pipeline = null;
-        this.engine = new webllm.MLCEngine();
+        const wllm = await getWebLLM();
+        this.engine = new wllm.MLCEngine();
         this.engine.setInitProgressCallback((report) => {
           this.progress = Math.round(report.progress * 100);
           this.statusText = report.text;
@@ -65,6 +81,7 @@ export class LocalAIService {
         this.engine = null;
         this.statusText = "正在初始化 CPU 文本生成管道...";
         
+        const pipeline = await getPipeline();
         this.pipeline = await pipeline('text-generation', modelId, {
           progress_callback: (report) => {
             if (report.status === 'progress') {
