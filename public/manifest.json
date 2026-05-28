@@ -2,7 +2,7 @@
   "name": "知识库管理系统",
   "short_name": "知识库",
   "description": "基于 Vue 3 的现代化知识管理解决方案",
-  "start_url": "/",
+  "start_url": "/shizhiku/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#409eff",
