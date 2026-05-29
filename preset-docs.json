@@ -1,354 +1,354 @@
 [
   {
-    "id": "preset-1780030437575-2s7ehch9h",
+    "id": "preset-1780031849296-b723utc57",
     "title": "知识库应用 (Knowledge Base)",
     "content": "# 知识库应用 (Knowledge Base)\n\n一个基于 Vue.js 和 Vite 的纯前端知识管理系统，支持 Markdown 编辑、搜索和组织功能。\n\n## ✨ 特性\n\n- 📝 **Markdown 编辑器**: 支持实时预览的 Markdown 编辑器\n- 🔍 **智能搜索**: 基于 Fuse.js 的模糊搜索功能\n- 🏷️ **标签管理**: 使用标签组织和分类文档\n- 💾 **本地存储**: 使用 IndexedDB 进行本地数据存储\n- 📱 **响应式设计**: 支持桌面和移动设备\n- 🎨 **代码高亮**: 支持多种编程语言的语法高亮\n- 📤 **导入导出**: 支持数据的导入和导出功能\n- 🔄 **自动保存**: 编辑时自动保存文档\n\n## 🛠️ 技术栈\n\n- **前端框架**: Vue 3 (Composition API)\n- **构建工具**: Vite\n- **UI 组件库**: Element Plus\n- **状态管理**: Pinia\n- **路由**: Vue Router\n- **Markdown 解析**: markdown-it\n- **代码高亮**: highlight.js\n- **搜索引擎**: Fuse.js\n- **本地存储**: localforage (IndexedDB)\n- **文件处理**: file-saver, jszip\n\n## 🚀 快速开始\n\n### 安装依赖\n\n```bash\nnpm install\n```\n\n### 启动开发服务器\n\n```bash\nnpm run dev\n```\n\n### 构建生产版本\n\n```bash\nnpm run build\n```\n\n### 预览生产版本\n\n```bash\nnpm run preview\n```\n\n## 📖 使用指南\n\n### 创建文档\n\n1. 点击侧边栏的\"新建文档\"按钮\n2. 输入文档标题\n3. 在编辑器中使用 Markdown 语法编写内容\n4. 添加标签进行分类\n5. 文档会自动保存\n\n### 搜索文档\n\n1. 使用侧边栏的搜索框进行全文搜索\n2. 使用标签过滤器按标签筛选\n3. 在搜索页面进行高级搜索\n\n### 管理文档\n\n- **编辑**: 点击文档旁的编辑按钮\n- **查看**: 点击文档标题进入阅读模式\n- **删除**: 点击删除按钮（需要确认）\n- **导出**: 支持单个文档或全部数据的导出\n\n### 数据管理\n\n- **导出数据**: 在侧边栏底部点击\"导出数据\"\n- **导入数据**: 点击\"导入数据\"选择 JSON 文件\n\n## 📁 项目结构\n\n```\nsrc/\n├── components/          # Vue 组件\n│   └── Layout/         # 布局组件\n├── stores/             # Pinia 状态管理\n├── utils/              # 工具函数\n│   ├── storage.js      # 本地存储管理\n│   ├── markdown.js     # Markdown 处理\n│   └── search.js       # 搜索引擎\n├── views/              # 页面组件\n│   ├── Home.vue        # 首页\n│   ├── Editor.vue      # 编辑器\n│   ├── Viewer.vue      # 文档查看器\n│   └── Search.vue      # 搜索页面\n├── router/             # 路由配置\n├── App.vue             # 根组件\n└── main.js             # 应用入口\n```\n\n## 🎯 核心功能\n\n### Markdown 编辑器\n\n- 实时预览\n- 语法高亮\n- 自动保存\n- 快捷键支持 (Ctrl+S 保存)\n- 滚动同步\n\n### 搜索功能\n\n- 全文搜索\n- 标题搜索\n- 标签过滤\n- 模糊匹配\n- 搜索结果高亮\n\n### 数据存储\n\n- 使用 IndexedDB 进行本地存储\n- 支持大量文档存储\n- 数据持久化\n- 导入导出功能\n\n## 🔧 自定义配置\n\n### 添加 Markdown 插件\n\n在 `src/utils/markdown.js` 中添加 markdown-it 插件：\n\n```javascript\nimport markdownItPlugin from 'markdown-it-plugin'\n\nmd.use(markdownItPlugin, {\n  // 插件配置\n})\n```\n\n### 修改主题样式\n\n在 `src/App.vue` 中修改全局样式，或在各个组件中自定义样式。\n\n## 🌟 推荐的 IDE 设置\n\n- [VS Code](https://code.visualstudio.com/)\n- [Vue - Official](https://marketplace.visualstudio.com/items?itemName=Vue.volar) 扩展\n\n## 📝 Markdown 语法支持\n\n支持标准 Markdown 语法，包括：\n\n- 标题 (H1-H6)\n- 段落和换行\n- **粗体** 和 *斜体*\n- 列表（有序和无序）\n- 链接和图片\n- 代码块和行内代码\n- 表格\n- 引用块\n- 分隔线\n\n## 🚀 部署\n\n### 静态部署\n\n构建后的文件可以部署到任何静态文件服务器：\n\n```bash\nnpm run build\n```\n\n生成的 `dist` 目录可以直接部署到：\n- GitHub Pages\n- Netlify\n- Vercel\n- 任何 Web 服务器\n\n### 本地预览\n\n```bash\nnpm run preview\n```\n\n## 🤝 贡献\n\n欢迎提交 Issue 和 Pull Request！\n\n## 📄 许可证\n\nMIT License\n\n## 🔗 相关链接\n\n- [Vue.js](https://vuejs.org/)\n- [Vite](https://vitejs.dev/)\n- [Element Plus](https://element-plus.org/)\n- [markdown-it](https://github.com/markdown-it/markdown-it)\n- [Fuse.js](https://fusejs.io/)\n",
     "tags": [
       "预设文档"
     ],
-    "createdAt": "2026-05-29T04:53:57.575Z",
-    "updatedAt": "2026-05-29T04:53:57.576Z",
+    "createdAt": "2026-05-29T05:17:29.296Z",
+    "updatedAt": "2026-05-29T05:17:29.296Z",
     "isPreset": true,
     "originalPath": "README"
   },
   {
-    "id": "preset-1780030437576-6t0prrpsq",
+    "id": "preset-1780031849296-za9e1ck4z",
     "title": "SEO 优化指南",
     "content": "# SEO 优化指南\n\n本文档详细介绍了知识库管理系统的 SEO 优化实现方案和使用指南。\n\n## 🎯 优化目标\n\n- 提高搜索引擎可见性\n- 改善页面加载性能\n- 增强用户体验\n- 提升网站权威性\n\n## 📋 已实现的 SEO 功能\n\n### 1. HTML 元数据优化\n\n#### 基础 SEO 标签\n- ✅ `<title>` 标签 - 每个页面独特的标题\n- ✅ `<meta description>` - 页面描述\n- ✅ `<meta keywords>` - 关键词标签\n- ✅ `<meta robots>` - 搜索引擎指令\n- ✅ `lang` 属性 - 页面语言设置\n\n#### Open Graph 标签\n- ✅ `og:title` - 社交媒体标题\n- ✅ `og:description` - 社交媒体描述\n- ✅ `og:image` - 社交媒体图片\n- ✅ `og:url` - 页面 URL\n- ✅ `og:type` - 内容类型\n- ✅ `og:site_name` - 网站名称\n\n#### Twitter Card 标签\n- ✅ `twitter:card` - 卡片类型\n- ✅ `twitter:title` - Twitter 标题\n- ✅ `twitter:description` - Twitter 描述\n- ✅ `twitter:image` - Twitter 图片\n\n### 2. 技术 SEO\n\n#### 站点地图和机器人文件\n- ✅ `sitemap.xml` - 自动生成的站点地图\n- ✅ `robots.txt` - 搜索引擎爬虫指令\n- ✅ 动态内容索引 - 包含文档页面\n\n#### 结构化数据 (JSON-LD)\n- ✅ WebSite 结构化数据\n- ✅ Article 结构化数据（文档页面）\n- ✅ BreadcrumbList 面包屑导航\n- ✅ SearchAction 搜索功能标记\n\n#### 性能优化\n- ✅ 资源压缩和缓存\n- ✅ 代码分割和懒加载\n- ✅ 图片优化\n- ✅ Core Web Vitals 监控\n\n### 3. 内容优化\n\n#### 页面结构\n- ✅ 语义化 HTML 标签\n- ✅ 标题层次结构 (H1, H2, H3)\n- ✅ 内部链接优化\n- ✅ 面包屑导航\n\n#### 移动端优化\n- ✅ 响应式设计\n- ✅ 移动端友好性\n- ✅ 触摸优化\n- ✅ 快速加载\n\n## 🛠️ 使用指南\n\n### 开发环境\n\n#### 1. 页面 SEO 配置\n```javascript\n// 在 Vue 组件中使用\nimport { usePageSEO } from '@/composables/useSEO.js'\n\n// 设置页面 SEO\nusePageSEO({\n  title: '页面标题 - 知识库管理系统',\n  description: '页面描述，不超过 160 字符',\n  keywords: '关键词1,关键词2,关键词3'\n})\n```\n\n#### 2. 文档页面 SEO\n```javascript\n// 为文档页面设置动态 SEO\nimport { useDocumentPageSEO } from '@/composables/useSEO.js'\n\nconst document = ref(null)\nuseDocumentPageSEO(document)\n```\n\n#### 3. 生成站点地图\n```bash\n# 手动生成站点地图\nnpm run seo:sitemap\n\n# 检查 SEO 配置\nnpm run seo:check\n\n# 构建时自动生成\nnpm run seo:build\n```\n\n### 生产环境\n\n#### 1. 部署配置\n- Vercel 配置已优化缓存策略\n- 自动生成 sitemap.xml 和 robots.txt\n- 启用性能监控\n\n#### 2. 监控指标\n- Core Web Vitals (LCP, FID, CLS)\n- 页面加载时间\n- 资源加载性能\n- 内存使用情况\n\n## 📊 SEO 检查清单\n\n### 必需项目 ✅\n- [x] 每个页面都有独特的 title 和 description\n- [x] 设置了正确的 meta 标签\n- [x] 配置了 Open Graph 和 Twitter Card\n- [x] 生成了 sitemap.xml 文件\n- [x] 创建了 robots.txt 文件\n- [x] 添加了结构化数据\n- [x] 设置了正确的语言属性\n- [x] 配置了 favicon 和图标\n\n### 推荐项目 ⚠️\n- [ ] 添加 canonical 链接（可选）\n- [ ] 设置 Google Analytics\n- [ ] 配置 Google Search Console\n- [ ] 添加 SSL 证书\n- [ ] 优化图片 alt 属性\n\n## 🔧 配置文件说明\n\n### 1. SEO 工具 (`src/utils/seo.js`)\n- 管理页面元数据\n- 设置 Open Graph 标签\n- 生成结构化数据\n\n### 2. SEO 组合函数 (`src/composables/useSEO.js`)\n- Vue 组件中的 SEO 功能\n- 响应式 SEO 更新\n- 路由变化自动更新\n\n### 3. Vite 插件 (`vite-plugins/seo-plugin.js`)\n- 构建时 SEO 优化\n- 自动生成 sitemap\n- HTML 优化处理\n\n### 4. 性能监控 (`src/utils/performance.js`)\n- Core Web Vitals 监控\n- 资源加载分析\n- 内存使用监控\n\n## 📈 性能优化策略\n\n### 1. 代码分割\n```javascript\n// vite.config.js 中的配置\nmanualChunks: {\n  vendor: ['vue', 'vue-router', 'pinia'],\n  ui: ['element-plus'],\n  utils: ['markdown-it', 'highlight.js', 'fuse.js', 'localforage']\n}\n```\n\n### 2. 资源优化\n- 图片压缩和格式优化\n- 字体文件预加载\n- CSS 和 JS 压缩\n- 静态资源缓存\n\n### 3. 加载策略\n- 关键资源优先加载\n- 非关键资源延迟加载\n- 预加载重要页面\n- 服务端缓存配置\n\n## 🚀 部署优化\n\n### Vercel 配置 (`vercel.json`)\n```json\n{\n  \"buildCommand\": \"npm run seo:build\",\n  \"headers\": [\n    {\n      \"source\": \"/(.*\\\\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2))\",\n      \"headers\": [\n        {\n          \"key\": \"Cache-Control\",\n          \"value\": \"public, max-age=31536000, immutable\"\n        }\n      ]\n    }\n  ]\n}\n```\n\n### 缓存策略\n- 静态资源：1 年缓存\n- HTML 文件：无缓存\n- API 响应：适当缓存\n- 图片资源：长期缓存\n\n## 📝 最佳实践\n\n### 1. 内容优化\n- 标题长度控制在 60 字符以内\n- 描述长度控制在 160 字符以内\n- 使用相关关键词，避免关键词堆砌\n- 保持内容更新和相关性\n\n### 2. 技术优化\n- 定期检查和更新 sitemap\n- 监控页面加载性能\n- 优化图片大小和格式\n- 确保移动端友好性\n\n### 3. 用户体验\n- 快速加载时间（< 3 秒）\n- 良好的导航结构\n- 清晰的页面层次\n- 无障碍访问支持\n\n## 🔍 监控和分析\n\n### 1. 性能监控\n```bash\n# 运行 SEO 检查\nnpm run seo:check\n\n# 分析构建产物\nnpm run analyze\n```\n\n### 2. 搜索引擎工具\n- Google Search Console\n- Bing Webmaster Tools\n- 百度站长平台\n- 360 站长平台\n\n### 3. 分析工具\n- Google Analytics\n- 百度统计\n- 站长统计\n- 热力图分析\n\n## 📚 相关资源\n\n- [Google SEO 指南](https://developers.google.com/search/docs)\n- [Core Web Vitals](https://web.dev/vitals/)\n- [结构化数据指南](https://developers.google.com/search/docs/guides/intro-structured-data)\n- [Open Graph 协议](https://ogp.me/)\n- [Twitter Card 文档](https://developer.twitter.com/en/docs/twitter-for-websites/cards/overview/abouts-cards)\n",
     "tags": [
       "预设文档",
       "指南"
     ],
-    "createdAt": "2026-05-29T04:53:57.576Z",
-    "updatedAt": "2026-05-29T04:53:57.576Z",
+    "createdAt": "2026-05-29T05:17:29.296Z",
+    "updatedAt": "2026-05-29T05:17:29.296Z",
     "isPreset": true,
     "originalPath": "SEO优化指南"
   },
   {
-    "id": "preset-1780030437576-n3xsrw9ij",
+    "id": "preset-1780031849296-j9dkdk5ck",
     "title": "Vue Router 是 Vue.js 官方的路由管理器",
     "content": "# Vue Router 是 Vue.js 官方的路由管理器\n\nVue Router 是 Vue.js 官方的路由管理器，用于实现单页应用（SPA）中的页面跳转和路由管理。它可以帮助你在不刷新整个页面的情况下，实现组件之间的切换，提升用户体验。\n\n\n### 一、基本使用步骤\n\n#### 1. 安装 Vue Router\n根据 Vue 版本选择对应的 Vue Router 版本：\n- Vue 3 对应 Vue Router 4+\n- Vue 2 对应 Vue Router 3.x\n\n```bash\n# Vue 3 + Vue Router 4\nnpm install vue-router@4\n\n# Vue 2 + Vue Router 3\nnpm install vue-router@3\n```\n\n\n#### 2. 基本配置（Vue 3 示例）\n\n**步骤 1：创建路由文件（`src/router/index.js`）**\n```javascript\nimport { createRouter, createWebHistory } from 'vue-router';\n// 导入组件\nimport Home from '../views/Home.vue';\nimport About from '../views/About.vue';\nimport User from '../views/User.vue';\n\n// 路由规则\nconst routes = [\n  {\n    path: '/',          // 路径\n    name: 'Home',       // 路由名称（可选）\n    component: Home     // 对应的组件\n  },\n  {\n    path: '/about',\n    name: 'About',\n    component: About\n  },\n  {\n    // 动态路由参数（例如：/user/123）\n    path: '/user/:id',\n    name: 'User',\n    component: User\n  }\n];\n\n// 创建路由实例\nconst router = createRouter({\n  history: createWebHistory(), // 使用 HTML5 history 模式（无 # 号）\n  routes                       // 路由规则\n});\n\nexport default router;\n```\n\n**步骤 2：在入口文件中引入（`src/main.js`）**\n```javascript\nimport { createApp } from 'vue';\nimport App from './App.vue';\nimport router from './router'; // 导入路由\n\ncreateApp(App)\n  .use(router) // 安装路由\n  .mount('#app');\n```\n\n**步骤 3：在组件中使用路由**\n```vue\n<!-- App.vue -->\n<template>\n  <div>\n    <!-- 路由导航（相当于 a 标签） -->\n    <nav>\n      <router-link to=\"/\">首页</router-link> |\n      <router-link to=\"/about\">关于</router-link> |\n      <router-link :to=\"'/user/' + 123\">用户 123</router-link>\n    </nav>\n\n    <!-- 路由出口：匹配的组件会渲染在这里 -->\n    <router-view></router-view>\n  </div>\n</template>\n```\n\n\n### 二、核心功能\n\n#### 1. 动态路由匹配\n用于匹配带参数的路由（如详情页）：\n```javascript\n// 路由规则\n{ path: '/user/:id', component: User }\n\n// 在组件中获取参数（Vue 3 组合式 API）\n<script setup>\nimport { useRoute } from 'vue-router';\nconst route = useRoute();\nconsole.log(route.params.id); // 获取动态参数 id\n</script>\n```\n\n\n#### 2. 嵌套路由\n用于实现页面布局中的子路由（如侧边栏 + 内容区）：\n```javascript\n// 路由规则\n{\n  path: '/dashboard',\n  component: Dashboard,\n  // 子路由\n  children: [\n    { path: '', component: DashboardHome }, // 默认子路由\n    { path: 'profile', component: Profile },\n    { path: 'settings', component: Settings }\n  ]\n}\n```\n\n在父组件中添加 `<router-view>` 渲染子组件：\n```vue\n<!-- Dashboard.vue -->\n<template>\n  <div class=\"dashboard\">\n    <sidebar></sidebar>\n    <main>\n      <router-view></router-view> <!-- 子路由组件渲染在这里 -->\n    </main>\n  </div>\n</template>\n```\n\n\n#### 3. 编程式导航\n通过代码实现路由跳转（替代 `<router-link>`）：\n```vue\n<script setup>\nimport { useRouter } from 'vue-router';\nconst router = useRouter();\n\n// 跳转到指定路径\nconst goToAbout = () => {\n  router.push('/about');\n};\n\n// 跳转到命名路由（带参数）\nconst goToUser = () => {\n  router.push({ name: 'User', params: { id: 456 } });\n};\n\n// 后退/前进\nconst goBack = () => {\n  router.go(-1); // 后退一步\n};\n</script>\n```\n\n\n#### 4. 路由守卫\n用于控制路由的访问权限（如登录验证）：\n\n**全局守卫（`router/index.js`）**\n```javascript\n// 全局前置守卫：进入路由前触发\nrouter.beforeEach((to, from, next) => {\n  // 判断是否需要登录\n  if (to.meta.requiresAuth && !isLogin()) {\n    next('/login'); // 未登录则跳转到登录页\n  } else {\n    next(); // 允许访问\n  }\n});\n```\n\n**路由独享守卫**\n```javascript\n{\n  path: '/admin',\n  component: Admin,\n  meta: { requiresAuth: true }, // 自定义元信息\n  beforeEnter: (to, from, next) => {\n    // 仅在进入此路由时触发\n    if (isAdmin()) {\n      next();\n    } else {\n      next('/forbidden');\n    }\n  }\n}\n```\n\n\n#### 5. 路由模式\n- **`createWebHistory()`**：HTML5 历史模式（无 # 号，需要服务器配置支持）\n- **`createWebHashHistory()`**：哈希模式（带 # 号，兼容性好，无需服务器配置）\n\n\n### 三、常见场景\n\n1. **404 页面**：匹配所有未定义的路由\n```javascript\n{ path: '/:pathMatch(.*)*', component: NotFound }\n```\n\n2. **路由懒加载**：优化首屏加载速度\n```javascript\n// 按需加载组件（打包时会分割为单独的 chunk）\nconst About = () => import('../views/About.vue');\n```\n\n3. **路由元信息**：存储路由相关的附加信息（如标题、权限）\n```javascript\n{\n  path: '/about',\n  component: About,\n  meta: { \n    title: '关于我们', \n    requiresAuth: false \n  }\n}\n```\n\n在全局守卫中使用元信息：\n```javascript\nrouter.beforeEach((to) => {\n  // 设置页面标题\n  document.title = to.meta.title || '默认标题';\n});\n```\n\n\nVue Router 是构建 Vue 单页应用的核心工具，通过上述功能可以灵活实现复杂的路由管理。实际开发中，建议结合官方文档深入学习其高级特性（如路由过渡动画、滚动行为等）。",
     "tags": [
       "预设文档"
     ],
-    "createdAt": "2026-05-29T04:53:57.576Z",
-    "updatedAt": "2026-05-29T04:53:57.576Z",
+    "createdAt": "2026-05-29T05:17:29.296Z",
+    "updatedAt": "2026-05-29T05:17:29.296Z",
     "isPreset": true,
     "originalPath": "Vue_Router_是_Vue.js_官方的路由管理器"
   },
   {
-    "id": "preset-1780030437576-qr4t2lykb",
+    "id": "preset-1780031849296-c53ncny6d",
     "title": "创建vite脚手架",
     "content": "#  创建vite脚手架\n\n创建 Vite 脚手架项目的过程非常简洁高效，以下是详细的步骤指南：\n\n### 前提条件\n确保你的电脑上已安装 Node.js（推荐 v14.18.0 或更高版本），可以通过以下命令检查：\n```bash\nnode -v  # 查看 Node.js 版本\nnpm -v   # 查看 npm 版本\n```\n如果未安装，可从 [Node.js 官网](https://nodejs.org/) 下载并安装 LTS 版本。\n\n\n### 步骤 1：创建 Vite 项目\n打开终端，运行以下命令启动项目创建向导：\n\n```bash\n# 使用 npm（推荐）\nnpm create vite@latest\n\n# 或使用 yarn\nyarn create vite\n\n# 或使用 pnpm\npnpm create vite\n```\n\n### 步骤 2：配置项目信息\n按照终端提示进行交互式配置：\n1. **输入项目名称**：例如 `my-project`（直接回车使用默认名 `vite-project`）\n2. **选择框架**：使用箭头键选择需要的框架（如 Vue、React、 vanilla 等）\n3. **选择变体**：根据框架选择具体类型（如 JavaScript 或 TypeScript）\n\n示例（创建 Vue + JavaScript 项目）：\n```\n√ Project name: ... my-vite-app\n√ Select a framework: » Vue\n√ Select a variant: » JavaScript\n```\n\n\n### 步骤 3：安装依赖并启动项目\n```bash\n# 进入项目目录\ncd my-vite-app\n\n# 安装依赖包\nnpm install\n\n# 启动开发服务器\nnpm run dev\n```\n\n运行成功后，终端会显示项目访问地址（通常是 `http://127.0.0.1:5173/`），打开浏览器即可看到默认页面。\n\n\n### 项目结构说明\n创建完成的项目结构如下（核心文件）：\n```\nmy-vite-app/\n├── node_modules/      # 项目依赖\n├── public/            # 静态资源（不会被编译）\n├── src/               # 源代码目录\n│   ├── assets/        # 图片、样式等资源\n│   ├── components/    # 组件目录\n│   ├── App.vue        # 根组件\n│   └── main.js        # 入口文件\n├── index.html         # 入口 HTML\n├── package.json       # 项目配置\n└── vite.config.js     # Vite 配置文件\n```\n\n\n### 自定义 Vite 配置（可选）\n你可以通过 `vite.config.js` 文件自定义项目配置，如修改端口、配置代理等：\n\n\n\n\n\n\n### 构建生产版本\n当项目开发完成后，运行以下命令构建用于生产环境的代码：\n```bash\nnpm run build\n```\n构建后的文件会生成在 `dist` 目录下，这些文件可以直接部署到服务器上。\n\n通过以上步骤，你可以快速搭建一个基于 Vite 的现代化前端项目，享受其快速的热更新和高效的构建体验。",
     "tags": [
       "预设文档"
     ],
-    "createdAt": "2026-05-29T04:53:57.576Z",
-    "updatedAt": "2026-05-29T04:53:57.576Z",
+    "createdAt": "2026-05-29T05:17:29.296Z",
+    "updatedAt": "2026-05-29T05:17:29.296Z",
     "isPreset": true,
     "originalPath": "_创建vite脚手架"
   },
   {
-    "id": "preset-1780030437576-jgdyotlmq",
+    "id": "preset-1780031849296-y2qo73g2y",
     "title": "git 常用指令",
     "content": "# git 常用指令\n\n以下是 Git 常用指令的汇总，涵盖了日常开发中最常用的操作：\n\n### 基础配置\n```bash\n# 配置用户名\ngit config --global user.name \"Your Name\"\n\n# 配置用户邮箱\ngit config --global user.email \"your.email@example.com\"\n\n# 查看配置信息\ngit config --list\n```\n\n### 仓库操作\n```bash\n# 初始化本地仓库\ngit init\n\n# 克隆远程仓库\ngit clone <远程仓库URL>\n\n# 查看远程仓库信息\ngit remote -v\n\n# 添加远程仓库\ngit remote add origin <远程仓库URL>\n\n# 更改远程仓库地址\ngit remote set-url origin <新远程仓库URL>\n```\n\n### 工作区与暂存区操作\n```bash\n# 查看文件状态\ngit status\n\n# 将文件添加到暂存区\ngit add <文件名>       # 添加指定文件\ngit add .             # 添加所有修改的文件\n\n# 将暂存区文件撤销\ngit reset <文件名>     # 撤销指定文件\ngit reset             # 撤销所有暂存区文件\n\n# 提交暂存区文件到本地仓库\ngit commit -m \"提交说明\"\n\n# 提交时直接将所有已跟踪文件的修改提交\ngit commit -am \"提交说明\"\n\n# 撤销工作区的修改（恢复到最近一次提交状态）\ngit checkout -- <文件名>\n```\n\n### 分支操作\n```bash\n# 查看所有分支\ngit branch\n\n# 创建新分支\ngit branch <分支名>\n\n# 切换分支\ngit checkout <分支名>\n\n# 创建并切换到新分支\ngit checkout -b <分支名>\n\n# 删除分支\ngit branch -d <分支名>  # 安全删除（需合并后才能删除）\ngit branch -D <分支名>  # 强制删除\n\n# 合并分支（当前分支合并目标分支）\ngit merge <目标分支名>\n```\n\n### 远程操作\n```bash\n# 拉取远程仓库更新（不合并）\ngit fetch\n\n# 拉取远程仓库更新并合并到当前分支\ngit pull origin <分支名>\n\n# 推送本地分支到远程仓库\ngit push origin <分支名>\n\n# 推送本地所有分支到远程仓库\ngit push --all origin\n\n# 删除远程分支\ngit push origin --delete <分支名>\n```\n\n### 版本回退\n```bash\n# 查看提交历史\ngit log                  # 详细日志\ngit log --oneline        # 简洁日志\ngit log --graph          # 图形化展示\n\n# 回退到指定版本\ngit reset --hard <提交ID>\n\n# 查看所有操作记录（包括已删除的提交）\ngit reflog\n```\n\n### 其他常用指令\n```bash\n# 查看工作区与暂存区的差异\ngit diff\n\n# 查看暂存区与本地仓库的差异\ngit diff --cached\n\n# 忽略文件配置（创建.gitignore文件）\ntouch .gitignore        # 添加不需要跟踪的文件/目录\n\n# 暂存当前工作区内容（用于切换分支）\ngit stash\n\n# 恢复暂存的内容\ngit stash pop\n\n# 查看标签\ngit tag\n\n# 创建标签\ngit tag <标签名>\n\n# 推送标签到远程\ngit push origin <标签名>\n```\n\n这些指令覆盖了 Git 的基本使用场景，熟练掌握可以有效提高版本控制效率。根据具体需求，还可以组合使用这些指令完成更复杂的操作。",
     "tags": [
       "预设文档"
     ],
-    "createdAt": "2026-05-29T04:53:57.576Z",
-    "updatedAt": "2026-05-29T04:53:57.576Z",
+    "createdAt": "2026-05-29T05:17:29.296Z",
+    "updatedAt": "2026-05-29T05:17:29.296Z",
     "isPreset": true,
     "originalPath": "git_常用指令"
   },
   {
-    "id": "preset-1780030437576-hlwhumn1b",
+    "id": "preset-1780031849296-c3t20qwel",
     "title": "js 原型链",
     "content": "# js 原型链\n\n你好呀！很高兴能和你聊天。\n\n别担心，这个概念其实很有趣，我们把它想象成**找东西的游戏**，好不好？\n\n你可以把“原型链”想象成**一家人站成一排**。\n\n1.  **你**站在最前面。\n2.  你的**爸爸**站在你身后，拉着你的手。\n3.  你的**爷爷**站在爸爸身后，拉着爸爸的手。\n4.  这就是一条“链子”。\n\n***\n\n**这个游戏是这样玩的：**\n\n假设你想找一颗**糖果**（这在电脑里叫做“数据”或“功能”）。\n\n1.  **第一步：** 你先摸摸**自己**的口袋。\n    * 如果有糖果，太好了，你直接吃掉！游戏结束。\n    * 如果你的口袋是空的，怎么办呢？\n\n2.  **第二步：** 你回头问身后的**爸爸**：“爸爸，你有糖果吗？”\n    * 如果爸爸有，他就会把糖果给你。你吃掉，游戏结束。\n    * 如果爸爸也没有，怎么办呢？\n\n3.  **第三步：** 爸爸会回头问身后的**爷爷**：“爷爷，你有糖果吗？”\n    * 如果爷爷有，他给爸爸，爸爸再给你。你吃掉，游戏结束。\n\n4.  **最后一步：** 如果爷爷也没有，而且爷爷身后没有人了（这叫做到了尽头）。\n    * 那就说明**真的没有糖果**。\n\n***\n\n**总结一下：**\n\n在电脑编程里，每一个东西（对象）身后都藏着一个“爸爸”（原型）。\n\n当你在这个东西里找不到你要的功能时，电脑就会自动去问它的“爸爸”，再没有就问“爷爷”。\n\n这一长串“**问完儿子、问爸爸、问爷爷**”的关系，就叫做**原型链**。\n\n这样解释，你能听懂吗？😊",
     "tags": [
       "预设文档"
     ],
-    "createdAt": "2026-05-29T04:53:57.576Z",
-    "updatedAt": "2026-05-29T04:53:57.576Z",
+    "createdAt": "2026-05-29T05:17:29.296Z",
+    "updatedAt": "2026-05-29T05:17:29.296Z",
     "isPreset": true,
     "originalPath": "js_原型链"
   },
   {
-    "id": "preset-1780030437576-xldhspksz",
+    "id": "preset-1780031849296-rw3veqa45",
     "title": "js常用的操作数组的方法",
     "content": "# js常用的操作数组的方法\n\nJavaScript 中数组是常用的数据结构，有许多内置方法可以方便地操作数组。以下是一些常用的数组方法：\n\n### 1. 增删元素\n- `push(element1, ..., elementN)`：向数组末尾添加一个或多个元素，返回新的长度。\n  ```javascript\n  const arr = [1, 2];\n  arr.push(3); // arr 变为 [1, 2, 3]\n  ```\n\n- `pop()`：删除并返回数组的最后一个元素。\n  ```javascript\n  const arr = [1, 2, 3];\n  arr.pop(); // 返回 3，arr 变为 [1, 2]\n  ```\n\n- `unshift(element1, ..., elementN)`：向数组开头添加一个或多个元素，返回新的长度。\n  ```javascript\n  const arr = [2, 3];\n  arr.unshift(1); // arr 变为 [1, 2, 3]\n  ```\n\n- `shift()`：删除并返回数组的第一个元素。\n  ```javascript\n  const arr = [1, 2, 3];\n  arr.shift(); // 返回 1，arr 变为 [2, 3]\n  ```\n\n- `splice(start, deleteCount, item1, ..., itemN)`：从指定位置删除元素，并可添加新元素，返回被删除的元素数组。\n  ```javascript\n  const arr = [1, 2, 3, 4];\n  arr.splice(1, 2, 5); // 从索引1开始删除2个元素，添加5，arr变为[1,5,4]\n  ```\n\n\n### 2. 数组遍历与转换\n- `forEach(callback)`：对数组每个元素执行回调函数，无返回值。\n  ```javascript\n  [1, 2, 3].forEach(item => console.log(item)); // 依次打印 1、2、3\n  ```\n\n- `map(callback)`：对每个元素执行回调，返回新数组（元素为回调返回值）。\n  ```javascript\n  const doubled = [1, 2, 3].map(item => item * 2); // [2, 4, 6]\n  ```\n\n- `filter(callback)`：返回满足回调条件（返回`true`）的元素组成的新数组。\n  ```javascript\n  const evens = [1, 2, 3, 4].filter(item => item % 2 === 0); // [2, 4]\n  ```\n\n- `reduce(callback, initialValue)`：通过回调将数组元素累积为一个值。\n  ```javascript\n  const sum = [1, 2, 3].reduce((acc, item) => acc + item, 0); // 6\n  ```\n\n\n### 3. 查找元素\n- `find(callback)`：返回第一个满足回调条件的元素，无则返回`undefined`。\n  ```javascript\n  const found = [1, 2, 3].find(item => item > 1); // 2\n  ```\n\n- `findIndex(callback)`：返回第一个满足条件的元素索引，无则返回`-1`。\n  ```javascript\n  const index = [1, 2, 3].findIndex(item => item > 1); // 1\n  ```\n\n- `includes(value)`：判断数组是否包含指定值，返回布尔值。\n  ```javascript\n  [1, 2, 3].includes(2); // true\n  ```\n\n- `indexOf(value)`：返回指定值在数组中首次出现的索引，无则返回`-1`。\n  ```javascript\n  [1, 2, 3, 2].indexOf(2); // 1\n  ```\n\n\n### 4. 数组排序与反转\n- `sort(compareFunction)`：对数组元素排序，默认按字符串Unicode码排序（会修改原数组）。\n  ```javascript\n  [3, 1, 2].sort((a, b) => a - b); // [1, 2, 3]（升序）\n  ```\n\n- `reverse()`：反转数组元素顺序（修改原数组）。\n  ```javascript\n  [1, 2, 3].reverse(); // [3, 2, 1]\n  ```\n\n\n### 5. 数组拼接与截取\n- `concat(array1, ..., arrayN)`：合并多个数组，返回新数组。\n  ```javascript\n  [1, 2].concat([3, 4]); // [1, 2, 3, 4]\n  ```\n\n- `slice(start, end)`：截取从`start`到`end`（不包含`end`）的元素，返回新数组。\n  ```javascript\n  [1, 2, 3, 4].slice(1, 3); // [2, 3]\n  ```\n\n\n### 6. 其他常用方法\n- `join(separator)`：将数组元素以指定分隔符拼接为字符串。\n  ```javascript\n  [1, 2, 3].join('-'); // \"1-2-3\"\n  ```\n\n- `every(callback)`：检测所有元素是否满足回调条件，返回布尔值。\n  ```javascript\n  [2, 4, 6].every(item => item % 2 === 0); // true\n  ```\n\n- `some(callback)`：检测是否有至少一个元素满足回调条件，返回布尔值。\n  ```javascript\n  [1, 3, 4].some(item => item % 2 === 0); // true（因为有4）\n  ```\n\n这些方法覆盖了数组的大部分操作场景，合理使用可以简化代码并提高效率。",
     "tags": [
       "预设文档"
     ],
-    "createdAt": "2026-05-29T04:53:57.576Z",
-    "updatedAt": "2026-05-29T04:53:57.576Z",
+    "createdAt": "2026-05-29T05:17:29.296Z",
+    "updatedAt": "2026-05-29T05:17:29.296Z",
     "isPreset": true,
     "originalPath": "js常用的操作数组的方法"
   },
   {
-    "id": "preset-1780030437576-1dov5kewz",
+    "id": "preset-1780031849296-kvaf6n0j6",
     "title": "js的代理",
     "content": "# js的代理\n\n你好！很高兴能用你最容易理解的方式来解释 JavaScript 里的 **“代理” (Proxy)**。\n\n首先，请你相信，你问的这个问题非常专业，能问出来说明你很棒！我们用一个你最熟悉、最简单的例子——**“体育队里的传话筒”**——来理解它。\n\n### 📣 什么是 JavaScript 的“代理”（Proxy）？\n\n在 JavaScript 里，“代理”就像一个 **“智能的中间人”** 或 **“传话筒”**。\n\n它的核心功能是：\n\n> **在你（代码）去操作一个对象（数据）之前，先由它（代理）接管这个操作。**\n\n这样，你就可以在这个对象身上安装一个“拦截器”，拦截所有的操作（读取、写入、删除等）。\n\n### 🏃 场景比喻：体育生的装备管理\n\n想象一下，你有一个装满了你所有体育装备的 **“原始背包”**。\n\n| 装备 | 状态 |\n| :--- | :--- |\n| **`ball`** (球) | `'足球'` |\n| **`shoes`** (鞋) | `'跑鞋'` |\n| **`water`** (水) | `1 瓶` |\n\n现在，我们给这个“原始背包”请了一个 **代理 (Proxy)** 来管理。\n\n#### 1\\. 代理的作用：在你拿东西前拦截！\n\n无论你想从背包里拿东西，还是放东西进去，都必须先通过这个代理。代理可以在你操作时做以下事情：\n\n| 你想做什么操作？ | 代理（Proxy）如何拦截？ | 对应的代码功能 |\n| :--- | :--- | :--- |\n| **读取 (`get`)**：你想查看 `ball` 是什么。 | **代理说：** “等一下！如果有人想拿球，我要先检查他有没有权限。” | **数据校验**：在你读取敏感数据前，执行权限检查。 |\n| **写入 (`set`)**：你想把 `shoes` 改成 `'篮球鞋'`。 | **代理说：** “等等！你放进去的新鞋，必须是符合尺码的。” | **数据验证**：确保写入的数据符合规则（比如库存不能是负数）。 |\n| **删除 (`delete`)**：你想扔掉 `water`。 | **代理说：** “不行！水是必需品，你不能删除！” | **操作保护**：阻止对关键数据的删除或修改。 |\n\n#### 2\\. 代码如何实现？\n\n在 JavaScript 中，当你创建一个 Proxy 时，你需要提供两样东西：\n\n1.  **`target`**：那个 **“原始背包”**（你想要保护和修改的对象）。\n2.  **`handler`**：那个 **“拦截规则”**（一个定义了 `get`, `set` 等方法的对象）。\n\n<!-- end list -->\n\n```javascript\n// 1. 原始对象（你的背包）\nconst target = {\n    shoes: '跑鞋',\n    water: 1\n};\n\n// 2. 规则对象（你的拦截器）\nconst handler = {\n    // 拦截读取操作\n    get: function(target, prop) {\n        if (prop === 'water') {\n            return target[prop] + ' (已消毒)'; // 偷偷修改返回的值\n        }\n        return target[prop];\n    }\n};\n\n// 3. 创建代理对象（你的传话筒）\nconst proxy = new Proxy(target, handler);\n\n// 4. 结果：\nconsole.log(proxy.shoes); // 结果: '跑鞋' (没有拦截，直接返回)\nconsole.log(proxy.water); // 结果: '1 (已消毒)' (被拦截并修改了)\n```\n\n### 🏆 总结\n\n在 Vue 3 这样的框架里，代理（Proxy）非常重要。\n\n它就是用来帮你创建 **响应式数据** 的！当数据被 Proxy 代理后，每当你读取或修改数据时，Proxy 就会立即通知 Vue 框架：“数据变了！请更新屏幕！” 这样屏幕上的界面才能自动跟着你的数据跑。\n\n`this` 是一个身份卡，而 **Proxy 是一个智能的保镖**。",
     "tags": [
       "预设文档"
     ],
-    "createdAt": "2026-05-29T04:53:57.576Z",
-    "updatedAt": "2026-05-29T04:53:57.576Z",
+    "createdAt": "2026-05-29T05:17:29.296Z",
+    "updatedAt": "2026-05-29T05:17:29.296Z",
     "isPreset": true,
     "originalPath": "js的代理"
   },
   {
-    "id": "preset-1780030437576-2t7n4wfop",
+    "id": "preset-1780031849296-l6ivk22n6",
     "title": "markdown使用教程",
     "content": "Markdown 是一种轻量级标记语言，语法简洁直观，广泛用于文档编写、笔记、博客等场景。以下是 **完整且常用的 Markdown 语法格式**，按功能分类整理，包含示例和注意事项，方便快速查阅和使用。\n\n\n### 一、标题（Headings）\n通过 `#` 符号定义，`#` 数量对应标题级别（1-6级），`#` 后需加**空格**，否则不生效。\n\n| 语法                  | 效果（预览）               | 说明                     |\n|-----------------------|----------------------------|--------------------------|\n| `# 一级标题`          | # 一级标题                 | 最高级，字体最大         |\n| `## 二级标题`         | ## 二级标题                | 常用作文章大章节标题     |\n| `### 三级标题`        | ### 三级标题               | 常用作小节标题           |\n| `#### 四级标题`       | #### 四级标题              | 字体较小，用于细分内容   |\n| `##### 五级标题`      | ##### 五级标题             | -                        |\n| `###### 六级标题`     | ###### 六级标题            | 最低级，字体接近正文     |\n\n**注意**：一级标题建议整篇文档只使用1个，保证结构清晰。\n\n\n### 二、文本样式（Text Styling）\n用于强调、标记文本，支持粗体、斜体、删除线等。\n\n| 语法                  | 效果（预览）               | 说明                     |\n|-----------------------|----------------------------|--------------------------|\n| `*斜体文本*` 或 `_斜体文本_` | *斜体文本* / _斜体文本_    | 两种符号均可，推荐用 `*` |\n| `**粗体文本**` 或 `__粗体文本__` | **粗体文本** / __粗体文本__ | 强调重点内容             |\n| `***粗斜体文本***` 或 `___粗斜体文本___` | ***粗斜体文本*** | 同时加粗和斜体           |\n| `~~删除线文本~~`      | ~~删除线文本~~             | 标记已废弃或修正的内容   |\n| `==高亮文本==`        | ==高亮文本==               | 部分平台支持（如 Typora、语雀） |\n| `H~2~O`               | H~2~O                      | 下标（如化学公式、日期） |\n| `X^2^`                | X^2^                       | 上标（如数学公式、幂次） |\n\n\n### 三、段落与换行（Paragraphs & Line Breaks）\nMarkdown 对段落和换行的处理有明确规则，避免格式混乱。\n\n1. **段落**：  \n   直接输入文本即可形成段落，段落之间需留**一个空行**（即按两次 `Enter`），否则会被视为同一段落。  \n   - 示例：  \n     ```markdown\n     这是第一个段落。内容可以换行输入，但只要不手动留空行，最终会合并为一段。\n     （这里即使手动换行了，预览时仍会显示为连续文本）\n\n     这是第二个段落。（与上一段之间留了空行，会被识别为独立段落）\n     ```\n\n2. **强制换行**：  \n   若需在同一段落内换行（不拆分段落），可在换行处加 **2个及以上空格 + Enter**，或使用 `<br>` 标签。  \n   - 示例：  \n     ```markdown\n     第一行末尾加两个空格  \n     这行会换行显示（同一段落内）\n\n     第一行末尾用<br>\n     这行也会换行显示\n     ```\n\n\n### 四、列表（Lists）\n支持有序列表（带数字）和无序列表（带符号），可嵌套使用。\n\n#### 1. 无序列表（Unordered Lists）\n用 `*`、`+`、`-` 作为列表标记，标记后需加**空格**，三种符号效果一致，推荐统一用 `*`。  \n- 示例：  \n  ```markdown\n  * 列表项1\n  * 列表项2\n    * 嵌套列表项2.1（前面加 4个空格 或 1个Tab）\n    * 嵌套列表项2.2\n  * 列表项3\n  ```\n- 预览效果：  \n  * 列表项1\n  * 列表项2\n    * 嵌套列表项2.1\n    * 嵌套列表项2.2\n  * 列表项3\n\n#### 2. 有序列表（Ordered Lists）\n用 `数字 + .` 作为标记，标记后需加**空格**，数字无需手动排序（Markdown 会自动修正）。  \n- 示例：  \n  ```markdown\n  1. 第一步\n  2. 第二步\n     1. 嵌套步骤2.1（前面加 4个空格）\n     2. 嵌套步骤2.2\n  3. 第三步\n  ```\n- 预览效果：  \n  1. 第一步\n  2. 第二步\n     1. 嵌套步骤2.1\n     2. 嵌套步骤2.2\n  3. 第三步\n\n#### 3. 任务列表（Task Lists）\n部分平台（如 GitHub、Typora）支持，用 `- [ ]` 表示未完成，`- [x]` 表示已完成，括号内需加**空格**。  \n- 示例：  \n  ```markdown\n  - [x] 完成Markdown语法学习\n  - [ ] 编写示例文档\n  - [ ] 检查格式正确性\n  ```\n- 预览效果：  \n  - [x] 完成Markdown语法学习\n  - [ ] 编写示例文档\n  - [ ] 检查格式正确性\n\n\n### 五、引用（Blockquotes）\n用于引用他人观点、文档内容或强调某段文字，用 `>` 作为标记，支持嵌套和多行引用。\n\n1. **基础引用**：  \n   `>` 后加空格，引用内容可换行，换行时无需重复加 `>`（但部分平台需加）。  \n   - 示例：  \n     ```markdown\n     > 这是一段引用文本，用于标记外部内容或重要说明。\n     > 换行时继续加 > 可确保格式统一（推荐）。\n     ```\n   - 预览效果：  \n     > 这是一段引用文本，用于标记外部内容或重要说明。\n     > 换行时继续加 > 可确保格式统一（推荐）。\n\n2. **嵌套引用**：  \n   用多个 `>` 实现嵌套（如 `>>` 表示二级引用）。  \n   - 示例：  \n     ```markdown\n     > 一级引用\n     >> 二级引用（嵌套在一级内）\n     >>> 三级引用（嵌套在二级内）\n     ```\n   - 预览效果：  \n     > 一级引用\n     >> 二级引用（嵌套在一级内）\n     >>> 三级引用（嵌套在二级内）\n\n3. **引用内混排**：  \n   引用内可嵌套列表、代码块等元素。  \n   - 示例：  \n     ```markdown\n     > 引用内的列表：\n     > * 列表项1\n     > * 列表项2\n     > \n     > 引用内的代码：`const a = 1`\n     ```\n   - 预览效果：  \n     > 引用内的列表：\n     > * 列表项1\n     > * 列表项2\n     > \n     > 引用内的代码：`const a = 1`\n\n\n### 六、代码（Code）\n用于展示代码片段，支持**行内代码**和**代码块**，部分平台支持语法高亮。\n\n#### 1. 行内代码（Inline Code）\n用 **1个反引号**（`）包裹代码，反引号位于键盘 `Tab` 键上方（英文输入法）。  \n- 示例：  \n  ```markdown\n  定义变量 `const name = \"Markdown\"`，然后调用 `printName()` 函数。\n  ```\n- 预览效果：  \n  定义变量 `const name = \"Markdown\"`，然后调用 `printName()` 函数。\n\n#### 2. 代码块（Code Blocks）\n有两种方式，推荐用 **三个反引号**（```），支持指定语言实现语法高亮。\n\n- 方式1：三个反引号（推荐）  \n  开头用 ``` + 语言名称（如 javascript、python），结尾用 ```，语言名称不区分大小写。  \n  - 示例（JavaScript 代码）：  \n    ```markdown\n    ```javascript\n    // 计算两数之和\n    function add(a, b) {\n      return a + b;\n    }\n    const result = add(2, 3);\n    console.log(result); // 输出 5\n    ```\n    ```\n  - 预览效果（带语法高亮）：  \n    ```javascript\n    // 计算两数之和\n    function add(a, b) {\n      return a + b;\n    }\n    const result = add(2, 3);\n    console.log(result); // 输出 5\n    ```\n\n- 方式2：缩进（不推荐）  \n  代码块前加 **4个空格** 或 **1个Tab**，但不支持语法高亮，仅适合简单代码。  \n  - 示例：  \n    ```markdown\n        # Python 简单代码\n        print(\"Hello, Markdown!\")\n    ```\n  - 预览效果：  \n        # Python 简单代码\n        print(\"Hello, Markdown!\")\n\n\n### 七、链接（Links）\n支持**行内链接**和**参考链接**，用于跳转至外部页面或内部锚点。\n\n#### 1. 行内链接（Inline Links）\n格式：`[链接文本](链接地址 \"可选的标题\")`，标题在鼠标 hover 时显示。  \n- 示例：  \n  ```markdown\n  访问 [GitHub](https://github.com \"GitHub 官网\") 查看开源项目，或查看 [Markdown 官方文档](https://daringfireball.net/projects/markdown/)。\n  ```\n- 预览效果：  \n  访问 [GitHub](https://github.com \"GitHub 官网\") 查看开源项目，或查看 [Markdown 官方文档](https://daringfireball.net/projects/markdown/)。\n\n#### 2. 参考链接（Reference Links）\n适合链接多次复用的场景，先定义链接标识，再在文档任意位置引用。  \n- 格式：  \n  1. 引用部分：`[链接文本][链接标识]`  \n  2. 定义部分：`[链接标识]: 链接地址 \"可选标题\"`（定义可放在文档末尾，不影响预览）  \n- 示例：  \n  ```markdown\n  推荐学习 [Markdown][md] 和 [VS Code][vsc]，[VS Code][vsc] 对 Markdown 支持很好。\n\n  // 链接定义（可放在文档末尾）\n  [md]: https://daringfireball.net/projects/markdown/ \"Markdown 官方文档\"\n  [vsc]: https://code.visualstudio.com/ \"VS Code 官网\"\n  ```\n- 预览效果：  \n  推荐学习 [Markdown][md] 和 [VS Code][vsc]，[VS Code][vsc] 对 Markdown 支持很好。\n\n#### 3. 锚点链接（Anchor Links）\n用于跳转到文档内的指定标题（仅部分平台支持，如 GitHub、Typora）。  \n- 规则：锚点地址为 **标题的小写形式，空格替换为 `-`**（若标题有特殊符号，需去除或转义）。  \n- 示例：  \n  ```markdown\n  点击跳转至 [「列表」部分](#四、列表lists)\n  ```\n- 预览效果：点击跳转至 [「列表」部分](#四、列表lists)（实际使用时需确保标题格式匹配）。\n\n\n### 八、图片（Images）\n语法与链接类似，仅多一个 `!` 前缀，格式：`![图片加载失败时的提示文本](图片地址 \"可选标题\")`。\n\n#### 1. 网络图片（推荐）\n直接使用图片的在线 URL（需确保 URL 可访问）。  \n- 示例：  \n  ```markdown\n  ![VS Code 图标](https://code.visualstudio.com/favicon.ico \"VS Code 图标\")\n  ```\n- 预览效果：  \n  ![VS Code 图标](https://code.visualstudio.com/favicon.ico \"VS Code 图标\")\n\n#### 2. 本地图片\n使用本地文件路径（相对路径或绝对路径），仅在本地编辑器（如 Typora）中生效，上传到平台需先上传图片。  \n- 示例（相对路径，图片与文档在同一文件夹）：  \n  ```markdown\n  ![我的截图](./screenshot.png \"本地截图\")\n  ```\n\n\n### 九、表格（Tables）\n语法需注意对齐方式，表头与内容之间需用 `| --- |` 分隔，支持左对齐、右对齐、居中对齐。\n\n#### 基础格式\n| 语法                  | 预览效果                   |\n|-----------------------|----------------------------|\n| ```markdown\n  | 姓名 | 年龄 | 职业 |\n  | --- | --- | --- |\n  | 张三 | 25 | 工程师 |\n  | 李四 | 30 | 设计师 |\n  ``` | | 姓名 | 年龄 | 职业 |\n| --- | --- | --- |\n| 张三 | 25 | 工程师 |\n| 李四 | 30 | 设计师 | |\n\n#### 对齐方式\n在 `---` 前后加 `:` 控制对齐：\n- `:---` 或 `---:`：左对齐 / 右对齐\n- `:---:`：居中对齐\n- 不加分号：默认左对齐\n\n- 示例（带对齐）：  \n  ```markdown\n  | 商品 | 价格（元） | 库存 |\n  | :--- | ---: | :---: |\n  | 手机 | 3999 | 50 |\n  | 电脑 | 5999 | 30 |\n  ```\n- 预览效果：  \n  | 商品 | 价格（元） | 库存 |\n  | :--- | ---: | :---: |\n  | 手机 | 3999 | 50 |\n  | 电脑 | 5999 | 30 |\n\n**注意**：`|` 两侧的空格可省略，表格内支持文本样式（如粗体 `**`）。\n\n\n### 十、分割线（Horizontal Rules）\n用 `***`、`---` 或 `___` 表示，需单独占一行，前后建议留空行，三种符号效果一致。  \n- 示例：  \n  ```markdown\n  上文内容\n\n  ***\n\n  下文内容\n  ```\n- 预览效果：  \n  上文内容\n\n  ***\n\n  下文内容\n\n\n### 十一、特殊符号（Escaping Characters）\n若需显示 Markdown 语法符号（如 `#`、`*`、`|`），需在符号前加 **反斜杠（\\）** 转义。  \n- 示例：  \n  ```markdown\n  显示 # 符号：\\#  \n  显示 * 符号：\\*  \n  显示 | 符号：\\|  \n  ```\n- 预览效果：  \n  显示 # 符号：\\#  \n  显示 * 符号：\\*  \n  显示 | 符号：\\|  \n\n\n### 十二、扩展语法（部分平台支持）\n以下语法并非所有 Markdown 编辑器都支持（需依赖插件或特定平台，如 Typora、GitHub、语雀）：\n\n1. **脚注（Footnotes）**  \n   格式：`文本[^脚注标识]` + 末尾定义 `[^脚注标识]: 脚注内容`  \n   - 示例：  \n     ```markdown\n     Markdown 由 John Gruber 创造[^1]。\n\n     [^1]: John Gruber 是美国程序员、作家，2004年与 Aaron Swartz 合作设计了 Markdown。\n     ```\n   - 预览效果：  \n     Markdown 由 John Gruber 创造[^1]。\n\n2. **数学公式（Math Equations）**  \n   用 `$` 包裹行内公式，`$$` 包裹块级公式（需编辑器支持 LaTeX 语法）。  \n   - 示例：  \n     ```markdown\n     行内公式：$E=mc^2$  \n     块级公式：\n     $$\n     \\sum_{i=1}^n i = \\frac{n(n+1)}{2}\n     $$\n     ```\n   - 预览效果：  \n     行内公式：$E=mc^2$  \n     块级公式：\n     $$\n     \\sum_{i=1}^n i = \\frac{n(n+1)}{2}\n     $$\n\n\n### 常用编辑器推荐\n- 本地编辑器：Typora（所见即所得，支持所有扩展语法）、VS Code（需装 Markdown 插件）  \n- 在线平台：GitHub（支持标准语法+扩展）、语雀、Notion（语法略有差异，需适配）\n\n掌握以上语法，即可满足 99% 的 Markdown 文档编写需求，建议结合实际编辑器多练习，熟悉格式细节～\n\n[^1]: John Gruber 是美国程序员、作家，2004年与 Aaron Swartz 合作设计了 Markdown。",
     "tags": [
       "预设文档",
       "教程"
     ],
-    "createdAt": "2026-05-29T04:53:57.576Z",
-    "updatedAt": "2026-05-29T04:53:57.576Z",
+    "createdAt": "2026-05-29T05:17:29.296Z",
+    "updatedAt": "2026-05-29T05:17:29.296Z",
     "isPreset": true,
     "originalPath": "markdown使用教程"
   },
   {
-    "id": "preset-1780030437576-utq22d45n",
+    "id": "preset-1780031849296-ruvuhyeub",
     "title": "Mermaid 测试",
     "content": "# Mermaid 测试\n\n这是一个用于测试 Mermaid 图表渲染的文档。\n\n## 流程图测试\n\n```mermaid\ngraph TD;\n    A[开始]-->B{判断条件};\n    B-- 是 -->C[执行任务 1];\n    B-- 否 -->D[执行任务 2];\n    C-->E[结束];\n    D-->E;\n```\n\n## 时序图测试\n\n```mermaid\nsequenceDiagram\n    participant Alice\n    participant Bob\n    Alice->>John: Hello John, how are you?\n    loop Healthcheck\n        John->>John: Fight against hypochondria\n    end\n    Note right of John: Rational thoughts <br/>prevail!\n    John-->>Alice: Great!\n    John->>Bob: How about you?\n    Bob-->>John: Jolly good!\n```\n",
     "tags": [
       "预设文档"
     ],
-    "createdAt": "2026-05-29T04:53:57.576Z",
-    "updatedAt": "2026-05-29T04:53:57.576Z",
+    "createdAt": "2026-05-29T05:17:29.296Z",
+    "updatedAt": "2026-05-29T05:17:29.296Z",
     "isPreset": true,
     "originalPath": "mermaid测试"
   },
   {
-    "id": "preset-1780030437576-8n3b4gisv",
+    "id": "preset-1780031849296-x7w9tmz5y",
     "title": "this 机制与箭头函数 (Context Binding)",
     "content": "# this 机制与箭头函数 (Context Binding)\n\n没问题！我们继续用最简单、最容易懂的方式，来聊聊 **`this` 机制** 和 **箭头函数** 的故事。\n\n这一次，我们把 **`this`** 想象成一个 **“听话的听众”**，而 **箭头函数** 就像一个 **“不听话的喇叭”**。\n\n---\n\n## 👂 第一部分：`this` 是一个“听话的听众” (普通函数)\n\n在普通的 JavaScript 函数里，`this`（听众）非常灵活，它只听**最后叫它名字的人**的话。\n\n### 场景：谁是你的教练？\n\n假设你有一个技能叫做 **`喊口号()`**，这个技能里用到了 `this.名字`。\n\n1.  **你是张三队**：张三队调用了 `喊口号()`。\n    * **听众（`this`）** 马上看向张三队。\n    * **`this.名字`** 就是 **“张三队”**。\n\n2.  **你是李四队**：李四队调用了同样的 `喊口号()`。\n    * **听众（`this`）** 马上看向李四队。\n    * **`this.名字`** 就是 **“李四队”**。\n\n**总结：** 在普通函数里，`this` 是一个“听话的听众”，它总会指向 **调用它** 的那个对象（主人）。\n\n---\n\n## 📢 第二部分：箭头函数是一个“不听话的喇叭”\n\n箭头函数（`=>`）被发明出来，就是为了不让 `this` 乱跑。\n\n### 场景：锁定的喇叭\n\n想象你买了一个 **特殊的喇叭**（箭头函数）：\n\n1.  当你第一次启动这个喇叭时，它会**立刻**记住它周围的第一个“环境”（也就是它的爸爸）。\n2.  **一旦记住，这个喇叭的指向就永远锁定了！** 无论你把它带到哪里，无论谁来按它的按钮，它只会指向它第一次记住的那个“爸爸”。\n\n**代码对比：**\n\n| 函数类型 | 谁是 `this`（听众/喇叭）？ |\n| :--- | :--- |\n| **普通函数** (`function`) | **动态变化**。谁调用它，它就指向谁。 |\n| **箭头函数** (`=>`) | **固定不变**。它在**定义时**就被锁定，指向它定义时外面的那个“爸爸”。 |\n\n**为什么要用箭头函数？**\n\n在 Vue 组件里，我们经常需要确保一个方法里的 `this` 永远指向这个 **组件本身**，而不是被浏览器或点击事件搞乱。箭头函数能帮你把 `this` 牢牢地锁在组件上，让它不再“不听话”。\n\n这样理解，`this` 的灵活机制和箭头函数的锁定机制，是不是就清楚多了呢？",
     "tags": [
       "预设文档"
     ],
-    "createdAt": "2026-05-29T04:53:57.576Z",
-    "updatedAt": "2026-05-29T04:53:57.576Z",
+    "createdAt": "2026-05-29T05:17:29.296Z",
+    "updatedAt": "2026-05-29T05:17:29.296Z",
     "isPreset": true,
     "originalPath": "this_机制与箭头函数_(Context_Binding)"
   },
   {
-    "id": "preset-1780030437576-0ikoj3hws",
+    "id": "preset-1780031849296-1d437v7r1",
     "title": "vue 组件通信方式",
     "content": "# vue 组件通信方式\n\n在 Vue 中，组件通信是开发中非常重要的部分，根据组件之间的关系（父子、兄弟、跨级等），可以采用不同的通信方式。以下是 Vue 中常用的组件通信方式：\n\n### 1. 父子组件通信\n#### （1）父传子：Props\n- 父组件通过属性（attribute）向子组件传递数据\n- 子组件通过 `props` 选项接收数据\n\n**示例：**\n```vue\n<!-- 父组件 -->\n<template>\n  <ChildComponent :message=\"parentMessage\" :user=\"userInfo\" />\n</template>\n\n<script>\nimport ChildComponent from './ChildComponent.vue'\nexport default {\n  components: { ChildComponent },\n  data() {\n    return {\n      parentMessage: 'Hello from parent',\n      userInfo: { name: 'John', age: 30 }\n    }\n  }\n}\n</script>\n\n<!-- 子组件 -->\n<template>\n  <div>\n    <p>{{ message }}</p>\n    <p>{{ user.name }}</p>\n  </div>\n</template>\n\n<script>\nexport default {\n  props: {\n    // 基础类型检查\n    message: String,\n    // 对象类型检查\n    user: {\n      type: Object,\n      required: true\n    }\n  }\n}\n</script>\n```\n\n#### （2）子传父：自定义事件（$emit）\n- 子组件通过 `$emit` 触发事件，传递数据\n- 父组件通过 `v-on` 监听事件并接收数据\n\n**示例：**\n```vue\n<!-- 子组件 -->\n<template>\n  <button @click=\"sendDataToParent\">发送数据</button>\n</template>\n\n<script>\nexport default {\n  methods: {\n    sendDataToParent() {\n      // 触发事件，可传递多个参数\n      this.$emit('child-event', '数据来自子组件', 123)\n    }\n  }\n}\n</script>\n\n<!-- 父组件 -->\n<template>\n  <ChildComponent @child-event=\"handleChildEvent\" />\n</template>\n\n<script>\nimport ChildComponent from './ChildComponent.vue'\nexport default {\n  components: { ChildComponent },\n  methods: {\n    handleChildEvent(data1, data2) {\n      console.log(data1, data2) // 输出：数据来自子组件 123\n    }\n  }\n}\n</script>\n```\n\n#### （3）父子双向绑定：v-model\n- 语法糖，本质是 `props` + `$emit` 的结合\n- 子组件接收 `value` props，触发 `input` 事件\n\n**示例：**\n```vue\n<!-- 子组件 -->\n<template>\n  <input :value=\"value\" @input=\"$emit('input', $event.target.value)\" />\n</template>\n\n<script>\nexport default {\n  props: ['value']\n}\n</script>\n\n<!-- 父组件 -->\n<template>\n  <ChildComponent v-model=\"message\" />\n</template>\n\n<script>\nimport ChildComponent from './ChildComponent.vue'\nexport default {\n  components: { ChildComponent },\n  data() {\n    return { message: '' }\n  }\n}\n</script>\n```\n\n### 2. 兄弟组件通信\n#### （1）通过父组件中转\n- 利用父组件作为中间层，实现兄弟组件间接通信\n- 步骤：兄组件 → 父组件（$emit）→ 弟组件（props）\n\n#### （2）事件总线（Event Bus）\n- 创建一个全局事件中心，实现任意组件通信\n- Vue 2 中可通过 `new Vue()` 创建；Vue 3 中可使用第三方库（如 mitt）\n\n**示例（Vue 3 + mitt）：**\n```javascript\n// eventBus.js\nimport mitt from 'mitt'\nexport default mitt()\n\n// 组件 A（发送方）\nimport bus from './eventBus.js'\nbus.emit('event-name', data)\n\n// 组件 B（接收方）\nimport bus from './eventBus.js'\nbus.on('event-name', (data) => {\n  console.log(data)\n})\n\n// 组件销毁时解绑\nbus.off('event-name')\n```\n\n### 3. 跨级组件通信\n#### （1）Provide / Inject（Vue 2.2+ / Vue 3）\n- 祖先组件通过 `provide` 提供数据\n- 后代组件通过 `inject` 注入数据\n\n**示例：**\n```vue\n<!-- 祖先组件 -->\n<script>\nexport default {\n  provide() {\n    return {\n      theme: 'dark',\n      changeTheme: this.changeTheme\n    }\n  },\n  methods: {\n    changeTheme(newTheme) {\n      // 改变主题的逻辑\n    }\n  }\n}\n</script>\n\n<!-- 后代组件 -->\n<script>\nexport default {\n  inject: ['theme', 'changeTheme'],\n  mounted() {\n    console.log(this.theme) // 输出：dark\n  }\n}\n</script>\n```\n\n#### （2）Vuex / Pinia（状态管理库）\n- 适合大型应用，集中管理全局状态\n- Vuex 是 Vue 官方状态管理库，Pinia 是 Vuex 作者新推出的替代品\n\n**Pinia 示例：**\n```javascript\n// store.js\nimport { defineStore } from 'pinia'\nexport const useStore = defineStore('main', {\n  state: () => ({ count: 0 }),\n  actions: {\n    increment() {\n      this.count++\n    }\n  }\n})\n\n// 组件 A\nimport { useStore } from './store.js'\nconst store = useStore()\nstore.increment()\n\n// 组件 B\nimport { useStore } from './store.js'\nconst store = useStore()\nconsole.log(store.count) // 输出：1\n```\n\n### 4. 其他通信方式\n#### （1）$parent / $children\n- 直接访问父/子组件实例（不推荐，耦合度高）\n\n#### （2）$refs\n- 父组件通过 `ref` 属性获取子组件实例\n\n```vue\n<!-- 父组件 -->\n<template>\n  <ChildComponent ref=\"childRef\" />\n</template>\n\n<script>\nexport default {\n  mounted() {\n    this.$refs.childRef.childMethod() // 调用子组件方法\n  }\n}\n</script>\n```\n\n#### （3）attrs / listeners\n- `$attrs`：包含父组件传递的非 props 属性\n- `$listeners`：包含父组件传递的非原生事件监听器\n\n### 通信方式选择建议\n- 父子组件：优先使用 Props + $emit\n- 简单兄弟组件：事件总线\n- 复杂组件关系：Pinia/Vuex\n- 深层嵌套组件：Provide / Inject\n\n不同场景选择合适的通信方式，可以使代码结构更清晰，维护性更好。",
     "tags": [
       "预设文档"
     ],
-    "createdAt": "2026-05-29T04:53:57.576Z",
-    "updatedAt": "2026-05-29T04:53:57.576Z",
+    "createdAt": "2026-05-29T05:17:29.296Z",
+    "updatedAt": "2026-05-29T05:17:29.296Z",
     "isPreset": true,
     "originalPath": "vue_组件通信方式"
   },
   {
-    "id": "preset-1780030437576-vz6xwk7cy",
+    "id": "preset-1780031849297-bgp3lb463",
     "title": "vue的生命周期",
     "content": "# vue的生命周期\n\n# Vue 生命周期图解（含 Vue 2 与 Vue 3 对比）\n为更直观理解生命周期流程，以下通过「文字说明+图片占位示例」的形式，展示 Vue 2 完整生命周期、Vue 3 Composition API 生命周期及核心阶段对比。\n\n\n## 一、Vue 2 完整生命周期流程图\nVue 2 生命周期分为「初始化→挂载→更新→销毁」四大阶段，各阶段钩子函数执行顺序及作用如下：\n\n![Vue 2 生命周期流程图](https://example.com/vue2-lifecycle-flow.png \"Vue 2 完整生命周期流程\")\n\n### 各阶段核心钩子与作用（对应上图节点）\n| 生命周期阶段 | 钩子函数       | 核心作用                                                                 |\n|--------------|----------------|--------------------------------------------------------------------------|\n| 初始化阶段   | `beforeCreate` | 实例刚创建，`data`、`methods` 未初始化，无法访问；无 DOM 元素。         |\n| 初始化阶段   | `created`      | 实例创建完成，可访问 `data`、`methods`；但 DOM 未生成，`$el` 为 `undefined`。 |\n| 挂载阶段     | `beforeMount`  | 模板编译完成，`$el` 已存在（虚拟 DOM），但未挂载到页面（真实 DOM 未渲染）。 |\n| 挂载阶段     | `mounted`      | 组件挂载完成，真实 DOM 已渲染；可执行 DOM 操作、初始化第三方库（如 ECharts）。 |\n| 更新阶段     | `beforeUpdate` | 数据更新触发，此时 `data` 已更新，但 DOM 未重新渲染（数据与 DOM 不同步）。 |\n| 更新阶段     | `updated`      | DOM 已根据新数据重新渲染（数据与 DOM 同步）；**禁止在此修改数据**（避免无限循环）。 |\n| 销毁阶段     | `beforeDestroy`| 组件销毁前触发，仍可访问实例属性/方法；常用于清除定时器、解绑事件、销毁第三方实例。 |\n| 销毁阶段     | `destroyed`    | 组件完全销毁，所有事件监听器移除、子组件销毁；实例属性/方法不可用。       |\n| 特殊阶段     | `activated`    | 仅 `keep-alive` 包裹的组件激活时触发（如从其他组件切回）。               |\n| 特殊阶段     | `deactivated`  | 仅 `keep-alive` 包裹的组件失活时触发（如切到其他组件）。                 |\n\n\n## 二、Vue 3 Composition API 生命周期流程图\nVue 3 保留了 Vue 2 核心生命周期逻辑，但钩子函数命名调整，且需通过 `import` 引入；新增调试用钩子，更适配 Composition API 写法：\n\n![Vue 3 Composition API 生命周期流程图](https://example.com/vue3-lifecycle-flow.png \"Vue 3 Composition API 生命周期流程\")\n\n### 各阶段钩子与 Vue 2 对应关系\n| Vue 3 钩子函数       | 对应 Vue 2 钩子 | 核心作用（与 Vue 2 一致，命名调整）                                     |\n|----------------------|-----------------|--------------------------------------------------------------------------|\n| `setup()`            | `beforeCreate`+`created` | 组件初始化时执行，替代前两个钩子；可在此初始化响应式数据（如 `ref`/`reactive`）。 |\n| `onBeforeMount`      | `beforeMount`   | 模板编译完成，DOM 未挂载。                                             |\n| `onMounted`          | `mounted`       | DOM 挂载完成，可执行 DOM 操作。                                         |\n| `onBeforeUpdate`     | `beforeUpdate`  | 数据更新，DOM 未重新渲染。                                             |\n| `onUpdated`          | `updated`       | DOM 已重新渲染，禁止修改数据。                                         |\n| `onBeforeUnmount`    | `beforeDestroy` | 组件销毁前，清理资源（定时器、事件等）。                                 |\n| `onUnmounted`        | `destroyed`     | 组件完全销毁，资源释放。                                               |\n| `onActivated`        | `activated`     | 同 Vue 2，`keep-alive` 组件激活时触发。                                 |\n| `onDeactivated`      | `deactivated`   | 同 Vue 2，`keep-alive` 组件失活时触发。                                 |\n| 调试钩子             | -               | `onRenderTracked`：响应式依赖被追踪时触发（调试用）。                   |\n| 调试钩子             | -               | `onRenderTriggered`：响应式依赖触发更新时触发（调试用）。               |\n\n\n## 三、Vue 2 与 Vue 3 生命周期核心差异对比图\n通过对比可快速掌握两者钩子命名及使用场景的区别：\n\n![Vue 2 与 Vue 3 生命周期对比图](https://example.com/vue2-vs-vue3-lifecycle.png \"Vue 2 与 Vue 3 生命周期差异对比\")\n\n### 核心差异总结\n1. **初始化钩子合并**：Vue 3 用 `setup()` 替代 `beforeCreate` 和 `created`，无需额外钩子。\n2. **销毁钩子命名调整**：`beforeDestroy`→`onBeforeUnmount`，`destroyed`→`onUnmounted`（更贴合「卸载」语义）。\n3. **Composition API 引入方式**：Vue 3 钩子需从 `vue` 中导入（如 `import { onMounted } from 'vue'`），Vue 2 无需导入可直接使用。\n4. **新增调试钩子**：Vue 3 新增 `onRenderTracked` 和 `onRenderTriggered`，便于调试响应式依赖。\n\n\n## 四、实际开发常用生命周期场景示例\n不同生命周期钩子对应不同业务需求，以下为典型场景与钩子的匹配：\n\n![Vue 生命周期常用场景示例](https://example.com/vue-lifecycle-use-cases.png \"Vue 生命周期实际开发场景\")\n\n| 业务场景                  | 推荐使用的钩子函数（Vue 2 / Vue 3）       | 原因分析                                                                 |\n|---------------------------|-------------------------------------------|--------------------------------------------------------------------------|\n| 发送初始化请求（如拉取列表数据） | `mounted` / `onMounted`                   | DOM 挂载完成后请求，避免数据返回时 DOM 未就绪导致的渲染问题。             |\n| 初始化第三方插件（如 ECharts） | `mounted` / `onMounted`                   | 需基于真实 DOM 初始化插件，`mounted` 阶段已生成真实 DOM。                 |\n| 清除定时器/解绑事件        | `beforeDestroy` / `onBeforeUnmount`       | 组件销毁前清理资源，避免内存泄漏（若用 `destroyed`/`onUnmounted`，部分资源可能已释放）。 |\n| 监听数据更新后的 DOM 变化  | `updated` / `onUpdated`                   | 数据更新并同步到 DOM 后执行逻辑（如根据新 DOM 计算高度）。               |\n| 初始化响应式数据          | - / `setup()`                             | Vue 3 中 `setup()` 是响应式数据初始化的唯一入口，比 Vue 2 更集中。       |",
     "tags": [
       "预设文档"
     ],
-    "createdAt": "2026-05-29T04:53:57.576Z",
-    "updatedAt": "2026-05-29T04:53:57.576Z",
+    "createdAt": "2026-05-29T05:17:29.297Z",
+    "updatedAt": "2026-05-29T05:17:29.297Z",
     "isPreset": true,
     "originalPath": "vue的生命周期"
   },
   {
-    "id": "preset-1780030437576-coilul5u9",
+    "id": "preset-1780031849297-zbq38rkg9",
     "title": "“重绘”和“重排”",
     "content": "# “重绘”和“重排”\n\n这是一个非常棒的问题！“重绘”和“重排”是网页速度变慢的两个主要原因。\n\n我们可以把浏览器显示网页的过程，想象成在搭一个 **乐高城堡**。\n\n---\n\n## 🏰 核心概念：搭乐高城堡的两个步骤\n\n浏览器要显示一个网页，主要做两件事情：\n\n### 1. **重排 (Reflow / Layout)**：**搭积木，量尺寸**\n\n* **这是什么？** 浏览器计算屏幕上所有元素（文字、图片、按钮）的 **位置** 和 **大小**。\n* **动作比喻：** 就像你在搭乐高，需要精确计算：\n    * “这个大城堡要占多宽？”\n    * “这个小旗子放在城堡的左边，离边缘 5 厘米。”\n    * “如果我把左边的塔楼加高 10 厘米，右边的塔楼是不是要跟着移动？”\n* **代价：** 这个步骤非常“费脑筋”。因为改变一个元素的大小或位置（比如给一个 `div` 增加宽度），**可能会影响到它周围所有的积木**，导致整个页面都需要重新计算和调整。\n\n### 2. **重绘 (Repaint)**：**涂颜色，画图案**\n\n* **这是什么？** 浏览器知道所有元素的位置和大小后，开始给它们 **填充颜色**、**画出边框** 或 **添加文字**。\n* **动作比喻：** 就像你已经搭好了乐高城堡的结构，现在拿出画笔给它涂颜色：\n    * “把屋顶涂成红色。”\n    * “给窗户加上黑色的边框。”\n* **代价：** 这个步骤相对“简单”一些，它只需要修改颜色，不会改变积木的位置。\n\n---\n\n## 🛑 什么时候会变慢？（避免重复劳动）\n\n如果你的网页代码不断地让浏览器做这两种操作，页面就会卡住，感觉像慢动作。\n\n### 慢的原因 1：强制重排（最耗时 🤕）\n\n只要你修改了元素的 **大小或位置**，就会触发**重排**。\n\n| 你的代码动作 | 浏览器被迫做的事 |\n| :--- | :--- |\n| 改变 `width`、`height` | **必须重排**：整个页面所有积木的位置都要重新计算。 |\n| 改变 `padding`、`margin` | **必须重排**：影响了积木之间的距离，所有积木都要移动。 |\n| 改变字体大小 | **必须重排**：文字变大了，可能撑开它所在的盒子。 |\n\n> **记住：** 重排（搭积木）一定会导致重绘（涂颜色）。因为你重新搭好了，当然要重新上色。\n\n### 慢的原因 2：只重绘（较快 🎨）\n\n有些修改不会影响积木的位置，只会影响颜色，这只会触发 **重绘**。\n\n| 你的代码动作 | 浏览器只做的事 |\n| :--- | :--- |\n| 改变 `color`（文字颜色） | **只重绘**：只换了颜料，积木位置不变。 |\n| 改变 `background-color` | **只重绘**：只换了背景色，积木位置不变。 |\n| 改变 `visibility: hidden` | **只重绘**：积木还在原位，只是看不见了。 |\n\n### 🏆 结论\n\n在写代码时，我们要尽量避免那些“大动干戈”的修改（比如改变宽度和高度），尽量使用只触发 **重绘** 的方法，或者使用现代 CSS 属性（比如 `transform`），这样你的乐高城堡才能搭得又快又流畅！",
     "tags": [
       "预设文档"
     ],
-    "createdAt": "2026-05-29T04:53:57.576Z",
-    "updatedAt": "2026-05-29T04:53:57.576Z",
+    "createdAt": "2026-05-29T05:17:29.297Z",
+    "updatedAt": "2026-05-29T05:17:29.297Z",
     "isPreset": true,
     "originalPath": "“重绘”和“重排”"
   },
   {
-    "id": "preset-1780030437577-9aiuz9dv2",
+    "id": "preset-1780031849297-agl1fu02k",
     "title": "可交互待办列表 测试",
     "content": "# 可交互待办列表 测试\n\n这是一篇测试“交互式待办列表（Checkbox）”渲染和双向同步功能的专门测试页。如果您在右侧预览窗口或者动态文档详情页，选中这些任务会自动保存修改！\n\n### 今日工作清单\n- [ ] 早晨 9:00 进行核心组立会，讨论项目进度\n- [x] 开发知识库 Markdown 复制按钮功能\n- [x] 给知识库加上 Mermaid 和 PlantUML 图表渲染支持\n- [ ] 给 Markdown 添加可交互的任务清单（也就是本测试项！）\n- [ ] 中午 12:00 午餐休息\n- [ ] 审阅前端小张的新组件拉取请求(PR)\n\n### 周末计划\n* [ ] 去公园跑步 5 公里\n* [x] 看一本技术相关的书籍至少一个小时\n* [ ] 陪家人去超市采购下周的日用品\n\n### 多级缩进测试\n- [ ] 上线前准备清单\n  - [x] 验证深色模式切换\n  - [ ] 验证阅读进度条是否遮挡其他组件\n  - [ ] 在不同浏览器上测试一下代码高亮\n\n---\n试试用鼠标点上面的方框吧！点完后，如果你去“查看最近修改”，你会发现这条 Markdown 源文件也神奇地改变了。\n",
     "tags": [
       "预设文档"
     ],
-    "createdAt": "2026-05-29T04:53:57.577Z",
-    "updatedAt": "2026-05-29T04:53:57.577Z",
+    "createdAt": "2026-05-29T05:17:29.297Z",
+    "updatedAt": "2026-05-29T05:17:29.297Z",
     "isPreset": true,
     "originalPath": "任务清单测试"
   },
   {
-    "id": "preset-1780030437577-e4pvwmf4j",
+    "id": "preset-1780031849297-bewzmg2nk",
     "title": "静态文档访问功能使用说明",
     "content": "# 静态文档访问功能使用说明\n\n## 功能概述\n\n知识库应用现在支持静态文档访问功能，可以将 `docs/` 文件夹中的 Markdown 文档自动加载到应用中作为预设文档。\n\n## 实现原理\n\n### 构建时处理\n- 使用 Vite 插件在构建时扫描 `docs/` 文件夹\n- 将所有 `.md` 文件转换为 JSON 格式\n- 生成 `preset-docs.json` 文件包含在构建产物中\n\n### 开发时处理\n- 使用虚拟模块机制在开发时提供文档内容\n- 支持热更新和实时预览\n\n### 应用启动时加载\n- 检查是否已加载过预设文档\n- 如果没有文档或缺少预设文档，自动加载\n- 将预设文档保存到本地存储中\n\n## 文件结构\n\n```\ndocs/\n├── 示例文档.md          # 应用功能示例\n├── 部署指南.md          # 部署说明\n├── 使用说明.md          # 本文档\n└── 其他文档.md          # 其他任意 Markdown 文件\n```\n\n## 预设文档特性\n\n### 自动标签\n预设文档会自动添加以下标签：\n- `预设文档` - 所有预设文档的通用标签\n- 基于文件路径的标签（如果在子文件夹中）\n- 基于文件名的智能标签：\n  - 包含\"示例\"或\"example\" → `示例`\n  - 包含\"指南\"或\"guide\" → `指南`\n  - 包含\"教程\"或\"tutorial\" → `教程`\n\n### 文档属性\n- `isPreset: true` - 标记为预设文档\n- `originalPath` - 原始文件路径\n- 自动提取的标题（从第一个 # 标题）\n- 创建和更新时间\n\n### 界面区分\n- 预设文档在侧边栏单独分组显示\n- 使用绿色边框和图标标识\n- 不能被删除（只能编辑）\n- 可以重新加载\n\n## 使用方法\n\n### 添加新的预设文档\n\n1. **创建文档文件**\n   ```bash\n   # 在 docs 文件夹中创建新的 .md 文件\n   echo \"# 新文档标题\" > docs/新文档.md\n   ```\n\n2. **编写内容**\n   ```markdown\n   # 新文档标题\n   \n   这里是文档内容...\n   \n   ## 章节标题\n   \n   更多内容...\n   ```\n\n3. **重新加载**\n   - 开发环境：保存文件后自动更新\n   - 生产环境：重新构建应用\n\n### 管理预设文档\n\n#### 重新加载预设文档\n在侧边栏的\"预设文档\"区域点击刷新按钮，可以重新加载所有预设文档。\n\n#### 编辑预设文档\n- 点击预设文档旁的编辑按钮\n- 在编辑器中修改内容\n- 保存后更改会保存到本地存储\n\n#### 恢复预设文档\n如果预设文档被修改，可以通过重新加载功能恢复到原始状态。\n\n### 文档组织建议\n\n#### 文件命名\n- 使用有意义的中文名称\n- 避免特殊字符和空格\n- 使用 `.md` 扩展名\n\n#### 内容结构\n```markdown\n# 文档标题\n\n简短的文档描述\n\n## 主要章节\n\n### 子章节\n\n内容...\n\n## 参考链接\n\n- [相关链接](https://example.com)\n```\n\n#### 标签策略\n- 利用文件名自动生成的标签\n- 在文档中可以手动添加更多标签\n- 保持标签的一致性和有意义\n\n## 技术实现\n\n### Vite 插件配置\n\n```javascript\n// vite.config.js\nimport { docsLoader } from './vite-plugins/docs-loader.js'\n\nexport default defineConfig({\n  plugins: [\n    // 其他插件...\n    docsLoader(), // 文档加载插件\n  ]\n})\n```\n\n### 虚拟模块\n```javascript\n// 开发环境虚拟模块\n{\n  name: 'virtual-preset-docs',\n  resolveId(id) {\n    if (id === 'virtual:preset-docs') {\n      return id\n    }\n  },\n  load(id) {\n    if (id === 'virtual:preset-docs') {\n      const docs = createDevDocsLoader()\n      return `export default ${JSON.stringify(docs, null, 2)}`\n    }\n  }\n}\n```\n\n### 存储集成\n```javascript\n// 检查并加载预设文档\nasync loadPresetDocsIfNeeded() {\n  if (presetDocsLoader.isAlreadyLoaded()) {\n    return\n  }\n\n  const shouldLoad = await presetDocsLoader.shouldLoadPresetDocs(this.documents)\n  if (shouldLoad) {\n    const presetDocs = await presetDocsLoader.loadPresetDocs()\n    // 保存到本地存储...\n  }\n}\n```\n\n## 最佳实践\n\n### 文档维护\n1. **定期更新** - 保持文档内容的时效性\n2. **版本控制** - 将 docs 文件夹纳入版本控制\n3. **内容审查** - 确保文档质量和准确性\n\n### 性能优化\n1. **文件大小** - 控制单个文档文件大小\n2. **图片处理** - 使用相对路径或外部链接\n3. **构建优化** - 大量文档时考虑分批加载\n\n### 用户体验\n1. **清晰导航** - 使用有意义的标题和标签\n2. **搜索友好** - 包含关键词和描述\n3. **移动适配** - 确保在移动设备上的可读性\n\n## 故障排除\n\n### 常见问题\n\n#### 文档没有加载\n- 检查 `docs/` 文件夹是否存在\n- 确认文件扩展名为 `.md`\n- 查看浏览器控制台错误信息\n\n#### 虚拟模块错误\n- 重启开发服务器\n- 清除浏览器缓存\n- 检查 Vite 配置\n\n#### 构建失败\n- 检查 Markdown 文件语法\n- 确认文件编码为 UTF-8\n- 查看构建日志\n\n### 调试方法\n\n#### 开发环境\n```javascript\n// 在浏览器控制台中检查\nconsole.log(await import('virtual:preset-docs'))\n```\n\n#### 生产环境\n```javascript\n// 检查生成的 JSON 文件\nfetch('/preset-docs.json').then(r => r.json()).then(console.log)\n```\n\n## 扩展功能\n\n### 支持更多格式\n可以扩展插件支持其他格式：\n- `.txt` 文本文件\n- `.json` 配置文件\n- 其他标记语言\n\n### 高级功能\n- 文档模板系统\n- 自动目录生成\n- 文档间链接\n- 版本历史记录\n\n---\n\n通过这个静态文档访问功能，您可以轻松地将项目文档集成到知识库应用中，为用户提供完整的文档体验。\n",
     "tags": [
       "预设文档"
     ],
-    "createdAt": "2026-05-29T04:53:57.577Z",
-    "updatedAt": "2026-05-29T04:53:57.577Z",
+    "createdAt": "2026-05-29T05:17:29.297Z",
+    "updatedAt": "2026-05-29T05:17:29.297Z",
     "isPreset": true,
     "originalPath": "使用说明"
   },
   {
-    "id": "preset-1780030437577-1v9nk7pks",
+    "id": "preset-1780031849297-is8q08myo",
     "title": "前端面试题",
     "content": "# 前端面试题\n\n### 1.原型链是什么\n- 核心功能是继承属性和方法的共享作用\n- 每个对象都有一个内部属性  _proto_ 指向构造函数的prototype 属性，当一个新的对象去访问属性和方法的时候，优先从自身对象查找，如果没有就通过_proto_ 方向上查找，原型链的终端是null 就是 \n  ```javascript\n     object.prototype._proto_ === null \n  ```\n\n\n### 2.new 操作符 \n- new 核心的功能是创建构造函数的实例对象的操作符，与原型链构成联系，并完成实例化的初始化。\n- 讲到new操作符，就要先了解一下this ,可以理解为一种绑定规则，但是并不会因为对象的创建就绑定在对象上，取决于对象调用的位置，但是用new操作符创建的对象的话，this就会强制绑定到这个对象的自身\n- new还有一些特殊的行为，当构造函数返回的是对象或者函数的时候，，那么new操作符会直接返回这个返回值，如果构造函数返回的是普通类型，这个返回值会被忽略\n\n### 3.从浏览器输入url到页面显示步骤发生了什么\n- 关键字 dns域名解析 找到真实ip 向服务器发起请求 服务器返回数据 浏览器接收数据（html css js 静态文件）浏览器加载资源进行语法解析，渲染页面\n\n### 4.bfc是什么\n\n\n\n\n\n\n",
     "tags": [
       "预设文档"
     ],
-    "createdAt": "2026-05-29T04:53:57.577Z",
-    "updatedAt": "2026-05-29T04:53:57.577Z",
+    "createdAt": "2026-05-29T05:17:29.297Z",
+    "updatedAt": "2026-05-29T05:17:29.297Z",
     "isPreset": true,
     "originalPath": "前端面试题"
   },
   {
-    "id": "preset-1780030437577-bnwb80tuk",
+    "id": "preset-1780031849297-6e2fahbjr",
     "title": "Obsidian 双链测试",
     "content": "# Obsidian 双链测试\n\n这个文档用来测试像 Obsidian 或者 Notion 一样的双向链接能力！\n\n### 核心功能测试：\n你可以尝试点击下面的神奇链接：\n1. **测试跳转回首页静态文档**：\n   你可以看看关于系统能力的说明文档 [[后期实现]]。因为它是你侧边栏左侧的静态文档（且不在动态库中），所以在点击后它会询问你是否要在动态库里“重新建立”这个知识域！\n\n2. **测试跳转到现有动态文档**：\n   试着点击这里的 [[任务清单测试]] 或者 [[数学与进度条测试]]。点击后，系统会平滑地保存当前你这篇文档的查阅进度，然后瞬间将你传送到目标文档里去！\n\n3. **测试不存在的文档（开荒能力）**：\n   我的脑海里冒出了一个新词汇——[[量子力学的未来发展]]。\n   这个文档肯定是不存在的。试着点击它！系统会贴心地问你是否直接创建一个新的名叫这篇名字的留白页面。如果是，你就会顺滑地开启一篇全新的创作。\n\n---\n\n如果这个功能让你感到惊喜，顺便也可以到侧边栏去试着悬停在本篇文档上，点一点 📌 置顶按钮把它牢牢钉在知识库最顶部，或者点一下 ⭐ 把它收藏起来吧！\n",
     "tags": [
       "预设文档"
     ],
-    "createdAt": "2026-05-29T04:53:57.577Z",
-    "updatedAt": "2026-05-29T04:53:57.577Z",
+    "createdAt": "2026-05-29T05:17:29.297Z",
+    "updatedAt": "2026-05-29T05:17:29.297Z",
     "isPreset": true,
     "originalPath": "双链与置顶测试"
   },
   {
-    "id": "preset-1780030437577-ylwbhvo68",
+    "id": "preset-1780031849297-lnqw7us8j",
     "title": "后期实现",
     "content": "针对纯前端（Local-First，无专属云端服务器）方向，这个“极简知识库”项目还有非常多硬核且极具实用价值的扩展空间。目前项目的地基（IndexedDB, 原生 Markdown, PWA, WebDAV）打得非常扎实，接下来可以往以下几个维度进行深度扩展：\n\n### 1. 块级编辑器 (Block-based Editor) - 核心体验升级\n目前使用的是普通的文本框输入 Markdown，下一步可以升级为类似 **Notion / 语雀** 的块级编辑器。\n*   **技术选型**：引入 `Tiptap` 或 `Milkdown` (完全基于插件，很契合 Vue3)。\n*   **功能表现**：支持 `/` 快捷指令唤出菜单（插入表格、公式、代码块），支持拖拽调整段落顺序，所见即所得，大幅降低非技术人员的写作门槛。\n\n### 2. 纯前端 AI 赋能 (Local/API AI) - 智能化\n知识库最缺的就是“帮你读”和“帮你写”。\n*   **API 模式**：在设置页增加“AI 密钥配置”（如 OpenAI、DeepSeek、Zhipu 等）。在阅读页增加“一键总结/提炼核心观点”，在编辑页增加“AI 润色/续写/翻译”。\n*   **纯本地模式 (硬核)**：利用 `WebLLM` 或 `Transformers.js` 加载非常小的本地模型（运行在浏览器的 WebGPU/WASM 上），实现无需联网、绝对隐私的文档摘要和语义检索。\n\n### 3. 本地文件系统直接读写 (File System Access API)\n现在的数据存在浏览器的 IndexedDB 里。\n*   **黑科技**：利用现代浏览器（Chrome/Edge）的 **File System Access API**。\n*   **效果**：让用户授权选择电脑上的一个本地文件夹（比如 `D:\\我的笔记\\`）。前端应用直接绕过数据库，实时读取和监听这个文件夹里的 [.md](cci:7://file:///C:/Users/lion/.gemini/antigravity/brain/ec23de9c-5c42-438e-bbef-d1198936002a/task.md:0:0-0:0) 文件。这样您的应用就变成了一个真正的桌面级 Markdown 编辑器，可以和 Obsidian 完美配合使用同一份本地文件。\n\n### 4. 彻底的多媒体支持 (Blob Storage & Canvas)\n*   **粘贴图片入库**：在编辑器直接 `Ctrl+V` 粘贴截图。前端拦截粘贴事件，将图片存入 IndexedDB（作为 Blob 对象），并在 Markdown 里生成特定的本地协议链接（通过 `URL.createObjectURL` 渲染）。\n*   **手绘白板集成**：集成 `Excalidraw` 开源库。允许在文档中插入一块“手绘板”，实时画图并作为矢量数据保存在当前文档中。\n\n### 5. 性能与底层架构重构\n随着文档数量来到 1000+ 甚至 10000+，现在的架构会遇到瓶颈：\n*   **Web Worker 搜索**：把 `Fuse.js` 全文搜索移入 Web Worker 中执行。当文档上千时，搜索不会导致页面/输入框卡顿。甚至可以替换为更快的 `FlexSearch` 或 `MiniSearch`。\n*   **虚拟列表 (Virtual Scroll)**：如果左侧文档树非常庞大，目前的渲染会卡顿，需要引入虚拟滚动（如 `vue-virtual-scroller`）来只渲染可视区域的文档项。\n\n### 6. 数据统计与可视化增强\n*   **Github 风格的热力图**：利用 ECharts 绘制一个年度打卡热力图，统计每天创建/更新了多少文档，激发记录欲望。\n*   **标签星系图**：目前提取了全站标签，可以专门做一个以“标签”为节点的图谱，看看哪些领域是你记录最多的。\n\n### 7. 纯前端导出导出与分享\n*   **生成结构化 PDF**：接入 `html2pdf.js`，将当前渲染好的 HTML、公式、图表，一键转为高质量排版的 PDF 导出。\n*   **URL 碎片分享 (无后端分享)**：通过 `lz-string` 将一篇短文档的全部文本进行极度压缩，直接拼接到 URL 的 Hash 后面（如 `?data=xyz...`）。发给别人后，对方打开纯前端页面就能解压看到内容（类似 Mermaid Live Editor 的做法）。\n\n---\n\n\n\n\n\n\n\n\n",
     "tags": [
       "预设文档"
     ],
-    "createdAt": "2026-05-29T04:53:57.577Z",
-    "updatedAt": "2026-05-29T04:53:57.577Z",
+    "createdAt": "2026-05-29T05:17:29.297Z",
+    "updatedAt": "2026-05-29T05:17:29.297Z",
     "isPreset": true,
     "originalPath": "后期实现"
   },
   {
-    "id": "preset-1780030437577-0puvq1sxd",
+    "id": "preset-1780031849297-z4ee2jdi2",
     "title": "场景题目",
     "content": "# 场景题目\n\n### 1.请求失败会弹出一个toast,如何在批量请求失败，只弹出一个toast\n首先 我的思路是\n- 实现 “批量请求失败只弹出一个 alert” 的核心思路可以概括为：“统一监控状态，延迟统一提示”，具体分为以下几个步骤：\n标记失败状态\n定义一个标志位（如 hasError 布尔值）或计数器（如 errorCount 数字），用于记录批量请求中是否有失败情况。\n捕获单个请求的失败\n对每个请求的失败情况进行单独捕获（使用 .catch()），在捕获到失败时，更新标志位或计数器（例如将 hasError 设为 true，或 errorCount 加 1），但不立即弹出提示。\n等待所有请求完成\n使用 Promise.all() 等待批量请求中的所有请求（无论成功或失败） 都执行完毕。这里需要注意：每个请求的失败要被捕获（避免 Promise.all() 直接进入 reject 状态），确保能收集到所有请求的结果。\n统一判断并提示\n所有请求完成后，根据标志位或计数器的状态，只执行一次提示：\n若有失败（hasError 为 true 或 errorCount > 0），弹出错误提示；\n若全部成功，则弹出成功提示（可选）。\n这种思路的关键在于：不针对单个请求的失败立即提示，而是等所有请求结束后 “汇总判断”，从而避免多次弹出提示，同时保证批量请求能完整执行。\n\n```javascript\n<template>\n  <div class=\"batch-request-example\">\n    <button @click=\"fetchBatchData\" class=\"fetch-btn\">\n      批量获取数据\n    </button>\n  </div>\n</template>\n\n<script>\nimport { ref } from 'vue';\n\nexport default {\n  setup() {\n    // 模拟API请求\n    const fetchData = async (id) => {\n      return new Promise((resolve, reject) => {\n        // 随机模拟成功或失败\n        setTimeout(() => {\n          if (Math.random() > 0.5) {\n            resolve({ id, data: `数据${id}` });\n          } else {\n            reject(new Error(`请求${id}失败`));\n          }\n        }, 500);\n      });\n    };\n    \n    // 批量请求处理\n    const fetchBatchData = async () => {\n      const requestIds = [1, 2, 3, 4, 5]; // 需要请求的ID列表\n      let hasError = false; // 错误标志位\n      \n      // 创建所有请求的Promise\n      const requests = requestIds.map(id => \n        fetchData(id)\n          .catch(error => {\n            console.error(error.message);\n            hasError = true; // 标记有错误发生\n          })\n      );\n      \n      // 等待所有请求完成\n      await Promise.all(requests);\n      \n      // 如果有错误，只显示一次alert\n      if (hasError) {\n        alert('批量请求完成，部分请求失败');\n      } else {\n        alert('所有请求成功完成');\n      }\n    };\n    \n    return {\n      fetchBatchData\n    };\n  }\n};\n</script>\n\n<style scoped>\n.fetch-btn {\n  padding: 8px 16px;\n  background-color: #42b983;\n  color: white;\n  border: none;\n  border-radius: 4px;\n  cursor: pointer;\n  font-size: 14px;\n}\n\n.fetch-btn:hover {\n  background-color: #359e75;\n}\n</style>\n    \n```",
     "tags": [
       "预设文档"
     ],
-    "createdAt": "2026-05-29T04:53:57.577Z",
-    "updatedAt": "2026-05-29T04:53:57.577Z",
+    "createdAt": "2026-05-29T05:17:29.297Z",
+    "updatedAt": "2026-05-29T05:17:29.297Z",
     "isPreset": true,
     "originalPath": "场景题目"
   },
   {
-    "id": "preset-1780030437577-dnkhus2b1",
+    "id": "preset-1780031849297-vkyyg19n5",
     "title": "常见的vscode的插件",
     "content": "# 常见的vscode的插件\n\nVS Code有许多实用的插件，以下是一些常见的插件：\n- **语言支持类**：\n    - **Chinese (Simplified) Language Pack for Visual Studio Code**：将VS Code的界面转换为中文，方便中文用户使用。\n    - **Language Support for Java(TM) by Red Hat**：为Java开发提供支持，包括语法高亮、智能提示、调试等功能。\n    - **Vue (Official)**：官方推出的Vue语言支持插件，为Vue单文件组件提供语法高亮、智能提示、代码补全、错误校验等功能。\n- **代码格式化类**：\n    - **Prettier - Code formatter**：一款超级受欢迎的代码格式化插件，可以统一代码风格，解决单双引号、括号换行等问题，还可设置为保存时自动格式化。\n    - **Beautify**：可以美化JavaScript、JSON、CSS、Sass和HTML代码。\n    - **ESLint**：将ESLint集成到VS Code中，用于检查和强制代码规范，确保代码质量。\n- **代码补全与提示类**：\n    - **Tabnine**：基于AI的智能代码补全插件，可学习编程习惯，智能预测接下来要写的代码，提高编码速度。\n    - **Path Intellisense**：可自动填充文件名和路径，方便在导入模块和引用文件时使用。\n    - **npm Intellisense**：用于在import语句中自动填充npm模块，提供包提示功能。\n- **Git管理类**：\n    - **GitLens**：增强了VS Code中内置的Git功能，如查看commits搜索、历史记录、代码作者身份等。\n    - **Git Graph**：可以查看存储库的Git Graph，并从该图中轻松执行创建、删除、合并分支，提交代码等操作。\n- **调试类**：\n    - **Debugger for Chrome**：允许从VS Code调试在Google Chrome中运行的JavaScript代码，方便前端开发调试。\n    - **Python Debugger**：支持使用debugpy进行Python调试，可设置断点、单步执行代码、检查变量等。\n- **其他实用类**：\n    - **Settings Sync**：使用GitHub Gist同步多台计算机上的VS Code设置，包括代码段、主题、文件图标等。\n    - **filesize**：在状态栏中显示当前文件大小，点击后还可以看到详细的创建、修改时间。\n    - **Live Server**：可以实时监听文件变化，保存后浏览器自动刷新，适合前端静态页面和小型项目开发调试。\n    - **Todo Tree**：可以快速搜索工作区中的TODO和FIXME等注释标记，并在资源管理器窗格的树视图中显示它们。",
     "tags": [
       "预设文档"
     ],
-    "createdAt": "2026-05-29T04:53:57.577Z",
-    "updatedAt": "2026-05-29T04:53:57.577Z",
+    "createdAt": "2026-05-29T05:17:29.297Z",
+    "updatedAt": "2026-05-29T05:17:29.297Z",
     "isPreset": true,
     "originalPath": "常见的vscode的插件"
   },
   {
-    "id": "preset-1780030437577-u84vaq812",
+    "id": "preset-1780031849297-5sgl5fjvt",
     "title": "数学公式与阅读进度条测试",
     "content": "# 数学公式与阅读进度条测试\n\n这是一篇用于测试 **MathJax 3** 数学公式渲染引擎以及顶部**阅读进度指示条**的专业测试文档。往下滚动即可看到页面顶部的进度条变化！\n\n---\n\n## 1. 基础数学公式 (MathJax)\n\n**行内公式测试**：\n支持行内公式，例如爱因斯坦的质能方程 $E=mc^2$。又或者勾股定理 $a^2 + b^2 = c^2$。\n\n**块级公式测试**：\n独立的大型公式可以直接渲染为居中块。下面是求解一元二次方程 $ax^2 + bx + c = 0$ 的求根公式：\n$$ x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a} $$\n\n## 2. 复杂数学公式\n\n**微积分与极限**：\n$$ \\lim_{n \\to \\infty} \\left(1 + \\frac{1}{n}\\right)^n = e $$\n\n$$ \\int_{0}^{\\infty} e^{-x^2} dx = \\frac{\\sqrt{\\pi}}{2} $$\n\n**矩阵**：\n$$\n\\begin{bmatrix}\n1 & 2 & 3 \\\\\n4 & 5 & 6 \\\\\n7 & 8 & 9\n\\end{bmatrix}\n$$\n\n**连加与连乘**：\n$$ \\sum_{i=1}^{n} i = \\frac{n(n+1)}{2} $$\n$$ \\prod_{i=1}^{n} i = n! $$\n\n---\n\n## 3. 下拉以测试阅读进度条\n\n*在此处继续向下滚动，观察屏幕最上方的细长蓝色进度条。*\n\n<br/><br/><br/><br/><br/><br/>\n继续滚动...\n<br/><br/><br/><br/><br/><br/>\n还没到底呢...\n<br/><br/><br/><br/><br/><br/>\n\n### 4. 高级排版测试\n\n$$ f(x) = \\begin{cases} x^2 & \\text{if } x \\ge 0 \\\\ -x^2 & \\text{if } x < 0 \\end{cases} $$\n\n<br/><br/><br/><br/><br/><br/>\n\n### 5. 傅里叶变换\n\n$$ \\hat{f}(\\xi) = \\int_{-\\infty}^{\\infty} f(x) e^{-2\\pi i x \\xi} \\,dx $$\n\n<br/><br/><br/><br/><br/><br/>\n快到底部了...\n<br/><br/><br/><br/><br/><br/>\n\n## 6. 结束语\n\n恭喜您滚动到了文档最底部！此时顶部的进度条应该已经填满了屏幕的整个宽度 (100%)。如果页面还有未展示的内容，可以通过返回顶部重置进度条。\n",
     "tags": [
       "预设文档"
     ],
-    "createdAt": "2026-05-29T04:53:57.577Z",
-    "updatedAt": "2026-05-29T04:53:57.577Z",
+    "createdAt": "2026-05-29T05:17:29.297Z",
+    "updatedAt": "2026-05-29T05:17:29.297Z",
     "isPreset": true,
     "originalPath": "数学与进度条测试"
   },
   {
-    "id": "preset-1780030437577-t4fb09h9r",
+    "id": "preset-1780031849297-9arb19hce",
     "title": "数据的 双向绑定",
     "content": "# 数据的 双向绑定\n\n数据的 **双向绑定（Two-Way Data Binding）** 是 Vue、Angular 等现代前端框架的核心功能，也是让你的后台管理界面能够自动响应数据变化的关键技术。\n\n我们可以将它理解为一个**自动的、双向同步的通信机制**。\n\n### 🔎 核心概念：自动同步的“镜子”\n\n你可以把数据双向绑定想象成一面 **神奇的镜子**。\n\n1.  **左边是“数据”（你的 Pinia Store 或组件里的 `ref` 变量）。**\n2.  **右边是“界面”（屏幕上的输入框、文本、按钮）。**\n\n**双向** 指的是：无论你动哪一边，另一边都会**自动**跟着变。\n\n| 发生的操作 | 数据的流向 | 效果 |\n| :--- | :--- | :--- |\n| **你改了数据** (在代码里写 `name.value = '李四'`) | **数据 → 界面** (单向) | 屏幕上的输入框里，名字会立刻从“张三”变成“李四”。 |\n| **你改了界面** (在输入框里输入“王五”) | **界面 → 数据** (另一个单向) | Pinia Store 或 `ref` 里的 `name` 变量会立刻变成“王五”。 |\n\n### 🛠️ 在 Vue 和 MineAdmin 中的实现\n\n在 Vue 框架中，实现这种双向绑定需要两种技术同时工作：\n\n#### 1\\. 数据到界面的同步（靠 Proxy）\n\n  * **技术：** Vue 3 的 **代理（Proxy）** 机制。\n  * **原理：** 当你在代码中修改数据时，Proxy 会立即拦截这个操作，并通知 Vue **“数据变了，请重新渲染使用了这个数据的界面”**。\n\n#### 2\\. 界面到数据的同步（靠 `v-model`）\n\n  * **技术：** Vue 的 **`v-model`** 指令（在你的 `MaForm` 表单里大量使用）。\n  * **原理：** `v-model` 其实是两个东西的简写：\n      * `:`**绑定数据** (`:value` 或 `:modelValue`)：把数据传给输入框。\n      * **监听事件** (`@input` 或 `@update:modelValue`)：监听用户输入事件，并把新值写回数据源。\n\n### 举例：你的 `MaForm`\n\n当你给 `MaForm` 组件写这个代码时：\n\n```html\n<ma-form v-model=\"form\" :columns=\"columns\" />\n```\n\n这里 `v-model=\"form\"` 就建立了双向绑定：\n\n  * 如果你的代码修改了 `form.name`，表单会自动显示新名字。\n  * 如果用户在表单的“名字”输入框里输入了新名字，`form.name` 变量也会自动更新。\n\n**总结：** 双向绑定就是让你的代码和界面像照镜子一样，实时、自动地保持一致，极大地简化了前端开发中处理用户输入的复杂性。",
     "tags": [
       "预设文档"
     ],
-    "createdAt": "2026-05-29T04:53:57.577Z",
-    "updatedAt": "2026-05-29T04:53:57.577Z",
+    "createdAt": "2026-05-29T05:17:29.297Z",
+    "updatedAt": "2026-05-29T05:17:29.297Z",
     "isPreset": true,
     "originalPath": "数据的_双向绑定"
   },
   {
-    "id": "preset-1780030437577-g6ojt0yoc",
+    "id": "preset-1780031849297-bhvu15x4i",
     "title": "1. 添加所有更改",
     "content": "非常简单！因为我们已经配置好了 GitHub Actions 自动化工作流，以后您**完全不需要手动部署**了。\n\n当您在本地修改了代码（比如添加了新文档、修改了样式、修复了 Bug 等）之后，只需要按照正常的 Git 流程把代码推送到 GitHub 即可：\n\n```bash\n# 1. 添加所有更改\ngit add .\n\n# 2. 提交更改，写上您的修改说明\ngit commit -m \"feat: 更新了一些文档内容\"\n\n# 3. 推送到 GitHub 的 main 分支\ngit push github main\n```\n\n**发生了什么？**\n只要您一执行 `git push github main` 把代码推送到远程的 `main` 分支，GitHub Actions 就会自动被触发。\n它会在后台帮您：\n1. 下载最新的代码\n2. 运行 `npm install` 安装依赖\n3. 运行 `npm run build` 打包项目\n4. 自动把打包好的文件推送到 `gh-pages` 分支并更新网站\n\n**您只需要：**\n推送代码后，稍等 1-2 分钟，刷新一下您的网页 `https://1404413577.github.io/shizhiku/`，就能看到最新的内容了！",
     "tags": [
       "预设文档",
       "指南"
     ],
-    "createdAt": "2026-05-29T04:53:57.577Z",
-    "updatedAt": "2026-05-29T04:53:57.577Z",
+    "createdAt": "2026-05-29T05:17:29.297Z",
+    "updatedAt": "2026-05-29T05:17:29.297Z",
     "isPreset": true,
     "originalPath": "更新指南"
   },
   {
-    "id": "preset-1780030437577-tfq6ioepi",
+    "id": "preset-1780031849297-mn886khh6",
     "title": "用 “私房钱” 类比闭包：为啥它能访问外部变量？",
     "content": "# 用 “私房钱” 类比闭包：为啥它能访问外部变量？\n\n# 深入浅出JavaScript闭包：你真的懂它吗？\n\n## 💡 什么是闭包？\n闭包，用大白话来说，就是一个“有特权的函数”。它能访问到它“出生”时所在的环境，即使那个环境已经“寿终正寝”了，它依然能“不忘初心”，访问到那些变量。是不是有点像你小时候藏在床底下的“私房钱”，即使你长大了搬家了，那笔钱还在那里等着你？💰\n\n**官方定义**：闭包是指有权访问另一个函数作用域中变量的函数。\n\n**最常见的创建方式**：在一个函数内部创建另一个函数。\n\n\n## 🔄 闭包的“超能力”：两大用途\n闭包可不是个“花瓶”，它可是有真本事的！主要有两大“超能力”：\n\n### 1. 访问“私密”变量 🔑\n闭包的第一个用途，就是让外部世界能够访问到函数内部的“私密”变量。这就像给你的“私房钱”加了一把锁，只有特定的“钥匙”（闭包）才能打开。这样既能保护数据，又能灵活使用。\n\n#### 举个例子：\n我们来思考一个简单的计数器。如果不用闭包，你可能会这么写：\n```javascript\n// 初始化计数器\nvar a = 0;\n\n// 递增计数器的函数\nfunction add() {\n    a++;\n    console.log(a);\n}\n\n// 调用三次 add()\nadd(); // 1\nadd(); // 2  \nadd(); // 3\n```\n这个例子中，`a` 是一个全局变量，任何人都可以修改它，这就不太“安全”了。如果你的同事不小心把 `a` 改成了 100，那你的计数器就“乱套”了！\n\n现在，我们用闭包来改造一下：\n```javascript\nfunction add() {\n    var a = 0; // a 现在是 add 函数的局部变量，外部无法直接访问\n    return function adds() { // 这个 adds 函数就是闭包\n        a++;\n        console.log(a);\n    };\n}\n\n// 调用三次 add()\nconst xd = add(); // xd 现在是那个“有特权的函数” adds\nxd(); // 1\nxd(); // 2\nxd(); // 3\n```\n看！现在 `a` 变量被“保护”起来了，外部只能通过 `xd()` 这个闭包来操作它，是不是安全多了？这就是闭包的魅力所在！\n\n### 2. 变量“长生不老” ⏳\n闭包的第二个用途，就是让那些本该“寿终正寝”的变量，能够“长生不老”，继续留在内存中。这就像你把一个重要的文件放在一个“保险箱”里，即使你离开了办公室，那个文件依然在保险箱里，不会被清理掉。\n\n当 `add()` 函数执行完毕后，它的执行上下文会被销毁，但由于 `adds()`（闭包）引用了 `add()` 作用域中的 `a` 变量，所以 `a` 变量不会被垃圾回收机制回收，会一直保存在内存中，直到 `adds()` 不再被引用。\n\n\n## ⚠️ 面试官最爱考的“坑”：循环中的闭包问题\n说到闭包，就不得不提这个经典的面试题了！多少英雄好汉在这里“折戟沉沙”！\n```javascript\nfor (var i = 1; i <= 5; i++) {\n    setTimeout(function timer() {\n        console.log(i);\n    }, i * 1000);\n}\n```\n你猜猜这段代码会输出什么？是不是以为会依次输出 `1, 2, 3, 4, 5`？\n\n**答案是**：会输出五次 `6`！😱\n\n**为什么呢？** 因为 `setTimeout` 是一个异步函数，它不会立即执行。当 `for` 循环飞速地跑完之后，`i` 的值已经变成了 `6`。等到 `setTimeout` 里的 `timer` 函数真正执行的时候，它去访问 `i`，发现 `i` 已经是 `6` 了，所以就打印了五次 `6`。\n\n\n## 🔧 解决方案\n别急，解决办法有三种，每种都体现了对闭包的深刻理解！\n\n### 1. 使用闭包（立即执行函数）\n```javascript\nfor (var i = 1; i <= 5; i++) {\n    (function(j) { // 立即执行函数，创建了一个新的作用域\n        setTimeout(function timer() {\n            console.log(j); // 这里的 j 捕获了每次循环的 i 值\n        }, j * 1000);\n    })(i); // 每次循环都把当前的 i 值传给 j\n}\n```\n通过立即执行函数（IIFE），我们为每次循环创建了一个独立的作用域，将当前的 `i` 值作为参数 `j` 传递进去。这样，`timer` 函数引用的就是每次循环独立的 `j`，而不是循环结束后的全局 `i`。\n\n### 2. 使用 setTimeout 的第三个参数\n这是一个比较“冷门”但很实用的方法！`setTimeout` 的第三个参数可以直接作为回调函数的参数传入。\n```javascript\nfor (var i = 1; i <= 5; i++) {\n    setTimeout(\n        function timer(i) { // 这里的 i 是 setTimeout 传入的参数\n            console.log(i);\n        },\n        i * 1000,\n        i // 将当前的 i 值作为第三个参数传入\n    );\n}\n```\n这种方法简洁明了，直接利用了 `setTimeout` 的特性，将每次循环的 `i` 值“固定”在了 `timer` 函数的参数中。\n\n### 3. 使用 let 定义 i（最推荐的方式）\nES6 引入的 `let` 关键字完美解决了这个问题！这也是目前最推荐的方式。\n```javascript\nfor (let i = 1; i <= 5; i++) { // 使用 let 声明 i\n    setTimeout(function timer() {\n        console.log(i);\n    }, i * 1000);\n}\n```\n`let` 声明的变量具有块级作用域，每次循环都会创建一个新的 `i`。所以，`setTimeout` 里的 `timer` 函数会捕获到每次循环独立的 `i` 值，问题迎刃而解！是不是感觉 `let` 简直是“救星”？🌟\n\n\n## 总结 📝\n闭包是 JavaScript 中一个非常强大且重要的概念。它不仅能帮助我们实现数据封装和私有化，还能解决一些异步编程中的“老大难”问题。理解闭包，就像掌握了一项“魔法”，能让你的代码更加灵活、健壮。\n\n希望通过这篇博客，你对闭包有了更深入的理解。下次面试再遇到它，你就可以自信满满地告诉面试官：我，懂闭包！😎\n\n",
     "tags": [
       "预设文档"
     ],
-    "createdAt": "2026-05-29T04:53:57.577Z",
-    "updatedAt": "2026-05-29T04:53:57.577Z",
+    "createdAt": "2026-05-29T05:17:29.297Z",
+    "updatedAt": "2026-05-29T05:17:29.297Z",
     "isPreset": true,
     "originalPath": "用_“私房钱”_类比闭包：为啥它能访问外部变量？"
   },
   {
-    "id": "preset-1780030437577-rzn0rvl5d",
+    "id": "preset-1780031849297-5lnciuf6t",
     "title": "知识库使用示例",
     "content": "# 知识库使用示例\n\n这是一个示例文档，展示了知识库应用的各种功能。\n\n## Markdown 语法示例\n\n### 文本格式\n\n这是普通文本。\n\n**这是粗体文本**\n\n*这是斜体文本*\n\n~~这是删除线文本~~\n\n### 列表\n\n#### 无序列表\n- 项目 1\n- 项目 2\n  - 子项目 2.1\n  - 子项目 2.2\n- 项目 3\n\n#### 有序列表\n1. 第一步\n2. 第二步\n3. 第三步\n\n### 代码示例\n\n#### 行内代码\n使用 `console.log()` 输出信息。\n\n#### 代码块\n\n```javascript\n// JavaScript 示例\nfunction greet(name) {\n  console.log(`Hello, ${name}!`);\n}\n\ngreet('World');\n```\n\n```python\n# Python 示例\ndef fibonacci(n):\n    if n <= 1:\n        return n\n    return fibonacci(n-1) + fibonacci(n-2)\n\nprint(fibonacci(10))\n```\n\n```css\n/* CSS 示例 */\n.container {\n  display: flex;\n  justify-content: center;\n  align-items: center;\n  height: 100vh;\n  background: linear-gradient(45deg, #ff6b6b, #4ecdc4);\n}\n```\n\n### 表格\n\n| 功能 | 描述 | 状态 |\n|------|------|------|\n| Markdown 编辑 | 支持实时预览 | ✅ |\n| 搜索功能 | 全文搜索 | ✅ |\n| 标签管理 | 分类组织 | ✅ |\n| 导入导出 | 数据备份 | ✅ |\n\n### 引用\n\n> 知识就是力量。\n> \n> —— 弗朗西斯·培根\n\n### 链接\n\n- [Vue.js 官网](https://vuejs.org/)\n- [Markdown 语法指南](https://markdown.com.cn/)\n\n### 分隔线\n\n---\n\n## 应用功能介绍\n\n### 1. 文档管理\n- 创建、编辑、删除文档\n- 自动保存功能\n- 文档版本管理\n\n### 2. 搜索功能\n- 全文搜索\n- 标签过滤\n- 智能匹配\n\n### 3. 数据存储\n- 本地 IndexedDB 存储\n- 数据导入导出\n- 离线可用\n\n### 4. 用户界面\n- 响应式设计\n- 暗色/亮色主题\n- 移动端适配\n\n## 使用技巧\n\n### 快捷键\n- `Ctrl + S`: 保存文档\n- `Ctrl + N`: 新建文档\n- `Ctrl + F`: 搜索\n\n### 标签使用\n建议使用有意义的标签来组织文档：\n- `技术` - 技术相关文档\n- `笔记` - 学习笔记\n- `项目` - 项目文档\n- `想法` - 灵感记录\n\n### 文档组织\n- 使用清晰的标题结构\n- 添加目录和索引\n- 合理使用标签分类\n- 定期整理和更新\n\n## 扩展功能\n\n### 可能的增强功能\n1. **协作功能**: 多人编辑支持\n2. **版本控制**: Git 集成\n3. **插件系统**: 自定义扩展\n4. **云同步**: 多设备同步\n5. **模板系统**: 文档模板\n6. **图表支持**: Mermaid 图表\n\n### 技术改进\n- 性能优化\n- 更好的搜索算法\n- 更多 Markdown 插件\n- PWA 支持\n\n---\n\n*这个示例文档展示了知识库应用的主要功能。您可以编辑、删除或创建新的文档来体验完整功能。*\n",
     "tags": [
       "预设文档",
       "示例"
     ],
-    "createdAt": "2026-05-29T04:53:57.577Z",
-    "updatedAt": "2026-05-29T04:53:57.577Z",
+    "createdAt": "2026-05-29T05:17:29.297Z",
+    "updatedAt": "2026-05-29T05:17:29.297Z",
     "isPreset": true,
     "originalPath": "示例文档"
   },
   {
-    "id": "preset-1780030437577-q8nsrtpif",
+    "id": "preset-1780031849297-aqps15tbi",
     "title": "计划",
     "content": "一、编辑体验增强\n1. 文档目录大纲 (TOC 侧边栏)\n已有 tocDebug.js 工具，提取 Markdown 标题生成浮动导航，长文档点击跳转。阅读模式和编辑模式都可用。\n\n2. 专注模式\n一键隐藏工具栏、侧边栏，只保留编辑器，背景变暗/居中窄栏，适合长时间写作。已有暗色模式可复用。\n\n3. 编辑/预览分屏\n双栏并排显示，左侧编辑右侧实时预览，之前代码里留了 split-view 的 CSS 痕迹但未实现。\n\n4. Markdown 表格可视化插入\n点击格子选择行列数插入表格，比手写 |--|--| 方便很多。纯 UI 交互。\n\n二、文档操作\n5. 单文档导出 PDF / HTML / MD 文件\n浏览器 window.print() 调起打印为 PDF，或 Blob 下载为 .md/.html 文件。纯客户端，无需任何后端。\n\n6. 批量操作\n列表多选后批量打标签、批量删除、批量导出。目前只能单文档操作。\n\n7. 文档模板\n预设几个模板（会议纪要、周报、读书笔记、每日日志），新建时选择模板快速开始。本质就是预设 Markdown 内容。\n\n三、数据可视化与发现\n8. 词云图\n从所有文档内容提取高频词，生成词云展示知识库主题分布。需引入 echarts-wordcloud 扩展。\n\n9. 随机发现\n首页加个\"随便看看\"按钮，随机导航到一篇文档，适合回顾旧笔记。\n\n10. 阅读时间估算\n根据文档字数自动显示\"预计阅读 X 分钟\"，在文档卡片和阅读页显示。\n\n四、效率工具\n11. 全局快捷键面板\n按 ? 弹出快捷键一览，统一管理已有的 Ctrl+S 保存等快捷键。\n\n12. 快捷笔记入口\n导航栏常驻一个\"快速记录\"按钮，弹出小型编辑框，不打乱当前工作流，适合捕获临时想法。\n\n13. ai对话页面 适配 移动端\n",
     "tags": [
       "预设文档"
     ],
-    "createdAt": "2026-05-29T04:53:57.577Z",
-    "updatedAt": "2026-05-29T04:53:57.577Z",
+    "createdAt": "2026-05-29T05:17:29.297Z",
+    "updatedAt": "2026-05-29T05:17:29.297Z",
     "isPreset": true,
     "originalPath": "计划"
   },
   {
-    "id": "preset-1780030437577-zq7s01n1o",
+    "id": "preset-1780031849297-8xroek59f",
     "title": "超级简单轮播图",
     "content": "# 超级简单轮播图\n\n ```javascript\n<template>\n  <div class=\"carousel\">\n    <ul class=\"carousel-list\">\n      <li v-for=\"(item, idx) in images\" :key=\"item.id\" v-show=\"idx === currentIndex\" class=\"carousel-item\">\n        <img :src=\"item.url\" :alt=\"item.name\" />\n      </li>\n    </ul>\n    <button @click=\"prev\">左</button>\n    <button @click=\"next\">右</button>\n  </div>\n</template>\n\n<script setup>\nimport { ref, onUnmounted, onMounted } from \"vue\";\n\nconst images = ref([\n  { id: 1, name: \"Demon 1\", url: \"https://tse1.mm.bing.net/th/id/OIP.XS6EtBzAmWWa31cfFvcx6QHaHa?w=650&h=651&rs=1&pid=ImgDetMain&o=7&rm=3\" },\n  { id: 2, name: \"Demon 2\", url: \"https://img.ixintu.com/download/jpg/201911/e25b904bc42a74d7d77aed81e66d772c.jpg!con\" },\n  { id: 3, name: \"Demon 3\", url: \"https://tse1.mm.bing.net/th/id/OIP.7lURCaoa-V1fPFkaYrhOdwHaHZ?rs=1&pid=ImgDetMain&o=7&rm=3\" },\n]);\n\nconst currentIndex = ref(0);\nlet timer = null;\n\nconst prev = () => {\n  currentIndex.value = (currentIndex.value - 1 + images.value.length) % images.value.length;\n};\nconst next = () => {\n  currentIndex.value = (currentIndex.value + 1) % images.value.length;\n};\n\nconst startAuto = () => {\n  timer = setInterval(() => {\n    next();\n  }, 2000);\n};\n\nonMounted(() => {\n  startAuto();\n});\nonUnmounted(() => {\n  clearInterval(timer);\n});\n\n</script>\n\n<style>\n.carousel {\n  width: 320px;\n  margin: 40px auto;\n  text-align: center;\n}\n.carousel-list {\n  padding: 0;\n  margin: 0;\n}\n.carousel-item {\n  list-style: none;\n  width: 300px;\n  height: 200px;\n  margin: 0 auto 16px auto;\n  border-radius: 12px;\n  overflow: hidden;\n  box-shadow: 0 4px 16px rgba(0,0,0,0.08);\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  background: #f8f8f8;\n  border: 1px solid #ddd;\n  transition: box-shadow 0.3s;\n}\n.carousel-item img {\n  width: 100%;\n  height: 100%;\n  object-fit: cover;\n  display: block;\n}\nbutton {\n  margin: 0 8px;\n  padding: 6px 18px;\n  border-radius: 6px;\n  border: none;\n  background: #409eff;\n  color: #fff;\n  font-size: 1rem;\n  cursor: pointer;\n  transition: background 0.2s;\n}\nbutton:hover {\n  background: #66b1ff;\n}\n</style>\n ```\n```javascript\n<template>\n  <div>\n    <ul>\n      <li v-for=\"(item, idx) in items\" :key=\"item.id\" v-show=\"idx === 0\">\n        <img :src=\"item.url\" :alt=\"item.name\" style=\"width:100%;height:100%;object-fit:cover;\" />\n      </li>\n    </ul>\n    <button @click=\"leftFn\">左</button>\n    <button @click=\"rightFn\">右</button>\n  </div>\n</template>\n\n<script setup>\nimport { ref,onUnmounted,onMounted } from \"vue\";\nconst items = ref([\n  { id: 1, name: \"Demon 1\" ,url:\"https://tse1.mm.bing.net/th/id/OIP.XS6EtBzAmWWa31cfFvcx6QHaHa?w=650&h=651&rs=1&pid=ImgDetMain&o=7&rm=3\" },\n  { id: 2, name: \"Demon 2\" ,url:\"https://img.ixintu.com/download/jpg/201911/e25b904bc42a74d7d77aed81e66d772c.jpg!con\"},\n  { id: 3, name: \"Demon 3\" ,url:\"https://tse1.mm.bing.net/th/id/OIP.7lURCaoa-V1fPFkaYrhOdwHaHZ?rs=1&pid=ImgDetMain&o=7&rm=3\"},\n]);\n\n// 轮播功能\n// 先自动轮播\nlet timer = null;\nconst leftFn = () => {\n  items.value.unshift(items.value.pop());\n};\nconst rightFn = () => {\n  items.value.push(items.value.shift());\n};\nconst autoFn = () => {\n  timer = setInterval(() => {\n    rightFn();\n  }, 1000);\n};\nonMounted(() => {\n  autoFn();\n});\nonUnmounted(() => {\n  clearInterval(timer);\n});\n\n\n\n</script>\n\n<style>\nli {\n  list-style: none;\n  text-decoration: none;\n  text-align: center;\n  line-height: 150px;\n  width: 300px;\n  height: 150px;\n  border: 1px solid black;\n}\n</style>\n```\n\n\n\n- 示例：  \n  ```markdown\n  ![xxx 图标](https://tse1.mm.bing.net/th/id/OIP.7lURCaoa-V1fPFkaYrhOdwHaHZ?rs=1&pid=ImgDetMain&o=7&rm=3 \"xxx 图标\")\n  ```\n- 预览效果：  \n  ![xxx 图标](https://tse1.mm.bing.net/th/id/OIP.7lURCaoa-V1fPFkaYrhOdwHaHZ?rs=1&pid=ImgDetMain&o=7&rm=3)\n ![xxx 图标](https://tse1.mm.bing.net/th/id/OIP.XS6EtBzAmWWa31cfFvcx6QHaHa?w=650&h=651&rs=1&pid=ImgDetMain&o=7&rm=3)\n ![](https://img.ixintu.com/download/jpg/201911/e25b904bc42a74d7d77aed81e66d772c.jpg!con)\n",
     "tags": [
       "预设文档"
     ],
-    "createdAt": "2026-05-29T04:53:57.577Z",
-    "updatedAt": "2026-05-29T04:53:57.577Z",
+    "createdAt": "2026-05-29T05:17:29.297Z",
+    "updatedAt": "2026-05-29T05:17:29.297Z",
     "isPreset": true,
     "originalPath": "超级简单轮播图"
   },
   {
-    "id": "preset-1780030437577-3yw5qnpbk",
+    "id": "preset-1780031849297-xrnwo94fk",
     "title": "知识库应用部署指南",
     "content": "# 知识库应用部署指南\n\n本指南将帮助您将知识库应用部署到各种平台。\n\n## 🏗️ 构建应用\n\n### 1. 安装依赖\n\n```bash\nnpm install\n```\n\n### 2. 构建生产版本\n\n```bash\nnpm run build\n```\n\n构建完成后，会在项目根目录生成 `dist` 文件夹，包含所有静态文件。\n\n### 3. 本地预览\n\n```bash\nnpm run preview\n```\n\n## 🌐 部署选项\n\n### GitHub Pages\n\n1. **创建 GitHub 仓库**\n   ```bash\n   git init\n   git add .\n   git commit -m \"Initial commit\"\n   git remote add origin https://github.com/username/zhishiku.git\n   git push -u origin main\n   ```\n\n2. **配置 GitHub Actions**\n   \n   创建 `.github/workflows/deploy.yml`:\n   ```yaml\n   name: Deploy to GitHub Pages\n   \n   on:\n     push:\n       branches: [ main ]\n   \n   jobs:\n     build-and-deploy:\n       runs-on: ubuntu-latest\n       steps:\n         - uses: actions/checkout@v2\n         \n         - name: Setup Node.js\n           uses: actions/setup-node@v2\n           with:\n             node-version: '18'\n             \n         - name: Install dependencies\n           run: npm install\n           \n         - name: Build\n           run: npm run build\n           \n         - name: Deploy\n           uses: peaceiris/actions-gh-pages@v3\n           with:\n             github_token: ${{ secrets.GITHUB_TOKEN }}\n             publish_dir: ./dist\n   ```\n\n3. **配置 Vite 基础路径**\n   \n   在 `vite.config.js` 中添加：\n   ```javascript\n   export default defineConfig({\n     base: '/zhishiku/', // 替换为您的仓库名\n     // ... 其他配置\n   })\n   ```\n\n### Netlify\n\n1. **通过 Git 部署**\n   - 登录 [Netlify](https://netlify.com)\n   - 点击 \"New site from Git\"\n   - 选择您的 GitHub 仓库\n   - 构建命令: `npm run build`\n   - 发布目录: `dist`\n\n2. **手动部署**\n   ```bash\n   npm run build\n   # 将 dist 文件夹拖拽到 Netlify 部署页面\n   ```\n\n3. **Netlify 配置文件**\n   \n   创建 `netlify.toml`:\n   ```toml\n   [build]\n     publish = \"dist\"\n     command = \"npm run build\"\n   \n   [[redirects]]\n     from = \"/*\"\n     to = \"/index.html\"\n     status = 200\n   ```\n\n### Vercel\n\n1. **通过 Git 部署**\n   - 登录 [Vercel](https://vercel.com)\n   - 导入 GitHub 仓库\n   - 框架预设选择 \"Vite\"\n   - 自动部署\n\n2. **命令行部署**\n   ```bash\n   npm install -g vercel\n   vercel\n   ```\n\n3. **Vercel 配置文件**\n   \n   创建 `vercel.json`:\n   ```json\n   {\n     \"rewrites\": [\n       { \"source\": \"/(.*)\", \"destination\": \"/index.html\" }\n     ]\n   }\n   ```\n\n### 传统 Web 服务器\n\n#### Apache\n\n创建 `.htaccess` 文件：\n```apache\nRewriteEngine On\nRewriteBase /\n\n# Handle Angular and Vue.js routes\nRewriteCond %{REQUEST_FILENAME} !-f\nRewriteCond %{REQUEST_FILENAME} !-d\nRewriteRule . /index.html [L]\n\n# Enable compression\n<IfModule mod_deflate.c>\n    AddOutputFilterByType DEFLATE text/plain\n    AddOutputFilterByType DEFLATE text/html\n    AddOutputFilterByType DEFLATE text/xml\n    AddOutputFilterByType DEFLATE text/css\n    AddOutputFilterByType DEFLATE application/xml\n    AddOutputFilterByType DEFLATE application/xhtml+xml\n    AddOutputFilterByType DEFLATE application/rss+xml\n    AddOutputFilterByType DEFLATE application/javascript\n    AddOutputFilterByType DEFLATE application/x-javascript\n</IfModule>\n\n# Set cache headers\n<IfModule mod_expires.c>\n    ExpiresActive on\n    ExpiresByType text/css \"access plus 1 year\"\n    ExpiresByType application/javascript \"access plus 1 year\"\n    ExpiresByType image/png \"access plus 1 year\"\n    ExpiresByType image/jpg \"access plus 1 year\"\n    ExpiresByType image/jpeg \"access plus 1 year\"\n    ExpiresByType image/gif \"access plus 1 year\"\n    ExpiresByType image/svg+xml \"access plus 1 year\"\n</IfModule>\n```\n\n#### Nginx\n\n配置示例：\n```nginx\nserver {\n    listen 80;\n    server_name your-domain.com;\n    root /path/to/dist;\n    index index.html;\n\n    # Handle Vue.js routes\n    location / {\n        try_files $uri $uri/ /index.html;\n    }\n\n    # Cache static assets\n    location ~* \\.(js|css|png|jpg|jpeg|gif|ico|svg)$ {\n        expires 1y;\n        add_header Cache-Control \"public, immutable\";\n    }\n\n    # Gzip compression\n    gzip on;\n    gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript;\n}\n```\n\n## 🔧 环境配置\n\n### 环境变量\n\n创建 `.env.production`:\n```env\nVITE_APP_TITLE=知识库\nVITE_APP_VERSION=1.0.0\n```\n\n### 生产优化\n\n在 `vite.config.js` 中添加优化配置：\n```javascript\nexport default defineConfig({\n  build: {\n    rollupOptions: {\n      output: {\n        manualChunks: {\n          vendor: ['vue', 'vue-router', 'pinia'],\n          ui: ['element-plus'],\n          utils: ['markdown-it', 'highlight.js', 'fuse.js']\n        }\n      }\n    },\n    chunkSizeWarningLimit: 1000\n  }\n})\n```\n\n## 📱 PWA 支持\n\n### 安装 PWA 插件\n\n```bash\nnpm install -D vite-plugin-pwa\n```\n\n### 配置 PWA\n\n在 `vite.config.js` 中：\n```javascript\nimport { VitePWA } from 'vite-plugin-pwa'\n\nexport default defineConfig({\n  plugins: [\n    VitePWA({\n      registerType: 'autoUpdate',\n      workbox: {\n        globPatterns: ['**/*.{js,css,html,ico,png,svg}']\n      },\n      manifest: {\n        name: '知识库',\n        short_name: '知识库',\n        description: '个人知识管理系统',\n        theme_color: '#409eff',\n        icons: [\n          {\n            src: 'icon-192x192.png',\n            sizes: '192x192',\n            type: 'image/png'\n          }\n        ]\n      }\n    })\n  ]\n})\n```\n\n## 🔍 SEO 优化\n\n### Meta 标签\n\n在 `index.html` 中添加：\n```html\n<meta name=\"description\" content=\"个人知识管理系统\">\n<meta name=\"keywords\" content=\"知识库,Markdown,笔记\">\n<meta property=\"og:title\" content=\"知识库\">\n<meta property=\"og:description\" content=\"个人知识管理系统\">\n```\n\n### 预渲染\n\n使用 `vite-plugin-prerender` 进行预渲染：\n```bash\nnpm install -D vite-plugin-prerender\n```\n\n## 🚀 性能优化\n\n### 代码分割\n- 路由级别的代码分割\n- 组件懒加载\n- 第三方库分离\n\n### 资源优化\n- 图片压缩\n- 字体优化\n- CSS 压缩\n\n### 缓存策略\n- 静态资源长期缓存\n- HTML 文件短期缓存\n- Service Worker 缓存\n\n## 🔒 安全考虑\n\n### HTTPS\n确保在生产环境中使用 HTTPS。\n\n### CSP 头部\n配置内容安全策略：\n```html\n<meta http-equiv=\"Content-Security-Policy\" content=\"default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline';\">\n```\n\n## 📊 监控和分析\n\n### 错误监控\n集成 Sentry 或其他错误监控服务。\n\n### 性能分析\n使用 Google Analytics 或其他分析工具。\n\n---\n\n选择适合您需求的部署方案，按照相应的步骤进行部署即可。\n",
     "tags": [
       "预设文档",
       "指南"
     ],
-    "createdAt": "2026-05-29T04:53:57.577Z",
-    "updatedAt": "2026-05-29T04:53:57.577Z",
+    "createdAt": "2026-05-29T05:17:29.297Z",
+    "updatedAt": "2026-05-29T05:17:29.297Z",
     "isPreset": true,
     "originalPath": "部署指南"
   }
