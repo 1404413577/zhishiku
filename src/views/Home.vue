@@ -3,7 +3,7 @@
     <div class="welcome-section">
       <h1>欢迎使用知识库</h1>
       <p>一个基于 Vue.js 的纯前端知识管理系统</p>
-      
+
       <div class="stats-cards">
         <el-card class="stat-card">
           <div class="stat-content">
@@ -11,14 +11,14 @@
             <div class="stat-label">文档总数</div>
           </div>
         </el-card>
-        
+
         <el-card class="stat-card">
           <div class="stat-content">
             <div class="stat-number">{{ stats.tags }}</div>
             <div class="stat-label">标签数量</div>
           </div>
         </el-card>
-        
+
         <el-card class="stat-card">
           <div class="stat-content">
             <div class="stat-number">{{ recentDocs.length }}</div>
@@ -35,12 +35,16 @@
         <el-card class="chart-card chart-card-wide">
           <template #header><span>知识词云</span></template>
           <div class="chart-container" ref="wordCloudRef"></div>
-          <div v-if="wordCloudData.length === 0" class="chart-empty">暂无内容数据</div>
+          <div v-if="wordCloudData.length === 0" class="chart-empty">
+            暂无内容数据
+          </div>
         </el-card>
         <el-card class="chart-card">
           <template #header><span>标签分布</span></template>
           <div class="chart-container" ref="tagChartRef"></div>
-          <div v-if="tagDistributionData.length === 0" class="chart-empty">暂无标签数据</div>
+          <div v-if="tagDistributionData.length === 0" class="chart-empty">
+            暂无标签数据
+          </div>
         </el-card>
         <el-card class="chart-card">
           <template #header><span>文档类型</span></template>
@@ -49,7 +53,12 @@
         <el-card class="chart-card">
           <template #header><span>月度新增趋势</span></template>
           <div class="chart-container" ref="trendChartRef"></div>
-          <div v-if="monthlyCreationData.xAxis.length === 0" class="chart-empty">暂无数据</div>
+          <div
+            v-if="monthlyCreationData.xAxis.length === 0"
+            class="chart-empty"
+          >
+            暂无数据
+          </div>
         </el-card>
         <el-card class="chart-card">
           <template #header><span>内容长度分布</span></template>
@@ -77,19 +86,11 @@
           新建文档
         </el-button>
 
-        <el-button
-          size="large"
-          @click="$router.push('/search')"
-          :icon="Search"
-        >
+        <el-button size="large" @click="$router.push('/search')" :icon="Search">
           搜索文档
         </el-button>
 
-        <el-button
-          size="large"
-          @click="importData"
-          :icon="Upload"
-        >
+        <el-button size="large" @click="importData" :icon="Upload">
           导入数据
         </el-button>
 
@@ -102,7 +103,6 @@
           随便看看
         </el-button>
 
-            
         <el-button
           size="large"
           v-if="stats.total > 0"
@@ -110,19 +110,26 @@
           :type="selectMode ? 'warning' : 'default'"
           :icon="Select"
         >
-          {{ selectMode ? '退出批量操作' : '批量操作' }}
+          {{ selectMode ? "退出批量操作" : "批量操作" }}
         </el-button>
-
       </div>
     </div>
 
     <!-- 批量操作栏 -->
     <div v-if="selectMode && selectedDocIds.size > 0" class="batch-bar">
       <span class="batch-count">已选 {{ selectedDocIds.size }} 项</span>
-      <el-button size="small" :icon="CollectionTag" @click="batchAddTag">批量标签</el-button>
-      <el-button size="small" :icon="Download" @click="batchExport">批量导出</el-button>
-      <el-button size="small" type="danger" :icon="Delete" @click="batchDelete">批量删除</el-button>
-      <el-button size="small" @click="selectedDocIds.clear()">取消选择</el-button>
+      <el-button size="small" :icon="CollectionTag" @click="batchAddTag"
+        >批量标签</el-button
+      >
+      <el-button size="small" :icon="Download" @click="batchExport"
+        >批量导出</el-button
+      >
+      <el-button size="small" type="danger" :icon="Delete" @click="batchDelete"
+        >批量删除</el-button
+      >
+      <el-button size="small" @click="selectedDocIds.clear()"
+        >取消选择</el-button
+      >
     </div>
 
     <div class="recent-documents" v-if="recentDocs.length > 0">
@@ -132,7 +139,9 @@
           v-for="doc in recentDocs"
           :key="doc.id"
           :class="['recent-item', { selected: selectedDocIds.has(doc.id) }]"
-          @click="selectMode ? toggleDocSelect(doc.id, $event) : viewDocument(doc)"
+          @click="
+            selectMode ? toggleDocSelect(doc.id, $event) : viewDocument(doc)
+          "
         >
           <el-checkbox
             v-if="selectMode"
@@ -168,7 +177,7 @@
             <p>点击"新建文档"按钮，开始编写您的第一篇知识文档</p>
           </div>
         </el-card>
-        
+
         <el-card class="guide-step">
           <div class="step-number">2</div>
           <div class="step-content">
@@ -176,7 +185,7 @@
             <p>支持完整的 Markdown 语法，包括代码高亮、表格、链接等</p>
           </div>
         </el-card>
-        
+
         <el-card class="guide-step">
           <div class="step-number">3</div>
           <div class="step-content">
@@ -188,8 +197,18 @@
     </div>
 
     <!-- 新建文档对话框（含模板选择） -->
-    <el-dialog v-model="showNewDocDialog" title="新建文档" width="600px" :close-on-click-modal="false">
-      <el-input v-model="newDocTitle" placeholder="文档标题" size="large" style="margin-bottom: 20px" />
+    <el-dialog
+      v-model="showNewDocDialog"
+      title="新建文档"
+      width="600px"
+      :close-on-click-modal="false"
+    >
+      <el-input
+        v-model="newDocTitle"
+        placeholder="文档标题"
+        size="large"
+        style="margin-bottom: 20px"
+      />
       <div class="template-label">选择模板（可选）</div>
       <div class="template-grid">
         <div
@@ -204,7 +223,11 @@
       </div>
       <template #footer>
         <el-button @click="showNewDocDialog = false">取消</el-button>
-        <el-button type="primary" @click="confirmCreateDocument" :disabled="!newDocTitle.trim()">
+        <el-button
+          type="primary"
+          @click="confirmCreateDocument"
+          :disabled="!newDocTitle.trim()"
+        >
           创建文档
         </el-button>
       </template>
@@ -265,12 +288,20 @@ const handleResize = () => allChartInstances().forEach(i => i.resize())
 
 // 计算属性
 const stats = computed(() => documentsStore.stats)
-const recentDocs = computed(() =>
-  documentsStore.documents
-    .filter(doc => doc.content && doc.content.trim()) // 过滤掉空文档
-    .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)) // 按更新时间排序
-    .slice(0, 6)
-)
+const recentDocs = computed(() => {
+  return documentsStore.documents
+    .slice(0, 5) // 取前5条
+    .map(doc => {
+      // 防御式编程：确保日期安全
+      const rawDate = doc.updatedAt || doc.createdAt || '';
+      const dateStr = typeof rawDate === 'string' ? rawDate : String(rawDate);
+      
+      return {
+        ...doc,
+        displayDate: dateStr ? dateStr.substring(0, 10) : ''
+      };
+    });
+});
 
 // 图表数据 — 标签分布
 const tagDistributionData = computed(() => {
@@ -490,7 +521,7 @@ const handleFileImport = async (event) => {
   } catch (error) {
     ElMessage.error('导入失败：' + error.message)
   }
-  
+
   event.target.value = ''
 }
 
@@ -519,7 +550,7 @@ const getDocumentSummary = (doc) => {
 
 const renderHeatmap = () => {
   if (!heatmapRef.value) return
-  
+
   if (!heatmapInstance) {
     heatmapInstance = echarts.init(heatmapRef.value, isDark.value ? 'dark' : 'light')
   }
@@ -545,7 +576,7 @@ const renderHeatmap = () => {
       top: 0,
       show: false,
       inRange: {
-        color: isDark.value 
+        color: isDark.value
           ? ['#161b22', '#0e4429', '#006d32', '#26a641', '#39d353']
           : ['#ebedf0', '#9be9a8', '#40c463', '#30a14e', '#216e39']
       }
@@ -954,7 +985,7 @@ watch([() => documentsStore.documents, isDark], () => {
 
 .recent-item:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .recent-item.selected {
@@ -1116,21 +1147,21 @@ watch([() => documentsStore.documents, isDark], () => {
   .chart-container {
     height: 220px;
   }
-  
+
   .welcome-section h1 {
     font-size: 1.8em;
   }
-  
+
   .welcome-section p {
     font-size: 1em;
   }
-  
+
   .stats-cards {
     flex-direction: column;
     align-items: center;
     gap: 10px;
   }
-  
+
   .stat-card {
     width: 100%;
   }
@@ -1139,13 +1170,13 @@ watch([() => documentsStore.documents, isDark], () => {
     flex-direction: column;
     align-items: stretch;
   }
-  
+
   .action-buttons .el-button {
     width: 100%;
     margin-left: 0 !important;
     margin-bottom: 10px;
   }
-  
+
   .recent-list {
     grid-template-columns: 1fr;
   }

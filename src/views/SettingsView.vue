@@ -6,7 +6,6 @@
 
     <el-scrollbar>
       <div class="settings-container">
-        <!-- 个性化设置 -->
         <el-card class="settings-card">
           <template #header>
             <div class="card-header">
@@ -34,7 +33,6 @@
           </el-form>
         </el-card>
 
-        <!-- WebDAV 同步设置 -->
         <el-card class="settings-card">
           <template #header>
             <div class="card-header">
@@ -68,12 +66,41 @@
             
             <el-form-item>
               <el-button type="primary" :icon="Connection" @click="testWebDAVConnection" :loading="testing">立即同步 & 测试</el-button>
-              <el-checkbox v-model="settings.syncOnOpen" ml-4>打开时自动同步</el-checkbox>
+              <el-checkbox v-model="settings.syncOnOpen" class="ml-4">打开时自动同步</el-checkbox>
             </el-form-item>
           </el-form>
         </el-card>
 
-        <!-- AI 配置 -->
+        <el-card class="settings-card">
+          <template #header>
+            <div class="card-header">
+              <el-icon><FolderOpened /></el-icon>
+              <span>原生本地工作区 (Local Workspace)</span>
+              <el-tag :type="isWorkspaceMounted ? 'success' : 'info'" style="margin-left: auto">
+                {{ isWorkspaceMounted ? '已连接' : '未连接' }}
+              </el-tag>
+            </div>
+          </template>
+          
+          <el-alert
+            title="纯本地 Markdown 模式"
+            type="success"
+            description="将网页连接到您电脑上的真实文件夹。所有文档将以 .md 格式直接保存在硬盘中，数据 100% 掌握在自己手中，可与 Obsidian、Typora 等软件无缝配合使用！"
+            show-icon
+            :closable="false"
+            style="margin-bottom: 20px"
+          />
+
+          <div class="workspace-actions" style="margin-left: 120px;">
+            <el-button type="primary" :icon="FolderChecked" @click="handleMountWorkspace" v-if="!isWorkspaceMounted">
+              选择本地文件夹
+            </el-button>
+            <el-button type="warning" :icon="Close" @click="handleUnmountWorkspace" v-else>
+              断开工作区连接
+            </el-button>
+          </div>
+        </el-card>
+
         <el-card class="settings-card">
           <template #header>
             <div class="card-header">
@@ -224,7 +251,6 @@
           </el-tabs>
         </el-card>
 
-        <!-- 备份与恢复 -->
         <el-card class="settings-card">
           <template #header>
             <div class="card-header">
@@ -244,7 +270,7 @@
             >
               <el-button type="warning" :icon="Upload">导入数据备份</el-button>
             </el-upload>
-            <el-checkbox v-model="settings.autoBackup" ml-4>自动定期备份</el-checkbox>
+            <el-checkbox v-model="settings.autoBackup" class="ml-4">自动定期备份</el-checkbox>
           </div>
         </el-card>
       </div>
@@ -256,11 +282,12 @@
 import { ref, onMounted } from 'vue'
 import { useSettingsStore } from '@/stores/settings'
 import { useDocumentsStore } from '@/stores/documents'
-import { Brush, Refresh, Box, Download, Upload, Connection, ChatDotRound } from '@element-plus/icons-vue'
+import { Brush, Refresh, Box, Download, Upload, Connection, ChatDotRound, FolderOpened, FolderChecked, Close } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { AIService } from '@/services/ai'
 import { syncWithWebDAV } from '@/utils/webdav'
 import { localAiService } from '@/services/localAi'
+import { FileSystem } from '@/services/fs.js'
 
 const settings = useSettingsStore()
 const documentsStore = useDocumentsStore()
@@ -275,9 +302,46 @@ const loadingLocal = ref(false)
 const localAiProgress = ref(0)
 const localAiStatus = ref('')
 
+// 本地工作区状态
+const isWorkspaceMounted = ref(false)
+
 onMounted(async () => {
+  // 检查 WebGPU
   webgpuSupport.value = await localAiService.constructor.checkWebGPUSupport()
+  
+  // 检查并恢复本地工作区权限
+  const hasPermission = await FileSystem.verifyPermission()
+  isWorkspaceMounted.value = hasPermission
 })
+
+// --- 原生工作区相关方法 ---
+const handleMountWorkspace = async () => {
+  const handle = await FileSystem.mountWorkspace()
+  if (handle) {
+    isWorkspaceMounted.value = true
+    ElMessage.success('成功挂载本地文件夹！正在读取文档...')
+    
+    try {
+      const files = await FileSystem.readAllFiles()
+      console.log('读取到的本地文件:', files)
+      
+      // TODO: 这里您可以将 files 导入/合并到您的 documentsStore 中
+      // documentsStore.setDocuments(files) 
+      
+      ElMessage.success(`读取完毕，共 ${files.length} 个本地 Markdown 文件。`)
+    } catch (err) {
+      ElMessage.error('读取文件夹失败: ' + err.message)
+    }
+  }
+}
+
+const handleUnmountWorkspace = async () => {
+  FileSystem.handle = null
+  isWorkspaceMounted.value = false
+  import('localforage').then(m => m.default.removeItem('zhishiku_workspace_handle'))
+  ElMessage.info('已断开本地工作区')
+}
+// -------------------------
 
 const initLocalModel = async () => {
   loadingLocal.value = true
@@ -309,7 +373,6 @@ const confirmAndTestLocal = async () => {
 
   testingLocal.value = true
   try {
-    // 尝试初始化引擎并发送简单请求验证
     await localAiService.getEngine(modelId, type, (report) => {
       localAiProgress.value = report.progress
       localAiStatus.value = report.statusText
@@ -342,7 +405,6 @@ const confirmAndTestOllama = async () => {
       ], null, null, { model: settings.ollamaModel })
       ElMessage.success('Ollama 测试成功：' + (reply ? reply.slice(0, 120) : '已连接'))
     } else {
-      // 若未指定模型，尝试列出模型以验证连接
       const models = await AIService.listOllamaModels()
       ElMessage.success('Ollama 可访问，发现模型数量：' + (models.length || 0))
     }
@@ -386,7 +448,6 @@ const confirmAndTestApi = async () => {
 
   testingOnline.value = true
   try {
-    // 使用一个简短的提示验证接口是否可用
     const reply = await AIService.chatCompletion([
       { role: 'user', content: '请返回一条简短的回复，确认连接是否正常。' }
     ], null, null, { model: settings.aiModel })
@@ -436,7 +497,7 @@ const importData = (file) => {
         type: 'warning'
       })
 
-      // TODO: 实现合并逻辑，目前仅示例
+      // TODO: 实现合并逻辑
       ElMessage.success('成功解析 ' + data.documents.length + ' 个文档 (导入合并逻辑开发中...)')
     } catch (err) {
       ElMessage.error('导入失败: ' + err.message)
@@ -536,5 +597,10 @@ const importData = (file) => {
   color: var(--el-text-color-secondary);
   margin-top: 4px;
   line-height: 1.4;
+}
+
+.workspace-actions {
+  display: flex;
+  gap: 12px;
 }
 </style>

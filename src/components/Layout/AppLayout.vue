@@ -692,7 +692,7 @@
 import { ref, computed, onMounted, watch } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import { useDocumentsStore } from "@/stores/documents.js";
-import { FSService } from "@/services/fs.js";
+import { FileSystem as FSService } from '@/services/fs.js'
 import { ElMessage, ElMessageBox } from "element-plus";
 import ShortcutsPanel from "@/components/ShortcutsPanel.vue";
 import {

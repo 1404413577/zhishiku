@@ -3,7 +3,7 @@ import { storage } from '@/utils/storage.js'
 import { searchEngine } from '@/utils/search.js'
 import { presetDocsLoader } from '@/utils/presetDocs.js'
 import { markdownProcessor } from '@/utils/markdown.js'
-import { FSService } from '@/services/fs.js'
+import { FileSystem as FSService } from '@/services/fs.js'
 import { ElMessage } from 'element-plus'
 
 export const useDocumentsStore = defineStore('documents', {
