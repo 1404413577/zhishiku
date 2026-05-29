@@ -30,6 +30,10 @@ try {
 // https://vite.dev/config/
 export default defineConfig({
   base: '/shizhiku/',
+  define: {
+    'process.env.IS_PREACT': JSON.stringify('false'),
+    'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'production')
+  },
   plugins: [
     vue({ include: [/\.vue$/, /\.md$/] }),
     visualizer({ open: true }), // 加上这行
@@ -210,8 +214,6 @@ export default defineConfig({
             // 6. 其他常用工具
             if (id.includes('localforage') || id.includes('file-saver') || id.includes('fuse.js') || id.includes('flexsearch')) return 'vendor-utils'
             
-            // 兜底：其他库
-            return 'vendor-others'
           }
         },
         // 文件命名优化
