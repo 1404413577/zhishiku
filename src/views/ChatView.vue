@@ -88,6 +88,8 @@
             v-for="(msg, index) in messages" 
             :key="index"
             :class="['message-wrapper', msg.role]"
+            @mouseenter="hoveredMessageIndex = index"
+            @mouseleave="hoveredMessageIndex = -1"
           >
             <div class="avatar">
               <el-icon v-if="msg.role === 'user'"><User /></el-icon>
@@ -98,6 +100,16 @@
               <div v-if="msg.role === 'user'" class="user-text">{{ msg.content }}</div>
               <!-- AI 消息用 Markdown 显示 -->
               <div v-else class="markdown-body" v-html="renderMarkdown(msg.content)"></div>
+            </div>
+            <div class="message-actions" v-if="hoveredMessageIndex === index">
+              <el-button 
+                type="danger" 
+                :icon="Delete" 
+                circle 
+                size="small"
+                @click="deleteMessage(index)"
+                title="删除此消息"
+              />
             </div>
           </div>
           
@@ -172,6 +184,7 @@ const isGenerating = ref(false)
 const currentReply = ref('')
 const chatBodyRef = ref(null)
 const abortController = ref(null)
+const hoveredMessageIndex = ref(-1)
 
 // 安全解析 localStorage 中的 JSON
 // 安全解析 localStorage 中的 JSON
@@ -486,6 +499,25 @@ const stopGeneration = () => {
   }
 }
 
+// 删除单条消息
+const deleteMessage = (index) => {
+  const session = activeSession.value
+  if (!session) return
+  
+  if (isGenerating.value) {
+    ElMessage.warning('生成中无法删除消息')
+    return
+  }
+  
+  ElMessageBox.confirm('确定要删除这条消息吗？', '确认操作', { type: 'warning' })
+    .then(() => {
+      session.messages.splice(index, 1)
+      session.updatedAt = Date.now()
+      ElMessage.success('消息已删除')
+    })
+    .catch(() => {})
+}
+
 // 发送消息
 const sendMessage = async () => {
   const text = userInput.value.trim()
@@ -755,6 +787,8 @@ onUnmounted(() => {
   display: flex;
   gap: 16px;
   max-width: 85%;
+  align-items: flex-start;
+  position: relative;
 }
 
 .message-wrapper.user {
@@ -801,6 +835,23 @@ onUnmounted(() => {
 .markdown-body {
   word-break: break-word;
   background-color: transparent !important;
+}
+
+.message-actions {
+  display: flex;
+  gap: 8px;
+  margin-left: 8px;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.message-wrapper:hover .message-actions {
+  opacity: 1;
+}
+
+.message-wrapper.user .message-actions {
+  margin-left: 0;
+  margin-right: 8px;
 }
 
 /* 简单的打字机动画 */
