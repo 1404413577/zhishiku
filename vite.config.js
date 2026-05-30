@@ -10,6 +10,11 @@ import { VitePWA } from 'vite-plugin-pwa'
 import hljs from 'highlight.js'
 import mathjax3 from 'markdown-it-mathjax3'
 import taskLists from 'markdown-it-task-lists'
+import { visualizer } from 'rollup-plugin-visualizer'
+
+// === 引入 Gzip 压缩插件 ===
+import viteCompression from 'vite-plugin-compression'
+
 // docs-loader 在运行时可能依赖文件系统，使用按需导入以避免在 Vite 配置打包时出错
 let docsLoader
 let createDevDocsLoader
@@ -21,12 +26,28 @@ try {
   // 忽略导入错误，开发时会按需处理
   console.warn('无法按需导入 docs-loader:', e && e.message)
 }
-
+const isVercel = process.env.VERCEL === '1';
+const isPreview = process.argv.includes('preview');
 // https://vite.dev/config/
 export default defineConfig({
-  base: '/shizhiku/',
+  base: isVercel ? '/' : (isPreview ? '/' : '/shizhiku/'),
+  define: {
+    'process.env.IS_PREACT': JSON.stringify('false'),
+    'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'production')
+  },
   plugins: [
     vue({ include: [/\.vue$/, /\.md$/] }),
+    visualizer({ open: false }), // 加上这行
+    
+    // === Gzip 压缩配置 ===
+    viteCompression({
+      verbose: true,     // 在控制台输出压缩结果
+      disable: false,    // 开启压缩
+      threshold: 10240,  // 对体积大于 10KB 的资源进行压缩
+      algorithm: 'gzip', // 使用 gzip 压缩算法
+      ext: '.gz',        // 压缩包扩展名
+    }),
+
     Markdown({
       markdownItOptions: {
         html: true,
@@ -112,77 +133,45 @@ export default defineConfig({
         start_url: '/shizhiku/',
         display: 'standalone',
         icons: [
-          {
-            src: 'logo.png',
-            sizes: '192x192',
-            type: 'image/png'
-          },
-          {
-            src: 'logo.png',
-            sizes: '512x512',
-            type: 'image/png'
-          },
-          {
-            src: 'logo.png',
-            sizes: '512x512',
-            type: 'image/png',
-            purpose: 'any maskable'
-          }
+          { src: 'logo.png', sizes: '192x192', type: 'image/png' },
+          { src: 'logo.png', sizes: '512x512', type: 'image/png' },
+          { src: 'logo.png', sizes: '512x512', type: 'image/png', purpose: 'any maskable' }
         ]
       },
       workbox: {
-        // 新版本 SW 立即激活并接管所有页面，避免旧缓存导致 JS 404
         skipWaiting: true,
         clientsClaim: true,
-        maximumFileSizeToCacheInBytes: 15 * 1024 * 1024,
+        maximumFileSizeToCacheInBytes: 30 * 1024 * 1024,
         globPatterns: ['**/*.{js,css,html,ico,png,svg,md,woff2}'],
         globIgnores: ['**/tex-svg-full-*.js'],
 
         runtimeCaching: [
-          // 导航请求走 NetworkFirst，确保始终获取最新 index.html
           {
             urlPattern: ({ request }) => request.mode === 'navigate',
             handler: 'NetworkFirst',
             options: {
               cacheName: 'pages-cache',
               networkTimeoutSeconds: 3,
-              expiration: {
-                maxEntries: 10,
-                maxAgeSeconds: 60 * 60 * 24
-              },
-              cacheableResponse: {
-                statuses: [0, 200]
-              }
+              expiration: { maxEntries: 10, maxAgeSeconds: 60 * 60 * 24 },
+              cacheableResponse: { statuses: [0, 200] }
             }
           },
-          // 超大 mathjax 文件运行时按需缓存
           {
             urlPattern: /tex-svg-full-.*\.js$/i,
             handler: 'CacheFirst',
             options: {
               cacheName: 'math-renderer-cache',
-              expiration: {
-                maxEntries: 5,
-                maxAgeSeconds: 60 * 60 * 24 * 30
-              },
-              cacheableResponse: {
-                statuses: [0, 200]
-              }
+              expiration: { maxEntries: 5, maxAgeSeconds: 60 * 60 * 24 * 30 },
+              cacheableResponse: { statuses: [0, 200] }
             }
           },
-          // Google 字体缓存
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
             handler: 'CacheFirst',
             options: {
               cacheName: 'google-fonts-cache',
-              expiration: {
-                maxEntries: 10,
-                maxAgeSeconds: 60 * 60 * 24 * 365
-              },
-              cacheableResponse: {
-                statuses: [0, 200]
-              }
+              expiration: { maxEntries: 10, maxAgeSeconds: 60 * 60 * 24 * 365 },
+              cacheableResponse: { statuses: [0, 200] }
             }
           }
         ]
@@ -200,19 +189,33 @@ export default defineConfig({
       '@': '/src'
     }
   },
-  // 确保 docs 文件夹在开发时可以被访问
   publicDir: 'public',
-  // 生产环境优化
   build: {
     rollupOptions: {
       output: {
-        manualChunks: {
-          vendor: ['vue', 'vue-router', 'pinia'],
-          ui: ['element-plus'],
-          markdown: ['markdown-it'],
-          highlight: ['highlight.js'],
-          search: ['fuse.js'],
-          storage: ['localforage', 'file-saver']
+        // === 函数式拆包策略 (极其重要：防止首页加载过慢) ===
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            // 1. 拆分 Excalidraw (白板)
+            if (id.includes('@excalidraw')) return 'vendor-excalidraw'
+            // 2. 拆分 Tiptap & ProseMirror
+            if (id.includes('@tiptap') || id.includes('prosemirror') || id.includes('tiptap-markdown')) return 'vendor-tiptap'
+            // 3. 拆分 Element Plus
+            if (id.includes('element-plus')) return 'vendor-element'
+            
+            // 🚨 新增：精准剥离 16MB 的 MathJax 巨兽！
+            if (id.includes('mathjax-full') || id.includes('markdown-it-mathjax3')) {
+              return 'vendor-mathjax' 
+            }
+
+            // 4. 拆分 Markdown 解析器与高亮
+            if (id.includes('markdown-it') || id.includes('highlight.js')) return 'vendor-markdown'
+            // 5. 拆分 Vue 全家桶
+            if (id.includes('vue') || id.includes('pinia') || id.includes('vue-router')) return 'vendor-vue'
+            // 6. 其他常用工具
+            if (id.includes('localforage') || id.includes('file-saver') || id.includes('fuse.js') || id.includes('flexsearch')) return 'vendor-utils'
+            
+          }
         },
         // 文件命名优化
         chunkFileNames: 'js/[name]-[hash].js',
@@ -230,10 +233,9 @@ export default defineConfig({
         }
       }
     },
-    chunkSizeWarningLimit: 1000,
-    // 确保构建时包含所有必要的文件
+    // 放宽警告体积界限 (因为我们将包拆分了，这个基本不会报警了)
+    chunkSizeWarningLimit: 1500,
     assetsInclude: ['**/*.md'],
-    // 压缩配置
     minify: 'terser',
     terserOptions: {
       compress: {
@@ -241,10 +243,8 @@ export default defineConfig({
         drop_debugger: true
       }
     },
-    // 资源内联阈值
     assetsInlineLimit: 4096
   },
-  // 预览服务器配置
   preview: {
     port: 4173,
     host: true
