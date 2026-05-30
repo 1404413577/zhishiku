@@ -483,6 +483,7 @@ const handleAIWrite = async () => {
         confirmButtonText: "开始生成",
         cancelButtonText: "取消",
         inputPlaceholder: "输入标题...",
+        inputValue: documentTitle.value || "",
       },
     );
     if (!title || !title.trim()) return;
