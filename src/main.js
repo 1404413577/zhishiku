@@ -12,9 +12,9 @@ import { registerSW } from 'virtual:pwa-register'
 
 
 // 注册 PWA Service Worker
-if (import.meta.env.PROD) {
-  registerSW({ immediate: true })
-}
+// if (import.meta.env.PROD) {
+//   registerSW({ immediate: true })
+// }
 
 const app = createApp(App)
 const pinia = createPinia()
@@ -26,15 +26,15 @@ app.use(ElementPlus)
 app.mount('#app')
 
 // 🚨 新增：立即注册 Service Worker，接管离线缓存
-registerSW({
-  immediate: true,
-  onOfflineReady() {
-    console.log('✅ PWA: 应用已准备好离线运行')
-  },
-  onNeedRefresh() {
-    console.log('🔄 PWA: 有新内容可用，请刷新页面')
-  }
-})
+// registerSW({
+//   immediate: true,
+//   onOfflineReady() {
+//     console.log('✅ PWA: 应用已准备好离线运行')
+//   },
+//   onNeedRefresh() {
+//     console.log('🔄 PWA: 有新内容可用，请刷新页面')
+//   }
+// })
 
 // 在 Pinia 安装后再加载开发调试工具
 if (import.meta.env.DEV) {
