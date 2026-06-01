@@ -1,12 +1,11 @@
 <template>
   <div class="chat-layout">
-    <!-- 左侧会话列表侧边栏 -->
     <div :class="['chat-sidebar', { 'sidebar-open': isSidebarOpen }]">
       <div class="sidebar-header">
-        <el-button type="primary" :icon="Plus" class="new-chat-btn" @click="createNewSession">
+        <el-button type="primary" :icon="Plus" class="new-chat-btn" @click="createNewSession" round>
           创建新对话
         </el-button>
-        <el-button class="sidebar-close-btn" :icon="Close" circle size="small" @click="isSidebarOpen = false" />
+        <el-button class="sidebar-close-btn" :icon="Close" circle text @click="isSidebarOpen = false" />
       </div>
       <el-scrollbar class="session-list">
         <div 
@@ -16,13 +15,14 @@
           @click="selectSession(session.id)"
         >
           <div class="session-info">
-            <el-icon><ChatDotRound /></el-icon>
+            <el-icon class="session-icon"><ChatDotRound /></el-icon>
             <span class="session-title">{{ session.title || '新对话' }}</span>
           </div>
           <el-button 
             type="danger" 
             :icon="Delete" 
             circle 
+            text
             size="small" 
             class="delete-btn" 
             @click.stop="deleteSession(session.id)"
@@ -34,128 +34,133 @@
 
     <div v-if="isSidebarOpen" class="sidebar-overlay" @click="isSidebarOpen = false"></div>
 
-    <!-- 右侧主对话界面 -->
-    <div class="chat-page">
+    <div class="chat-main">
       <div class="chat-header">
         <div class="header-left">
-          <el-button class="menu-toggle" :icon="Menu" circle @click="isSidebarOpen = true" />
-          <h2><el-icon><ChatLineRound /></el-icon> AI 对话</h2>
+          <el-button class="menu-toggle" :icon="Menu" text circle @click="isSidebarOpen = true" />
+          <h2 class="header-title">AI 对话</h2>
         </div>
         <div class="header-right">
-          <span class="model-label">AI 引擎:</span>
-          <el-select 
-            v-model="selectedEngine" 
-            placeholder="选择引擎" 
-            size="small" 
-            style="width: 120px"
-            @change="onEngineChange"
-          >
-            <el-option label="在线 API" value="online" />
-            <el-option label="本地模型" value="local" />
-            <el-option label="Ollama" value="ollama" />
-          </el-select>
-
-          <span class="model-label" style="margin-left: 16px">模型:</span>
-          <el-select 
-            v-model="selectedModel" 
-            :placeholder="modelPlaceholder" 
-            size="small" 
-            style="width: 200px"
-            :loading="loadingModels"
-            @change="onModelChange"
-          >
-            <el-option
-              v-for="model in availableModels"
-              :key="model.value || model.name"
-              :label="model.label || model.name"
-              :value="model.value || model.name"
-            />
-          </el-select>
-          <el-button size="small" :icon="Refresh" circle @click="fetchModels" title="刷新模型列表" style="margin-left: 8px" />
-          <el-button size="small" type="success" :icon="Download" @click="archiveToDocument" title="将此对话保存为 Markdown 文档" style="margin-left: 8px" :disabled="messages.length === 0">归档</el-button>
-        </div>
-      </div>
-
-      <div class="chat-body" ref="chatBodyRef">
-        <div v-if="messages.length === 0" class="empty-state">
-          <el-icon class="empty-icon"><MagicStick /></el-icon>
-          <p>欢迎使用 AI 对话！请在下方输入问题，我们将连接到您的本地 Ollama 模型。</p>
-          <p class="sub-text" v-if="!selectedModel">请先在右上角选择一个模型，或去设置中检查您的 Ollama 接口地址。</p>
-        </div>
-
-        <div class="messages" v-else>
-          <div 
-            v-for="(msg, index) in messages" 
-            :key="index"
-            :class="['message-wrapper', msg.role]"
-            @mouseenter="hoveredMessageIndex = index"
-            @mouseleave="hoveredMessageIndex = -1"
-          >
-            <div class="avatar">
-              <el-icon v-if="msg.role === 'user'"><User /></el-icon>
-              <el-icon v-else><Monitor /></el-icon>
-            </div>
-            <div class="message-content">
-              <!-- 用户消息普通文本显示 -->
-              <div v-if="msg.role === 'user'" class="user-text">{{ msg.content }}</div>
-              <!-- AI 消息用 Markdown 显示 -->
-              <div v-else class="markdown-body" v-html="renderMarkdown(msg.content)"></div>
-            </div>
-            <div class="message-actions" v-if="hoveredMessageIndex === index">
-              <el-button 
-                type="danger" 
-                :icon="Delete" 
-                circle 
-                size="small"
-                @click="deleteMessage(index)"
-                title="删除此消息"
+          <div class="engine-selector">
+            <el-select v-model="selectedEngine" placeholder="引擎" size="default" style="width: 110px" @change="onEngineChange">
+              <el-option label="在线 API" value="online" />
+              <el-option label="本地模型" value="local" />
+              <el-option label="Ollama" value="ollama" />
+            </el-select>
+          </div>
+          <div class="model-selector">
+            <el-select 
+              v-model="selectedModel" 
+              :placeholder="modelPlaceholder" 
+              size="default" 
+              style="width: 180px"
+              :loading="loadingModels"
+              @change="onModelChange"
+            >
+              <el-option
+                v-for="model in availableModels"
+                :key="model.value || model.name"
+                :label="model.label || model.name"
+                :value="model.value || model.name"
               />
-            </div>
+            </el-select>
+            <el-button size="default" :icon="Refresh" circle text @click="fetchModels" title="刷新模型" />
           </div>
-          
-          <!-- 大模型思考中的占位 -->
-          <div v-if="isGenerating && !currentReply" class="message-wrapper assistant">
-            <div class="avatar"><el-icon><Loading /></el-icon></div>
-            <div class="message-content typing-indicator">
-              <span></span><span></span><span></span>
-            </div>
+          <div class="header-actions">
+            <el-button size="default" type="primary" plain :icon="Download" @click="archiveToDocument" title="保存为 Markdown" :disabled="messages.length === 0">
+              归档
+            </el-button>
           </div>
         </div>
       </div>
 
-      <div class="context-hint" v-if="messageCount > 8">
-        对话较长时，较早的消息将自动裁剪以适配模型上下文窗口
+      <div class="chat-body-container" ref="chatBodyRef">
+        <div class="chat-body-inner">
+          <div v-if="messages.length === 0" class="empty-state">
+            <div class="empty-icon-wrapper">
+              <el-icon class="empty-icon"><MagicStick /></el-icon>
+            </div>
+            <h3>有什么我可以帮你的吗？</h3>
+            <p class="sub-text" v-if="!selectedModel">请先在右上角选择一个模型，或去设置中检查引擎配置。</p>
+          </div>
+
+          <div class="messages" v-else>
+            <div 
+              v-for="(msg, index) in messages" 
+              :key="index"
+              :class="['message-row', msg.role]"
+              @mouseenter="hoveredMessageIndex = index"
+              @mouseleave="hoveredMessageIndex = -1"
+            >
+              <div class="avatar-col" v-if="msg.role === 'assistant'">
+                <div class="avatar ai-avatar"><el-icon><Monitor /></el-icon></div>
+              </div>
+
+              <div class="content-col">
+                <div class="message-bubble">
+                  <div v-if="msg.role === 'user'" class="user-text">{{ msg.content }}</div>
+                  <div v-else class="markdown-body" v-html="renderMarkdown(msg.content)"></div>
+                </div>
+
+                <div class="message-actions" :class="{ 'show-actions': hoveredMessageIndex === index }">
+                  <el-tooltip content="删除此问答对" placement="top">
+                    <el-button type="danger" :icon="Delete" circle text size="small" @click="deleteMessagePair(index)" />
+                  </el-tooltip>
+                </div>
+              </div>
+            </div>
+            
+            <div v-if="isGenerating && !currentReply" class="message-row assistant">
+              <div class="avatar-col">
+                <div class="avatar ai-avatar"><el-icon><Loading /></el-icon></div>
+              </div>
+              <div class="content-col">
+                <div class="message-bubble typing-indicator">
+                  <span></span><span></span><span></span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="context-hint" v-if="messageCount > 8">
+            对话较长，较早的消息将自动裁剪以适配上下文窗口
+          </div>
+        </div>
       </div>
 
       <div class="chat-footer">
-        <el-input
-          v-model="userInput"
-          type="textarea"
-          :rows="3"
-          placeholder="输入问题... (Shift + Enter 换行，Enter 发送)"
-          @keydown="handleKeydown"
-          resize="none"
-          :disabled="isGenerating"
-        />
-        <div class="action-bar">
-          <span class="hint-text">如果出现网络错误，请确保已设置 OLLAMA_ORIGINS="*" 环境变量并启动了 Ollama服务</span>
-          <el-button
-            type="primary"
-            :icon="Promotion"
-            @click="sendMessage"
-            :loading="isGenerating"
-            :disabled="!userInput.trim() || !selectedModel"
-          >
-            发送
-          </el-button>
-          <el-button
-            v-if="isGenerating"
-            type="danger"
-            @click="stopGeneration"
-          >
-            停止生成
-          </el-button>
+        <div class="input-wrapper">
+          <el-input
+            v-model="userInput"
+            type="textarea"
+            :rows="1"
+            :autosize="{ minRows: 1, maxRows: 6 }"
+            placeholder="给 AI 发送消息... (Shift + Enter 换行)"
+            @keydown="handleKeydown"
+            resize="none"
+            class="chat-input"
+            :disabled="isGenerating"
+          />
+          <div class="input-actions">
+            <el-button
+              v-if="isGenerating"
+              type="danger"
+              circle
+              :icon="Close"
+              @click="stopGeneration"
+              title="停止生成"
+            />
+            <el-button
+              v-else
+              type="primary"
+              circle
+              :icon="Promotion"
+              @click="sendMessage"
+              :disabled="!userInput.trim() || !selectedModel"
+              class="send-btn"
+            />
+          </div>
         </div>
+        <div class="footer-hint">AI 可能会产生错误，请核实重要信息。</div>
       </div>
     </div>
   </div>
@@ -186,13 +191,11 @@ const chatBodyRef = ref(null)
 const abortController = ref(null)
 const hoveredMessageIndex = ref(-1)
 
-// 安全解析 localStorage 中的 JSON
-// 安全解析 localStorage 中的 JSON
 const safeJsonParse = (str, fallback = []) => {
-  if (!str) return fallback // 拦截 localStorage 返回的 null 或空字符串
+  if (!str) return fallback
   try { 
     const parsed = JSON.parse(str)
-    return parsed !== null ? parsed : fallback // 防止存入的字符串正好是 "null"
+    return parsed !== null ? parsed : fallback
   } catch { 
     return fallback 
   }
@@ -216,38 +219,25 @@ if (sessions.value.length === 0) {
     activeSessionId.value = sessions.value[0].id
     localStorage.removeItem('ollama-chat-history')
   } else {
-    // 默认创建一个空会话
     const id = Date.now().toString()
-    sessions.value.push({
-      id,
-      title: '新对话',
-      updatedAt: Date.now(),
-      messages: []
-    })
+    sessions.value.push({ id, title: '新对话', updatedAt: Date.now(), messages: [] })
     activeSessionId.value = id
   }
 }
 
-// 确保始终有选中的 session
 if (!activeSessionId.value && sessions.value.length > 0) {
   activeSessionId.value = sessions.value[0].id
 }
 
-// 自动存库
 watch(sessions, (newVal) => {
   localStorage.setItem('ollama-chat-sessions', JSON.stringify(newVal))
 }, { deep: true })
 
 watch(activeSessionId, (newVal) => {
-  if (newVal) {
-    localStorage.setItem('ollama-active-session', newVal)
-  }
+  if (newVal) localStorage.setItem('ollama-active-session', newVal)
 })
 
-// 计算属性
-const sortedSessions = computed(() => {
-  return [...sessions.value].sort((a, b) => b.updatedAt - a.updatedAt)
-})
+const sortedSessions = computed(() => [...sessions.value].sort((a, b) => b.updatedAt - a.updatedAt))
 
 const modelPlaceholder = computed(() => {
   const placeholders = {
@@ -258,97 +248,58 @@ const modelPlaceholder = computed(() => {
   return placeholders[selectedEngine.value] || '选择模型'
 })
 
-const activeSession = computed(() => {
-  return sessions.value.find(s => s.id === activeSessionId.value) || null
-})
-
-const messages = computed(() => {
-  return activeSession.value ? activeSession.value.messages : []
-})
-
+const activeSession = computed(() => sessions.value.find(s => s.id === activeSessionId.value) || null)
+const messages = computed(() => activeSession.value ? activeSession.value.messages : [])
 const messageCount = computed(() => messages.value.length)
 
-// 会话管理操作
 const createNewSession = () => {
-  if (isGenerating.value) {
-    ElMessage.warning('请等待当前对话生成完毕再创建新对话')
-    return
-  }
-  // 避免出现连续多个空会话
+  if (isGenerating.value) return ElMessage.warning('请等待当前对话生成完毕再创建新对话')
   const hasEmpty = sessions.value.find(s => s.messages.length === 0)
   if (hasEmpty) {
     activeSessionId.value = hasEmpty.id
     return
   }
-
   const id = Date.now().toString()
-  sessions.value.push({
-    id,
-    title: '新对话',
-    updatedAt: Date.now(),
-    messages: []
-  })
+  sessions.value.push({ id, title: '新对话', updatedAt: Date.now(), messages: [] })
   activeSessionId.value = id
   scrollToBottom()
 }
 
 const selectSession = (id) => {
-  if (isGenerating.value) {
-    ElMessage.warning('请等待当前对话生成完毕再切换')
-    return
-  }
+  if (isGenerating.value) return ElMessage.warning('请等待当前对话生成完毕再切换')
   activeSessionId.value = id
   scrollToBottom()
 }
 
 const deleteSession = async (id) => {
-  if (isGenerating.value && id === activeSessionId.value) {
-    ElMessage.warning('当前对话正在生成中，无法删除')
-    return
-  }
-
+  if (isGenerating.value && id === activeSessionId.value) return ElMessage.warning('当前对话正在生成中，无法删除')
   try {
     await ElMessageBox.confirm('确定要彻底删除这条历史对话记录吗？', '确认操作', { type: 'warning' })
     const index = sessions.value.findIndex(s => s.id === id)
     if (index > -1) {
       sessions.value.splice(index, 1)
       if (activeSessionId.value === id) {
-        if (sessions.value.length > 0) {
-          activeSessionId.value = sortedSessions.value[0].id // 切换到最近的
-        } else {
-          createNewSession() // 全删完了就建一个新的
-        }
+        if (sessions.value.length > 0) activeSessionId.value = sortedSessions.value[0].id
+        else createNewSession()
       }
     }
   } catch {}
 }
 
+const renderMarkdown = (text) => markdownProcessor.render(text || '')
 
-// Markdown 渲染
-const renderMarkdown = (text) => {
-  return markdownProcessor.render(text || '')
-}
-
-// 获取模型列表
 const fetchModels = async () => {
   loadingModels.value = true
   availableModels.value = []
-  
   try {
     if (selectedEngine.value === 'online') {
-      // 在线 API 模式：显示配置的模型
-      availableModels.value = []
       if (settings.aiModel) {
-        availableModels.value.push({
-          label: settings.aiModel,
-          value: settings.aiModel
-        })
+        availableModels.value.push({ label: settings.aiModel, value: settings.aiModel })
         selectedModel.value = settings.aiModel
       } else {
         ElMessage.info('请先在设置中配置在线 API 模型')
       }
     } else if (selectedEngine.value === 'local') {
-      // 本地模型模式：根据类型显示本地模型
       const localType = settings.localAiType || 'gpu'
       if (localType === 'gpu') {
         availableModels.value = [
@@ -358,20 +309,18 @@ const fetchModels = async () => {
         selectedModel.value = settings.localModelId || availableModels.value[0].value
       } else {
         availableModels.value = [
-          { label: 'Qwen1.5-0.5B-Chat (0.5B / 中文支持好)', value: 'Xenova/Qwen1.5-0.5B-Chat' },
-          { label: 'TinyLlama-1.1B-Chat (1.1B / 通用对话)', value: 'Xenova/TinyLlama-1.1B-Chat-v1.0' }
+          { label: 'Qwen1.5-0.5B-Chat', value: 'Xenova/Qwen1.5-0.5B-Chat' },
+          { label: 'TinyLlama-1.1B-Chat', value: 'Xenova/TinyLlama-1.1B-Chat-v1.0' }
         ]
         selectedModel.value = settings.localCpuModelId || availableModels.value[0].value
       }
     } else if (selectedEngine.value === 'ollama') {
-      // Ollama 模式
       if (!settings.ollamaBaseUrl) {
         ElMessage.warning('请先在设置中配置 Ollama 地址')
         loadingModels.value = false
         return
       }
       availableModels.value = await AIService.listOllamaModels()
-      
       if (availableModels.value.length > 0 && !selectedModel.value) {
         selectedModel.value = availableModels.value[0].name
         settings.ollamaModel = selectedModel.value
@@ -384,7 +333,6 @@ const fetchModels = async () => {
       }
     }
   } catch (error) {
-    console.error('获取模型失败:', error)
     ElMessage.error('无法获取模型列表，请检查配置')
   } finally {
     loadingModels.value = false
@@ -401,15 +349,11 @@ const onEngineChange = (val) => {
 
 const onModelChange = (val) => {
   selectedModel.value = val
-  if (selectedEngine.value === 'online') {
-    settings.aiModel = val
-  } else if (selectedEngine.value === 'local') {
+  if (selectedEngine.value === 'online') settings.aiModel = val
+  else if (selectedEngine.value === 'local') {
     const localType = settings.localAiType || 'gpu'
-    if (localType === 'gpu') {
-      settings.localModelId = val
-    } else {
-      settings.localCpuModelId = val
-    }
+    if (localType === 'gpu') settings.localModelId = val
+    else settings.localCpuModelId = val
   } else if (selectedEngine.value === 'ollama') {
     settings.ollamaModel = val
   }
@@ -423,37 +367,24 @@ const scrollToBottom = () => {
   })
 }
 
-// 一键归档到我的文档
 const archiveToDocument = async () => {
   if (messages.value.length === 0) return
-  
   let content = `# AI 对话归档 (${new Date().toLocaleString('zh-CN')})\n\n**AI 引擎**: ${selectedEngine.value} | **模型**: ${selectedModel.value}\n\n---\n\n`
-  
   for (const msg of messages.value) {
-    if (msg.role === 'user') {
-      content += `**🧑 User:**\n${msg.content}\n\n`
-    } else {
-      content += `**🤖 AI:**\n${msg.content}\n\n`
-    }
+    if (msg.role === 'user') content += `**🧑 User:**\n${msg.content}\n\n`
+    else content += `**🤖 AI:**\n${msg.content}\n\n`
   }
-  
   const title = activeSession.value?.title && activeSession.value.title !== '新对话' 
     ? `AI 对话：${activeSession.value.title}`
     : `AI 对话归档 - ${new Date().toLocaleDateString('zh-CN')}`
-  
   try {
-    const doc = await documentsStore.createDocument(title, content)
-    ElMessage.success({
-      message: '对话已成功归档到“我的文档”！返回左侧菜单可查看。',
-      duration: 3500
-    })
+    await documentsStore.createDocument(title, content)
+    ElMessage.success({ message: '对话已成功归档到“我的文档”！', duration: 3500 })
   } catch (error) {
-    console.error('归档失败', error)
-    ElMessage.error('归档失败，无法保存到文档库')
+    ElMessage.error('归档失败')
   }
 }
 
-// 键盘快捷键处理
 const handleKeydown = (e) => {
   if (e.key === 'Enter' && !e.shiftKey) {
     e.preventDefault()
@@ -461,18 +392,12 @@ const handleKeydown = (e) => {
   }
 }
 
-// 裁剪对话历史，避免超出模型上下文窗口
-// 安全阈值设为 3000 tokens，为回复预留约 1000 tokens (4096 context window)
 const MAX_HISTORY_TOKENS = 3000
-
 const estimateTokens = (text) => Math.ceil(text.length / 2)
 
 const trimHistory = (messages) => {
-  // 从最新到最旧累加 tokens，超过阈值则丢弃更早的消息
-  // 确保结果以 user 角色开头（模型通常要求首条消息为 user）
   const selected = []
   let tokenCount = 0
-
   for (let i = messages.length - 1; i >= 0; i--) {
     const msg = messages[i]
     const tokens = estimateTokens(msg.content || '')
@@ -480,45 +405,52 @@ const trimHistory = (messages) => {
     selected.unshift(msg)
     tokenCount += tokens
   }
-
-  // 如果第一条是 assistant，往前多取一条 user 消息
   if (selected.length > 0 && selected[0].role === 'assistant') {
     const firstIdx = messages.indexOf(selected[0])
-    if (firstIdx > 0) {
-      selected.unshift(messages[firstIdx - 1])
-    }
+    if (firstIdx > 0) selected.unshift(messages[firstIdx - 1])
   }
-
   return selected
 }
 
-// 停止生成
 const stopGeneration = () => {
-  if (abortController.value) {
-    abortController.value.abort()
-  }
+  if (abortController.value) abortController.value.abort()
 }
 
-// 删除单条消息
-const deleteMessage = (index) => {
+// 核心更新：成对删除逻辑
+const deleteMessagePair = (index) => {
   const session = activeSession.value
   if (!session) return
+  if (isGenerating.value) return ElMessage.warning('生成中无法删除消息')
   
-  if (isGenerating.value) {
-    ElMessage.warning('生成中无法删除消息')
-    return
-  }
-  
-  ElMessageBox.confirm('确定要删除这条消息吗？', '确认操作', { type: 'warning' })
-    .then(() => {
-      session.messages.splice(index, 1)
-      session.updatedAt = Date.now()
-      ElMessage.success('消息已删除')
-    })
-    .catch(() => {})
+  ElMessageBox.confirm('确定要删除此消息吗？(对应的问答将一起被删除)', '删除确认', { 
+    type: 'warning',
+    confirmButtonText: '删除',
+    cancelButtonText: '取消'
+  }).then(() => {
+    const msg = session.messages[index]
+    let startIndex = index
+    let deleteCount = 1
+
+    // 如果删除的是用户的提问，顺带删除下一个 AI 回答
+    if (msg.role === 'user') {
+      if (index + 1 < session.messages.length && session.messages[index + 1].role === 'assistant') {
+        deleteCount = 2
+      }
+    } 
+    // 如果删除的是 AI 的回答，顺带删除上一个用户的提问
+    else if (msg.role === 'assistant') {
+      if (index - 1 >= 0 && session.messages[index - 1].role === 'user') {
+        startIndex = index - 1
+        deleteCount = 2
+      }
+    }
+
+    session.messages.splice(startIndex, deleteCount)
+    session.updatedAt = Date.now()
+    ElMessage.success('已删除对应问答')
+  }).catch(() => {})
 }
 
-// 发送消息
 const sendMessage = async () => {
   const text = userInput.value.trim()
   if (!text || !selectedModel.value || isGenerating.value) return
@@ -526,13 +458,10 @@ const sendMessage = async () => {
   let session = activeSession.value
   if (!session) return
 
-  // 临时保存当前引擎，发送后恢复
   const previousEngine = settings.aiEngine
   settings.aiEngine = selectedEngine.value
 
-  // 1. 添加用户消息
   session.messages.push({ role: 'user', content: text })
-
   if (session.messages.length <= 2) {
     session.title = text.length > 15 ? text.substring(0, 15) + '...' : text
   }
@@ -543,26 +472,19 @@ const sendMessage = async () => {
   isGenerating.value = true
   scrollToBottom()
 
-  // 2. 准备对话历史 (裁剪后发送，避免超出上下文窗口)
   const allHistory = session.messages.map(m => ({ role: m.role, content: m.content }))
   const history = trimHistory(allHistory)
 
-  // 3. 占位 AI 消息
   session.messages.push({ role: 'assistant', content: '' })
   const assistantMsgIndex = session.messages.length - 1
-
-  // 创建用于中止请求的 AbortController
   abortController.value = new AbortController()
 
   try {
-    // 根据引擎类型调用对应 AI 服务
     if (selectedEngine.value === 'local') {
-      // 本地模型需要通过 localAiService
       const { localAiService } = await import('@/services/localAi')
       const localType = settings.localAiType || 'gpu'
-      const modelId = selectedModel.value
       await localAiService.chatCompletion(
-        modelId,
+        selectedModel.value,
         localType,
         history,
         (_delta, fullText) => {
@@ -574,7 +496,6 @@ const sendMessage = async () => {
         { signal: abortController.value.signal }
       )
     } else {
-      // 在线 API 和 Ollama 都通过 AIService
       await AIService.chatCompletion(
         history,
         (_delta, fullText) => {
@@ -587,12 +508,11 @@ const sendMessage = async () => {
       )
     }
   } catch (error) {
-    console.error('调用 AI 失败:', error)
     if (error.name !== 'AbortError') {
       if (session.messages[assistantMsgIndex].content === '') {
-         session.messages[assistantMsgIndex].content = '请求失败: ' + (error.message || '请检查配置及网络状况。')
+         session.messages[assistantMsgIndex].content = '请求失败: ' + (error.message || '网络异常')
       } else {
-         session.messages[assistantMsgIndex].content += '\n\n**[请求中断或发生错误: ' + (error.message || '未知错误') + ']**'
+         session.messages[assistantMsgIndex].content += '\n\n**[中断: ' + (error.message || '未知错误') + ']**'
       }
     }
   } finally {
@@ -618,47 +538,54 @@ onUnmounted(() => {
     settings.aiEngine = previousAiEngine.value
   }
 })
-
 </script>
 
 <style scoped>
+/* 全局布局 */
 .chat-layout {
   display: flex;
-  height: calc(100vh - 60px); /* 排除顶部导航的高度 */
+  height: calc(100vh - 60px);
   background-color: var(--el-bg-color-page);
 }
 
+/* 侧边栏 */
 .chat-sidebar {
-  width: 250px;
+  width: 260px;
   background-color: var(--el-bg-color);
   border-right: 1px solid var(--el-border-color-lighter);
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .sidebar-header {
   padding: 16px;
   border-bottom: 1px solid var(--el-border-color-lighter);
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .new-chat-btn {
-  width: 100%;
+  flex: 1;
+  font-weight: 500;
 }
 
 .session-list {
   flex: 1;
-  overflow-x: hidden;
+  padding: 8px;
 }
 
 .session-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 14px 16px;
+  padding: 12px 14px;
+  margin-bottom: 4px;
+  border-radius: 8px;
   cursor: pointer;
-  border-bottom: 1px solid var(--el-border-color-extra-light);
-  transition: all 0.2s;
+  transition: all 0.2s ease;
   color: var(--el-text-color-regular);
 }
 
@@ -669,162 +596,195 @@ onUnmounted(() => {
 .session-item.active {
   background-color: var(--el-color-primary-light-9);
   color: var(--el-color-primary);
-  border-left: 3px solid var(--el-color-primary);
-}
-
-.session-item.active .session-title {
-  font-weight: 500;
 }
 
 .session-info {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   overflow: hidden;
 }
 
+.session-icon {
+  font-size: 16px;
+}
+
 .session-title {
-  font-size: 14px;
+  font-size: 13px;
+  font-weight: 500;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 150px;
+  max-width: 140px;
 }
 
 .delete-btn {
   opacity: 0;
-  transition: opacity 0.2s;
-  transform: scale(0.9);
+  transform: scale(0.8);
 }
 
 .session-item:hover .delete-btn {
   opacity: 1;
+  transform: scale(1);
 }
 
-.chat-page {
+/* 右侧主工作区 */
+.chat-main {
   flex: 1;
   display: flex;
   flex-direction: column;
-  padding: 20px 30px;
-  box-sizing: border-box;
-  overflow: hidden;
-  max-width: 1100px;
-  margin: 0 auto;
+  position: relative;
+  background-color: var(--el-bg-color);
 }
 
+/* 顶部操作区 */
 .chat-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
-  padding-bottom: 15px;
+  padding: 14px 24px;
+  background-color: var(--el-bg-color);
   border-bottom: 1px solid var(--el-border-color-lighter);
+  z-index: 10;
 }
 
-.chat-header h2 {
-  margin: 0;
+.header-left {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 20px;
+  gap: 12px;
+}
+
+.header-title {
+  font-size: 16px;
   font-weight: 600;
+  margin: 0;
+  color: var(--el-text-color-primary);
 }
 
 .header-right {
   display: flex;
   align-items: center;
+  gap: 12px;
 }
 
-.model-label {
-  font-size: 14px;
-  color: var(--el-text-color-secondary);
-  margin-right: 12px;
+.engine-selector, .model-selector {
+  display: flex;
+  align-items: center;
 }
 
-.chat-body {
+/* 消息流区域 */
+.chat-body-container {
   flex: 1;
   overflow-y: auto;
-  padding: 10px 20px;
-  background-color: var(--el-bg-color);
-  border: 1px solid var(--el-border-color-lighter);
-  border-radius: 8px;
-  margin-bottom: 20px;
   scroll-behavior: smooth;
-  box-shadow: var(--el-box-shadow-light);
+  padding-bottom: 20px;
 }
 
+.chat-body-inner {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+/* 空状态 */
 .empty-state {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  height: 100%;
-  color: var(--el-text-color-secondary);
+  height: 40vh;
   text-align: center;
+  color: var(--el-text-color-primary);
 }
 
-.empty-icon {
-  font-size: 48px;
-  margin-bottom: 16px;
-  color: var(--el-text-color-placeholder);
-}
-
-.sub-text {
-  font-size: 13px;
-  margin-top: 8px;
-  opacity: 0.8;
-}
-
-.messages {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  padding-bottom: 10px;
-  margin-top: 10px;
-}
-
-.message-wrapper {
-  display: flex;
-  gap: 16px;
-  max-width: 85%;
-  align-items: flex-start;
-  position: relative;
-}
-
-.message-wrapper.user {
-  align-self: flex-end;
-  flex-direction: row-reverse;
-}
-
-.message-wrapper.assistant {
-  align-self: flex-start;
-}
-
-.avatar {
-  width: 40px;
-  height: 40px;
+.empty-icon-wrapper {
+  width: 64px;
+  height: 64px;
   border-radius: 50%;
+  background: var(--el-color-primary-light-9);
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: var(--el-color-primary-light-9);
+  margin-bottom: 20px;
+}
+
+.empty-icon {
+  font-size: 32px;
   color: var(--el-color-primary);
+}
+
+.empty-state h3 {
   font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+.sub-text {
+  font-size: 14px;
+  color: var(--el-text-color-secondary);
+}
+
+/* 消息布局 */
+.messages {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.message-row {
+  display: flex;
+  gap: 16px;
+  width: 100%;
+}
+
+.message-row.user {
+  flex-direction: row-reverse;
+}
+
+.message-row.assistant {
+  flex-direction: row;
+}
+
+.avatar-col {
   flex-shrink: 0;
+  width: 32px;
 }
 
-.message-wrapper.user .avatar {
-  background-color: var(--el-color-success-light-9);
+.ai-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--el-color-success-light-8);
   color: var(--el-color-success);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
 }
 
-.message-content {
-  background-color: var(--el-fill-color-light);
-  padding: 12px 16px;
-  border-radius: 8px;
+.content-col {
+  max-width: 80%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.message-row.user .content-col {
+  align-items: flex-end;
+}
+
+.message-bubble {
   font-size: 15px;
   line-height: 1.6;
-  overflow-x: auto;
+}
+
+/* 用户气泡 */
+.message-row.user .message-bubble {
+  background-color: var(--el-fill-color);
+  padding: 12px 18px;
+  border-radius: 18px;
+  border-bottom-right-radius: 4px;
+  color: var(--el-text-color-primary);
 }
 
 .user-text {
@@ -832,29 +792,92 @@ onUnmounted(() => {
   word-break: break-word;
 }
 
+/* AI 内容区 (无气泡，更原生) */
+.message-row.assistant .message-bubble {
+  background: transparent;
+  padding: 4px 0;
+  width: 100%;
+  color: var(--el-text-color-primary);
+}
+
 .markdown-body {
   word-break: break-word;
   background-color: transparent !important;
+  font-size: 15px;
 }
 
+/* 消息操作悬浮条 */
 .message-actions {
   display: flex;
-  gap: 8px;
-  margin-left: 8px;
+  margin-top: 6px;
   opacity: 0;
   transition: opacity 0.2s;
 }
 
-.message-wrapper:hover .message-actions {
+.message-actions.show-actions {
   opacity: 1;
 }
 
-.message-wrapper.user .message-actions {
-  margin-left: 0;
-  margin-right: 8px;
+/* 底部输入区 */
+.chat-footer {
+  padding: 0 24px 24px;
+  max-width: 850px;
+  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
 }
 
-/* 简单的打字机动画 */
+.input-wrapper {
+  position: relative;
+  background-color: var(--el-fill-color-light);
+  border: 1px solid var(--el-border-color);
+  border-radius: 20px;
+  padding: 4px;
+  box-shadow: var(--el-box-shadow-lighter);
+  transition: border-color 0.2s;
+}
+
+.input-wrapper:focus-within {
+  border-color: var(--el-color-primary);
+}
+
+.chat-input :deep(.el-textarea__inner) {
+  background-color: transparent;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 12px 60px 12px 16px;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.input-actions {
+  position: absolute;
+  right: 12px;
+  bottom: 8px;
+  display: flex;
+  align-items: center;
+}
+
+.send-btn {
+  width: 32px;
+  height: 32px;
+}
+
+.footer-hint {
+  text-align: center;
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
+  margin-top: 12px;
+}
+
+.context-hint {
+  text-align: center;
+  font-size: 12px;
+  color: var(--el-color-warning);
+  margin-top: 24px;
+}
+
+/* 动画 */
 .typing-indicator span {
   display: inline-block;
   width: 6px;
@@ -871,69 +894,20 @@ onUnmounted(() => {
   40% { transform: scale(1); }
 }
 
-.context-hint {
-  text-align: center;
-  font-size: 12px;
-  color: var(--el-color-warning);
-  padding: 4px 0;
-  margin-bottom: 4px;
-}
-
-.chat-footer {
-  background-color: var(--el-bg-color);
-  border: 1px solid var(--el-border-color);
-  border-radius: 8px;
-  padding: 12px;
-  box-shadow: var(--el-box-shadow-light);
-}
-
-.action-bar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: 10px;
-}
-
-.hint-text {
-  font-size: 12px;
-  color: var(--el-text-color-secondary);
-}
-
-/* 移动端适配 */
+/* 响应式设计 */
 @media (max-width: 768px) {
   .chat-sidebar {
     position: fixed;
     top: 0;
     left: 0;
-    width: 280px;
     height: 100%;
     z-index: 1000;
     transform: translateX(-100%);
-    transition: transform 0.3s ease;
-    box-shadow: none;
   }
 
   .chat-sidebar.sidebar-open {
     transform: translateX(0);
-    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.15);
-  }
-
-  .sidebar-header {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .new-chat-btn {
-    flex: 1;
-  }
-
-  .sidebar-close-btn {
-    display: inline-flex;
-  }
-
-  .session-title {
-    max-width: 140px;
+    box-shadow: 4px 0 24px rgba(0,0,0,0.15);
   }
 
   .sidebar-overlay {
@@ -942,94 +916,44 @@ onUnmounted(() => {
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.4);
+    background: rgba(0,0,0,0.4);
     z-index: 999;
   }
 
-  .menu-toggle {
-    display: inline-flex;
-    margin-right: 8px;
-    flex-shrink: 0;
-  }
-
-  .chat-page {
-    padding: 12px 12px;
-    max-width: 100%;
-  }
-
   .chat-header {
+    padding: 10px 12px;
     flex-wrap: wrap;
-    gap: 10px;
-    margin-bottom: 12px;
-    padding-bottom: 10px;
-  }
-
-  .chat-header h2 {
-    font-size: 16px;
+    gap: 12px;
   }
 
   .header-right {
-    flex-wrap: wrap;
-    gap: 6px;
     width: 100%;
+    justify-content: space-between;
   }
 
-  .header-right .model-label {
-    font-size: 12px;
-    margin-right: 4px;
+  .model-selector .el-select {
+    width: 140px !important;
   }
 
-  .chat-body {
-    padding: 10px 12px;
-    margin-bottom: 12px;
+  .chat-body-inner {
+    padding: 16px 12px;
   }
 
-  .message-wrapper {
-    max-width: 92%;
+  .message-row {
+    gap: 10px;
   }
 
-  .message-content {
-    font-size: 14px;
-    padding: 10px 12px;
-  }
-
-  .avatar {
-    width: 34px;
-    height: 34px;
-    font-size: 16px;
+  .content-col {
+    max-width: 90%;
   }
 
   .chat-footer {
-    padding: 10px;
-  }
-
-  .chat-footer .el-textarea__inner {
-    font-size: 14px;
-  }
-
-  .action-bar {
-    flex-direction: column;
-    gap: 8px;
-    align-items: flex-end;
-  }
-
-  .hint-text {
-    display: none;
+    padding: 0 12px 12px;
   }
 }
 
-/* 桌面端：隐藏移动端按钮 */
 @media (min-width: 769px) {
-  .menu-toggle {
-    display: none;
-  }
-
-  .sidebar-close-btn {
-    display: none;
-  }
-
-  .sidebar-overlay {
-    display: none;
-  }
+  .menu-toggle { display: none; }
+  .sidebar-close-btn { display: none; }
 }
 </style>
