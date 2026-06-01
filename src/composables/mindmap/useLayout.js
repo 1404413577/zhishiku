@@ -1,6 +1,6 @@
 import { ref } from 'vue'
 
-export function useLayout(rootData, currentTheme) {
+export function useLayout(rootData, currentTheme, lineStyle) {
   const flatNodes = ref([])
   const connections = ref([])
 
@@ -10,7 +10,6 @@ export function useLayout(rootData, currentTheme) {
   const NODE_HEIGHT = 38
   let measureCtx = null
 
-  // 使用 Canvas API 测量文本宽度
   function getTextWidth(text, fontSize) {
     if (!measureCtx) {
       measureCtx = document.createElement('canvas').getContext('2d')
@@ -19,7 +18,6 @@ export function useLayout(rootData, currentTheme) {
     return measureCtx.measureText(text).width
   }
 
-  // 递归计算宽高
   function computeLayout(node, level = 0) {
     node._level = level
     const fs = level === 0 ? 16 : (node.style?.fontSize || 13)
@@ -40,7 +38,6 @@ export function useLayout(rootData, currentTheme) {
     node._totalHeight = Math.max(node._height, total)
   }
 
-  // 递归分配 X, Y 坐标
   function assignPositions(node, x, topY) {
     node._x = x
     node._y = topY + node._totalHeight / 2 - node._height / 2
@@ -56,11 +53,11 @@ export function useLayout(rootData, currentTheme) {
     }
   }
 
-  // 收集所有节点用于扁平渲染，并生成贝塞尔曲线连线
   function collectNodesAndConnections() {
     const nodes = []
     const conns = []
-    const lineColor = currentTheme.value.lineColor
+    const color = currentTheme.value.lineColor
+    const style = lineStyle?.value || 'curve'
 
     function walk(node) {
       nodes.push(node)
@@ -72,10 +69,19 @@ export function useLayout(rootData, currentTheme) {
           const childCY = child._y + child._height / 2
           const midX = (parentRight + childLeft) / 2
 
+          let path = ''
+          if (style === 'curve') {
+            path = `M ${parentRight} ${parentCY} C ${midX} ${parentCY}, ${midX} ${childCY}, ${childLeft} ${childCY}`
+          } else if (style === 'orthogonal') {
+            path = `M ${parentRight} ${parentCY} L ${midX} ${parentCY} L ${midX} ${childCY} L ${childLeft} ${childCY}`
+          } else if (style === 'straight') {
+            path = `M ${parentRight} ${parentCY} L ${childLeft} ${childCY}`
+          }
+
           conns.push({
             id: `${node.id}-${child.id}`,
-            path: `M ${parentRight} ${parentCY} C ${midX} ${parentCY}, ${midX} ${childCY}, ${childLeft} ${childCY}`,
-            color: lineColor,
+            path,
+            color,
           })
           walk(child)
         }
@@ -86,7 +92,6 @@ export function useLayout(rootData, currentTheme) {
     connections.value = conns
   }
 
-  // 触发一次完整的排版计算
   function recalc() {
     if (!rootData.value) return
     computeLayout(rootData.value, 0)

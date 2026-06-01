@@ -15,33 +15,47 @@
     </div>
     <div class="toolbar-right">
       <el-select 
+        :model-value="currentLineStyle" 
+        size="small" 
+        style="width: 100px; margin-right: 8px;" 
+        @update:model-value="$emit('update:currentLineStyle', $event)"
+      >
+        <el-option label="贝塞尔曲线" value="curve" />
+        <el-option label="直角折线" value="orthogonal" />
+        <el-option label="直线连接" value="straight" />
+      </el-select>
+      
+      <el-select 
         :model-value="currentThemeName" 
         size="small" 
-        style="width: 120px" 
+        style="width: 100px" 
         @update:model-value="$emit('update:currentThemeName', $event)"
       >
         <el-option v-for="t in themeNames" :key="t.value" :label="t.label" :value="t.value" />
       </el-select>
-      <el-button size="small" @click="$emit('export-json')" :icon="Download">导出 JSON</el-button>
-      <el-button size="small" @click="$emit('export-png')" :icon="Picture">导出图片</el-button>
+      
+      <el-button size="small" style="margin-left:8px" @click="$emit('export-json')" :icon="Download">导出</el-button>
+      <el-button size="small" @click="$emit('export-png')" :icon="Picture">图片</el-button>
     </div>
   </div>
 </template>
 
 <script setup>
-import { DocumentAdd, Select, ZoomIn, ZoomOut, RefreshLeft, RefreshRight, Download, Picture } from '@element-plus/icons-vue'
+import { DocumentAdd, Select, ZoomIn, ZoomOut, RefreshLeft, RefreshRight, Download, Picture, Menu } from '@element-plus/icons-vue'
 
 defineProps({
   zoom: { type: Number, required: true },
   canUndo: { type: Boolean, required: true },
   canRedo: { type: Boolean, required: true },
   themeNames: { type: Array, required: true },
-  currentThemeName: { type: String, required: true }
+  currentThemeName: { type: String, required: true },
+  currentLineStyle: { type: String, required: true }
 })
 
 defineEmits([
   'new', 'save', 'zoom-in', 'zoom-out', 'fit-center', 
-  'undo', 'redo', 'export-json', 'export-png', 'update:currentThemeName'
+  'undo', 'redo', 'export-json', 'export-png', 
+  'update:currentThemeName', 'update:currentLineStyle', 'toggle-menu'
 ])
 </script>
 

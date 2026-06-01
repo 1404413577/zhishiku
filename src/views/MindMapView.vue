@@ -1,6 +1,5 @@
 <template>
   <div class="mindmap-app" :style="{ background: currentTheme.bg }">
-    
     <MindMapSidebar
       :sessions="sessions"
       :activeSessionId="activeSessionId"
@@ -20,8 +19,9 @@
         :canRedo="canRedo" 
         :themeNames="themeNames"
         v-model:currentThemeName="currentThemeName"
+        v-model:currentLineStyle="lineStyle"
         @toggle-menu="isSidebarOpen = true"
-        @new="createNewSession"
+        @new="createNewSession('blank')"
         @save="saveMindMap"
         @zoom-in="zoomIn" 
         @zoom-out="zoomOut"
@@ -42,6 +42,13 @@
         @contextmenu.prevent
       >
         <svg ref="svgRef" class="mm-svg" :style="{ cursor: isPanning ? 'grabbing' : 'grab' }">
+          <defs>
+            <pattern id="grid-pattern" width="40" height="40" patternUnits="userSpaceOnUse">
+              <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(0,0,0,0.06)" stroke-width="1"/>
+            </pattern>
+          </defs>
+          <rect width="100%" height="100%" fill="url(#grid-pattern)" style="pointer-events: none;" />
+
           <g :transform="`translate(${panX}, ${panY}) scale(${zoom})`">
             <path
               v-for="conn in connections" 
@@ -78,6 +85,12 @@
                 style="pointer-events: none; user-select: none;"
               >{{ node.title.length > 18 ? node.title.slice(0, 17) + '…' : node.title }}</text>
               
+              <g v-if="node.note" :transform="`translate(${node._width - 24}, 8)`" style="cursor: help;">
+                <title>{{ node.note }}</title> 
+                <rect width="16" height="16" rx="4" fill="rgba(0,0,0,0.05)" />
+                <text x="8" y="8" text-anchor="middle" dominant-baseline="central" font-size="10">📝</text>
+              </g>
+
               <g 
                 v-if="node.children && node.children.length > 0" 
                 class="collapse-toggle" 
@@ -139,12 +152,10 @@
 import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
-// 1. 导入已拆分的 UI 组件
 import MindMapSidebar from '@/components/MindMap/MindMapSidebar.vue'
 import MindMapToolbar from '@/components/MindMap/MindMapToolbar.vue'
 import MindMapStylePanel from '@/components/MindMap/MindMapStylePanel.vue'
 
-// 2. 导入核心逻辑 (Composables)
 import { createNode } from '@/composables/mindmap/useNodeModel'
 import { useCreate } from '@/composables/mindmap/useCreate'
 import { cleanNodeForExport, exportAsPNG } from '@/composables/mindmap/useExport'
@@ -153,32 +164,26 @@ import { useUndoRedo } from '@/composables/mindmap/useUndoRedo'
 import { useNodeOperations } from '@/composables/mindmap/useNodeOperations'
 import { usePersist } from '@/composables/mindmap/usePersist'
 
-// ==================== 状态管理 ====================
-// 数据层绑定
-const rootData = ref(createNode('中心主题', 0)) // 初始化空数据，会被 loadSessions 覆盖
+const rootData = ref(createNode('中心主题', 0)) 
 const selectedNodeId = ref(null)
 const editingNode = ref(null)
 const editText = ref('')
 const isSidebarOpen = ref(false)
+const lineStyle = ref('curve') // 新增：全局连线风格
 
-// DOM 引用
 const canvasContainer = ref(null)
 const svgRef = ref(null)
 const editInputRef = ref(null)
 
-// 视图属性
 const zoom = ref(1)
 const panX = ref(40)
 const panY = ref(40)
 const isPanning = ref(false)
 const panStart = ref({ x: 0, y: 0 })
-
-// 拖拽属性
 const dragNodeId = ref(null)
 const dragStart = ref({ x: 0, y: 0 })
 const dragTargetParent = ref(null)
 
-// 主题配置
 const themes = {
   default: { label: '默认蓝', bg: '#f0f2f5', rootFill: '#409eff', rootText: '#ffffff', lineColor: '#b3c6e0', nodeFill: '#ffffff', nodeText: '#303133', nodeBorder: '#dcdfe6' },
   dark: { label: '暗夜黑', bg: '#1e1e2e', rootFill: '#7c3aed', rootText: '#ffffff', lineColor: '#4a4a6a', nodeFill: '#2d2d3f', nodeText: '#e0e0e0', nodeBorder: '#4a4a6a' },
@@ -190,50 +195,38 @@ const themeNames = Object.keys(themes).map(k => ({ label: themes[k].label, value
 const currentThemeName = ref('default')
 const currentTheme = computed(() => themes[currentThemeName.value])
 
-// ==================== 接入 Composables ====================
-// 布局引擎
-const { flatNodes, connections, recalc } = useLayout(rootData, currentTheme)
+// 传入 lineStyle 给布局引擎
+const { flatNodes, connections, recalc } = useLayout(rootData, currentTheme, lineStyle)
 
-// 历史记录与撤销重做
 const { canUndo, canRedo, pushUndo, undo, redo, clearHistory } = useUndoRedo(rootData, () => {
   selectedNodeId.value = null
   recalc()
 })
 
-// 节点操作方法包
 const { findNode, findParent, addChildNode, addSiblingNode, deleteNode, toggleCollapse } = useNodeOperations({
-  rootData, 
-  selectedNodeId, 
-  pushUndo, 
-  recalc, 
-  startEdit: (node) => startEdit(node)
+  rootData, selectedNodeId, pushUndo, recalc, startEdit: (node) => startEdit(node)
 })
 
 const selectedNode = computed(() => selectedNodeId.value ? findNode(selectedNodeId.value) : null)
 
-// 持久化与多会话管理
 const { sessions, activeSessionId, loadSessions, saveMindMap, createNewSession, switchSession, deleteSession } = usePersist(rootData, () => {
-  // 当侧边栏切换导图文件时，清理画布状态并重新渲染
   selectedNodeId.value = null
   if (clearHistory) clearHistory()
   recalc()
   fitToCenter()
 })
 
-// 监听主题切换，重新生成线条颜色
 watch(currentThemeName, () => recalc())
+watch(lineStyle, () => recalc()) // 监听连线风格变化，自动重绘
 
-// ==================== 侧边栏与工具栏操作 ====================
 function handleDeleteSession(id) {
   ElMessageBox.confirm('确定要彻底删除这个思维导图吗？', '删除确认', { 
-    type: 'warning', 
-    confirmButtonText: '删除',
-    cancelButtonText: '取消'
+    type: 'warning', confirmButtonText: '删除', cancelButtonText: '取消'
   }).then(() => deleteSession(id)).catch(() => {})
 }
 
 function applyStyleFromPanel(newStyle) {
-  if (!selectedNode.value) return // 移除 _level === 0 的限制
+  if (!selectedNode.value) return 
   pushUndo()
   selectedNode.value.style = { ...newStyle }
   recalc()
@@ -246,7 +239,6 @@ function resetNodeStyle(node) {
   recalc()
 }
 
-// 居中画布
 const { getCenterViewport } = useCreate()
 function fitToCenter() {
   const vp = getCenterViewport()
@@ -255,11 +247,9 @@ function fitToCenter() {
   panY.value = vp.panY
 }
 
-// 缩放
 function zoomIn() { zoom.value = Math.min(3, zoom.value * 1.2) }
 function zoomOut() { zoom.value = Math.max(0.2, zoom.value / 1.2) }
 
-// 导出
 function exportAsJSONFn() {
   const json = JSON.stringify(cleanNodeForExport(rootData.value), null, 2)
   const a = document.createElement('a')
@@ -269,14 +259,10 @@ function exportAsJSONFn() {
   ElMessage.success('JSON 导出成功')
 }
 
-function exportAsPNGFn() { 
-  exportAsPNG(svgRef.value, flatNodes.value, currentTheme.value) 
-}
+function exportAsPNGFn() { exportAsPNG(svgRef.value, flatNodes.value, currentTheme.value) }
 
-// ==================== 画布核心交互 ====================
-// 鼠标按下：拖拽画布空白处
 function onCanvasMouseDown(e) {
-  if (e.target === svgRef.value || e.target.classList.contains('mm-svg')) {
+  if (e.target === svgRef.value || e.target.classList.contains('mm-svg') || e.target.tagName === 'rect') {
     isPanning.value = true
     panStart.value = { x: e.clientX - panX.value, y: e.clientY - panY.value }
   }
@@ -284,7 +270,6 @@ function onCanvasMouseDown(e) {
   if (editingNode.value && e.target !== editInputRef.value) finishEdit()
 }
 
-// 鼠标移动：实现平移和拖拽释放位置预览
 function onCanvasMouseMove(e) {
   if (isPanning.value) { 
     panX.value = e.clientX - panStart.value.x
@@ -302,10 +287,7 @@ function onCanvasMouseMove(e) {
       const cx = node._x + node._width / 2
       const cy = node._y + node._height / 2
       const dist = Math.hypot(svgX - cx, svgY - cy)
-      if (dist < closestDist && node.id !== dragNodeId.value) { 
-        closest = node
-        closestDist = dist 
-      }
+      if (dist < closestDist && node.id !== dragNodeId.value) { closest = node; closestDist = dist }
       if (node.children && !node.collapsed) {
         for (const c of node.children) findClosest(c)
       }
@@ -315,7 +297,6 @@ function onCanvasMouseMove(e) {
   }
 }
 
-// 节点按下：开启节点拖拽
 function onNodeMouseDown(e, node) {
   selectedNodeId.value = node.id
   if (node !== rootData.value && e.button === 0) {
@@ -324,7 +305,6 @@ function onNodeMouseDown(e, node) {
   }
 }
 
-// 节点释放算法：变更层级与父节点
 function handleDrop() {
   const node = findNode(dragNodeId.value)
   const target = dragTargetParent.value
@@ -342,9 +322,7 @@ function handleDrop() {
   
   pushUndo()
   const oldParent = findParent(node.id)
-  if (oldParent) {
-    oldParent.children = oldParent.children.filter(c => c.id !== node.id)
-  }
+  if (oldParent) oldParent.children = oldParent.children.filter(c => c.id !== node.id)
   if (!target.children) target.children = []
   target.children.push(node)
   node._level = target._level + 1
@@ -361,7 +339,6 @@ function onCanvasMouseUp() {
   }
 }
 
-// 鼠标滚轮缩放
 function onWheel(e) {
   const delta = e.deltaY > 0 ? 0.9 : 1.1
   const newZoom = Math.min(3, Math.max(0.2, zoom.value * delta))
@@ -374,7 +351,6 @@ function onWheel(e) {
   zoom.value = newZoom
 }
 
-// ==================== 内联编辑 ====================
 const editInputStyle = computed(() => {
   if (!editingNode.value) return {}
   const node = editingNode.value
@@ -390,10 +366,7 @@ function startEdit(node) {
   editingNode.value = node
   editText.value = node.title
   nextTick(() => { 
-    if (editInputRef.value) { 
-      editInputRef.value.focus()
-      editInputRef.value.select() 
-    } 
+    if (editInputRef.value) { editInputRef.value.focus(); editInputRef.value.select() } 
   })
 }
 
@@ -406,11 +379,8 @@ function finishEdit() {
   cancelEdit()
 }
 
-function cancelEdit() { 
-  editingNode.value = null 
-}
+function cancelEdit() { editingNode.value = null }
 
-// ==================== 快捷键绑定 ====================
 function onKeydown(e) {
   if (editingNode.value || ((e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') && e.target !== editInputRef.value)) return
   
@@ -426,7 +396,6 @@ function onKeydown(e) {
   else if (e.key === ' ' && node.children?.length > 0) { e.preventDefault(); toggleCollapse(node) }
 }
 
-// ==================== 生命周期钩子 ====================
 onMounted(() => { 
   loadSessions()
   window.addEventListener('keydown', onKeydown)
@@ -440,7 +409,6 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-/* 最外层应用布局 */
 .mindmap-app { 
   display: flex; 
   flex-direction: row; 
@@ -449,8 +417,6 @@ onUnmounted(() => {
   overflow: hidden; 
   user-select: none; 
 }
-
-/* 主内容区占用剩余空间 */
 .mm-main-content {
   flex: 1;
   display: flex;
@@ -458,8 +424,6 @@ onUnmounted(() => {
   position: relative;
   min-width: 0; 
 }
-
-/* 移动端侧边栏遮罩 */
 .sidebar-overlay {
   position: fixed;
   top: 0; 
@@ -469,34 +433,25 @@ onUnmounted(() => {
   background: rgba(0,0,0,0.4);
   z-index: 14;
 }
-
-/* SVG 画布容器 */
 .mm-canvas-container { 
   flex: 1; 
   overflow: hidden; 
   position: relative; 
 }
-
 .mm-svg { 
   width: 100%; 
   height: 100%; 
   display: block; 
 }
-
-/* 节点交互效果 */
 .mm-node-group { 
   cursor: pointer; 
 }
-
 .mm-node-group:hover .add-child-btn { 
   opacity: 1 !important; 
 }
-
 .mm-node-group.selected rect:first-child { 
   filter: drop-shadow(0 0 0 2px var(--el-color-primary)) !important; 
 }
-
-/* 悬浮输入编辑框 */
 .mm-inline-edit { 
   position: absolute; 
   border: 2px solid var(--el-color-primary); 
@@ -508,8 +463,6 @@ onUnmounted(() => {
   background: #fff; 
   box-sizing: border-box; 
 }
-
-/* 底部操作提示文本 */
 .mm-hint {
   position: absolute;
   bottom: 12px;

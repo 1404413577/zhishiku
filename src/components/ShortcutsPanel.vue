@@ -1,112 +1,124 @@
 <template>
-  <el-dialog v-model="visible" title="快捷键" width="500px" :close-on-click-modal="true" @keydown.stop>
-    <div class="shortcuts-list">
-      <div v-for="group in shortcutGroups" :key="group.name" class="shortcut-group">
-        <h3 class="group-title">{{ group.name }}</h3>
-        <div v-for="item in group.items" :key="item.key" class="shortcut-item">
-          <span class="shortcut-desc">{{ item.desc }}</span>
-          <kbd class="shortcut-key">{{ item.key }}</kbd>
-        </div>
-      </div>
+  <div class="mm-style-panel" v-if="selectedNode">
+    <div class="panel-header">
+      <span>节点设置</span>
+      <el-button :icon="Close" circle size="small" text @click="$emit('close')" />
     </div>
-  </el-dialog>
+    <div class="panel-body">
+      <div class="style-row">
+        <label>填充颜色</label>
+        <el-color-picker v-model="nodeStyle.fillColor" size="small" @change="applyStyle" />
+      </div>
+      <div class="style-row">
+        <label>文字颜色</label>
+        <el-color-picker v-model="nodeStyle.fontColor" size="small" @change="applyStyle" />
+      </div>
+      <div class="style-row">
+        <label>边框颜色</label>
+        <el-color-picker v-model="nodeStyle.borderColor" size="small" @change="applyStyle" />
+      </div>
+      <div class="style-row">
+        <label>边框宽度</label>
+        <el-slider v-model="nodeStyle.borderWidth" :min="0" :max="5" size="small" @change="applyStyle" />
+      </div>
+      <div class="style-row">
+        <label>字号</label>
+        <el-slider v-model="nodeStyle.fontSize" :min="10" :max="24" size="small" @change="applyStyle" />
+      </div>
+      <el-divider />
+      
+      <div class="style-row" style="flex-direction: column; align-items: flex-start;">
+        <label style="margin-bottom: 8px;">节点备注 (悬浮显示)</label>
+        <el-input 
+          v-model="selectedNode.note" 
+          type="textarea" 
+          :rows="3" 
+          placeholder="输入补充信息..." 
+        />
+      </div>
+      <el-divider />
+
+      <el-button size="small" @click="$emit('add-child', selectedNode)" :icon="Plus">添加子节点</el-button>
+      <el-button size="small" style="margin-left:8px" @click="$emit('add-sibling', selectedNode)" :icon="Plus" :disabled="selectedNode._level === 0">添加同级</el-button>
+      <el-button size="small" style="margin-left:8px" type="danger" @click="$emit('delete', selectedNode)" :icon="Delete" :disabled="selectedNode._level === 0">删除</el-button>
+      <el-divider />
+      <el-button size="small" type="warning" @click="$emit('reset-style', selectedNode)">重置样式</el-button>
+    </div>
+  </div>
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { reactive, watch } from 'vue'
+import { Close, Plus, Delete } from '@element-plus/icons-vue'
 
-const visible = ref(false)
-
-const shortcutGroups = [
-  {
-    name: '编辑器',
-    items: [
-      { desc: '保存文档', key: 'Ctrl + S' },
-      { desc: '切换专注模式', key: 'Ctrl + Shift + F' },
-      { desc: '退出专注模式', key: 'Esc' },
-      { desc: '插入表格', key: '工具栏按钮' }
-    ]
-  },
-  {
-    name: '编辑模式',
-    items: [
-      { desc: '切换编辑/分屏/预览', key: '工具栏按钮' },
-      { desc: '粗体', key: 'Ctrl + B' },
-      { desc: '斜体', key: 'Ctrl + I' },
-      { desc: '撤销', key: 'Ctrl + Z' },
-      { desc: '重做', key: 'Ctrl + Shift + Z' }
-    ]
-  },
-  {
-    name: '全局',
-    items: [
-      { desc: '显示此快捷键面板', key: '?' },
-      { desc: '搜索文档', key: 'Ctrl + K' }
-    ]
-  }
-]
-
-const handleKeydown = (e) => {
-  if (e.key === '?' && !e.ctrlKey && !e.metaKey && !e.altKey && !isInputFocused()) {
-    e.preventDefault()
-    visible.value = !visible.value
-  }
-}
-
-const isInputFocused = () => {
-  const el = document.activeElement
-  return el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable)
-}
-
-onMounted(() => {
-  window.addEventListener('keydown', handleKeydown)
+const props = defineProps({
+  selectedNode: { type: Object, default: null },
+  currentTheme: { type: Object, required: true }
 })
 
-onUnmounted(() => {
-  window.removeEventListener('keydown', handleKeydown)
+const emit = defineEmits(['close', 'apply-style', 'add-child', 'add-sibling', 'delete', 'reset-style'])
+
+const nodeStyle = reactive({
+  fillColor: '#ffffff',
+  fontColor: '#303133',
+  borderColor: '#dcdfe6',
+  borderWidth: 1,
+  fontSize: 13,
 })
+
+watch(() => props.selectedNode, (node) => {
+  if (node) {
+    nodeStyle.fillColor = node.style?.fillColor || (node._level === 0 ? props.currentTheme.rootFill : props.currentTheme.nodeFill)
+    nodeStyle.fontColor = node.style?.fontColor || (node._level === 0 ? props.currentTheme.rootText : props.currentTheme.nodeText)
+    nodeStyle.borderColor = node.style?.borderColor || (node._level === 0 ? 'transparent' : props.currentTheme.nodeBorder)
+    nodeStyle.borderWidth = node.style?.borderWidth ?? 1
+    nodeStyle.fontSize = node.style?.fontSize ?? (node._level === 0 ? 16 : 13)
+  }
+}, { immediate: true })
+
+const applyStyle = () => {
+  emit('apply-style', { ...nodeStyle })
+}
 </script>
 
 <style scoped>
-.shortcuts-list {
-  max-height: 60vh;
-  overflow-y: auto;
+.mm-style-panel {
+  position: absolute;
+  top: 56px;
+  right: 12px;
+  width: 260px;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.12);
+  z-index: 20;
+  overflow: hidden;
 }
-
-.shortcut-group {
-  margin-bottom: 20px;
-}
-
-.group-title {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--el-text-color-primary);
-  margin: 0 0 10px 0;
-  padding-bottom: 6px;
-  border-bottom: 1px solid var(--el-border-color-lighter);
-}
-
-.shortcut-item {
+.panel-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 7px 0;
+  padding: 12px 16px;
+  font-weight: 600;
   font-size: 14px;
+  border-bottom: 1px solid var(--el-border-color-lighter);
+  background: var(--el-color-primary-light-9);
 }
-
-.shortcut-desc {
+.panel-body {
+  padding: 16px;
+}
+.style-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+  font-size: 13px;
   color: var(--el-text-color-regular);
 }
-
-.shortcut-key {
-  display: inline-block;
-  padding: 2px 8px;
-  background: var(--el-fill-color);
-  border: 1px solid var(--el-border-color);
-  border-radius: 4px;
-  font-family: monospace;
-  font-size: 12px;
-  color: var(--el-text-color-secondary);
-  white-space: nowrap;
+.style-row label {
+  flex-shrink: 0;
+  margin-right: 12px;
+}
+.style-row .el-slider, .style-row .el-input {
+  flex: 1;
 }
 </style>
