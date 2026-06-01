@@ -1,7 +1,11 @@
 <template>
   <div class="mm-toolbar">
     <div class="toolbar-left">
+
       <el-button class="menu-toggle" :icon="Menu" text circle @click="$emit('toggle-menu')" />
+      <el-button type="primary" plain size="small" @click="$emit('ai-generate')">
+  <span style="margin-right: 4px;">✨</span> AI 生成
+</el-button>
       <el-button size="small" @click="$emit('import-md')" :icon="Document">导入 MD</el-button>
       <el-button size="small" @click="$emit('save')" :icon="Select">保存</el-button>
       <el-divider direction="vertical" />
@@ -44,6 +48,7 @@ defineProps({
 })
 
 defineEmits([
+  'ai-generate',
   'import-md', 'save', 'zoom-in', 'zoom-out', 'fit-center', 'undo', 'redo', 
   'export-json', 'export-png', 'update:currentThemeName', 'update:currentLineStyle', 
   'update:currentLayoutMode', 'toggle-menu'

@@ -22,6 +22,7 @@
 
     <div class="mm-main-content">
       <MindMapToolbar
+        @ai-generate="aiDialogVisible = true"
         :zoom="zoom"
         :canUndo="canUndo"
         :canRedo="canRedo"
@@ -253,10 +254,53 @@
         >
       </template>
     </el-dialog>
+    <el-dialog
+      v-model="aiDialogVisible"
+      title="✨ AI 一键生成思维导图"
+      width="500px"
+    >
+      <div
+        v-loading="isAiGenerating"
+        element-loading-text="AI 正在疯狂思考并构建导图，请稍候..."
+      >
+        <p
+          style="
+            margin-bottom: 12px;
+            font-size: 13px;
+            color: var(--el-text-color-secondary);
+          "
+        >
+          输入一个主题或一句话，AI 将自动为你发散思维并生成完整的导图大纲。
+        </p>
+        <el-input
+          v-model="aiPrompt"
+          type="textarea"
+          :rows="4"
+          placeholder="例如：帮我梳理一份 Vue3 的核心概念学习路径\n或者：双十一大促营销活动策划方案"
+          @keydown.enter.prevent="handleAiGenerate"
+        />
+      </div>
+      <template #footer>
+        <el-button @click="aiDialogVisible = false" :disabled="isAiGenerating"
+          >取消</el-button
+        >
+        <el-button
+          type="primary"
+          @click="handleAiGenerate"
+          :disabled="!aiPrompt.trim() || isAiGenerating"
+        >
+          开始生成
+        </el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup>
+import { AIService } from "@/services/ai";
+const aiDialogVisible = ref(false);
+const aiPrompt = ref("");
+const isAiGenerating = ref(false);
 import { ref, computed, onMounted, onUnmounted, nextTick, watch } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 
@@ -298,6 +342,79 @@ const panStart = ref({ x: 0, y: 0 });
 const dragNodeId = ref(null);
 const dragStart = ref({ x: 0, y: 0 });
 const dragTargetParent = ref(null);
+
+/**
+ * AI 一键生成思维导图核心算法 (流式实时渲染版)
+ */
+async function handleAiGenerate() {
+  const text = aiPrompt.value.trim();
+  if (!text || isAiGenerating.value) return;
+
+  isAiGenerating.value = true;
+
+  // 1. 立刻关闭弹窗，让用户能直观看到背后的画布
+  aiDialogVisible.value = false;
+
+  // 2. 提前记录一次历史，防止撤销栈被中间生成状态塞满
+  pushUndo();
+
+  // 3. 在画布上立刻生成一个带有用户问题的“根节点”作为起点
+  const rootTitle = text.length > 15 ? text.substring(0, 15) + "..." : text;
+  rootData.value = createNode(rootTitle, 0);
+  recalc();
+  fitToCenter();
+
+  const systemPrompt = `你是一个顶级的思维导图架构师。
+请根据用户的输入，构建一个逻辑清晰、层级分明、结构严谨的思维导图大纲。
+【严格输出规则】：
+1. 只能使用 Markdown 的无序列表格式（如：- 主题、  - 子主题）。
+2. 不要输出任何问候语、解释性文字、总结性文字。
+3. 不要使用 \`\`\`markdown 代码块包裹内容，直接输出纯文本。
+4. 层级深度控制在 3~4 级为最佳，内容要精炼，适合做导图节点。
+
+用户需求：${text}`;
+
+  try {
+    // 4. 调用 AI 流式接口
+    await AIService.chatCompletion(
+      [{ role: "user", content: systemPrompt }],
+      (_delta, fullText) => {
+        // ========== 这里是“野蛮生长”的魔法核心 ==========
+
+        // A. 实时清理 markdown 代码块标记
+        const cleanedText = fullText
+          .replace(/```markdown\n?/g, "")
+          .replace(/```\n?/g, "")
+          .trim();
+
+        if (cleanedText) {
+          // B. 把半成品的文本实时交给引擎解析为树状 AST
+          const parsedData = parseMarkdownToData(cleanedText);
+
+          // C. 锁定根节点名字（覆盖默认的“导入的导图”）
+          parsedData.title = rootTitle;
+
+          // D. 实时覆盖画板数据
+          rootData.value = parsedData;
+
+          // E. 重新排版（触发 Vue 响应式与 SVG 重绘）
+          recalc();
+        }
+      },
+      null,
+      { model: "gpt-3.5-turbo" }, // 💡 注意：这里可以替换成你们设置中选中的在线模型
+    );
+
+    // 生成完全结束后，清空输入框提示成功，并让整个导图居中自适应
+    aiPrompt.value = "";
+    ElMessage.success("✨ 导图生成完毕！");
+    fitToCenter();
+  } catch (error) {
+    ElMessage.error("AI 生成失败：" + error.message);
+  } finally {
+    isAiGenerating.value = false;
+  }
+}
 
 // MD 弹窗
 const mdDialogVisible = ref(false);
