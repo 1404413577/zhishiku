@@ -334,13 +334,22 @@ const docTypeData = computed(() => {
 })
 
 // 图表数据 — 月度新增趋势
+// 图表数据 — 月度新增趋势
 const monthlyCreationData = computed(() => {
   const months = {}
   documentsStore.documents.forEach(doc => {
     const date = doc.createdAt || doc.updatedAt
     if (date) {
-      const month = date.substring(0, 7)
-      months[month] = (months[month] || 0) + 1
+      // 统一转换为 Date 对象，兼容字符串(IndexedDB)和数字时间戳(本地文件夹)
+      const dateObj = new Date(date)
+      // 确保是一个合法的时间
+      if (!isNaN(dateObj.getTime())) {
+        const year = dateObj.getFullYear()
+        const month = String(dateObj.getMonth() + 1).padStart(2, '0')
+        const monthStr = `${year}-${month}`
+        
+        months[monthStr] = (months[monthStr] || 0) + 1
+      }
     }
   })
   const sorted = Object.entries(months).sort()

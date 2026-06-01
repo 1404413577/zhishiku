@@ -602,7 +602,9 @@
 
       <!-- 页面内容 -->
       <div class="page-content">
-        <router-view />
+        <router-view v-slot="{ Component }">
+          <component :is="Component" :key="route.fullPath" />
+        </router-view>
       </div>
     </el-main>
   </el-container>
@@ -692,7 +694,7 @@
 import { ref, computed, onMounted, watch } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import { useDocumentsStore } from "@/stores/documents.js";
-import { FileSystem as FSService } from '@/services/fs.js'
+import { FileSystem as FSService } from "@/services/fs.js";
 import { ElMessage, ElMessageBox } from "element-plus";
 import ShortcutsPanel from "@/components/ShortcutsPanel.vue";
 import {
@@ -967,8 +969,11 @@ const disconnectWorkspace = async () => {
     "确定要断开本地文件夹的连接吗？系统将切回到浏览器内建存储。",
     "断开连接",
   );
+  // 1. 先使用 await 等待路由跳转彻底完成，这会触发原组件(如 Editor)的完全卸载
+  await router.push("/");
+
+  // 2. 视图安全后，再切换底层数据源
   await documentsStore.switchToIndexedDB();
-  router.push("/");
 };
 
 const reconnectWorkspace = async () => {
