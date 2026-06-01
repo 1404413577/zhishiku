@@ -1,11 +1,14 @@
 <template>
   <div :class="['mm-sidebar', { 'sidebar-open': isSidebarOpen }]">
     <div class="sidebar-header">
-      <!-- 使用 Dropdown 下拉菜单实现模板选择 -->
-      <el-dropdown trigger="click" @command="handleCreate" class="new-mm-dropdown">
+      <el-dropdown
+        trigger="click"
+        @command="handleCreate"
+        class="new-mm-dropdown"
+      >
         <el-button type="primary" class="new-mm-btn" round>
           <el-icon><Plus /></el-icon>
-          <span style="margin-left: 4px; margin-right: 4px;">新建导图</span>
+          <span style="margin-left: 4px; margin-right: 4px">新建</span>
           <el-icon><ArrowDown /></el-icon>
         </el-button>
         <template #dropdown>
@@ -13,64 +16,123 @@
             <el-dropdown-item command="blank">📄 空白导图</el-dropdown-item>
             <el-dropdown-item command="project">📊 项目计划</el-dropdown-item>
             <el-dropdown-item command="meeting">📝 会议纪要</el-dropdown-item>
-            <el-dropdown-item command="brainstorm">💡 头脑风暴</el-dropdown-item>
+            <el-dropdown-item command="brainstorm"
+              >💡 头脑风暴</el-dropdown-item
+            >
           </el-dropdown-menu>
         </template>
       </el-dropdown>
-
-      <el-button class="sidebar-close-btn" :icon="Close" circle text @click="$emit('update:isSidebarOpen', false)" />
+      <el-button
+        class="sidebar-close-btn"
+        :icon="Close"
+        circle
+        text
+        @click="$emit('update:isSidebarOpen', false)"
+      />
     </div>
-    <el-scrollbar class="session-list">
-      <div
-        v-for="session in sortedSessions"
-        :key="session.id"
-        :class="['session-item', { active: session.id === activeSessionId }]"
-        @click="$emit('select', session.id)"
-      >
-        <div class="session-info">
-          <el-icon class="session-icon"><Share /></el-icon>
-          <span class="session-title">{{ session.title || '未命名导图' }}</span>
-        </div>
-        <el-button
-          type="danger"
-          :icon="Delete"
-          circle
-          text
-          size="small"
-          class="delete-btn"
-          @click.stop="$emit('delete', session.id)"
-          title="删除导图"
-        />
-      </div>
-    </el-scrollbar>
+
+    <el-tabs v-model="activeTab" class="sidebar-tabs" stretch>
+      <el-tab-pane label="文档列表" name="sessions">
+        <el-scrollbar class="session-list">
+          <div
+            v-for="session in sortedSessions"
+            :key="session.id"
+            :class="[
+              'session-item',
+              { active: session.id === activeSessionId },
+            ]"
+            @click="$emit('select', session.id)"
+          >
+            <div class="session-info">
+              <el-icon class="session-icon"><Share /></el-icon>
+              <span class="session-title">{{
+                session.title || "未命名导图"
+              }}</span>
+            </div>
+            <el-button
+              type="danger"
+              :icon="Delete"
+              circle
+              text
+              size="small"
+              class="delete-btn"
+              @click.stop="$emit('delete', session.id)"
+            />
+          </div>
+        </el-scrollbar>
+      </el-tab-pane>
+
+      <el-tab-pane label="大纲视图" name="outline">
+        <el-scrollbar class="outline-tree">
+          <el-tree
+            :data="treeData"
+            node-key="id"
+            default-expand-all
+            draggable
+            :expand-on-click-node="false"
+            @node-drag-start="$emit('push-undo')"
+            @node-drop="handleOutlineDrop"
+          >
+            <template #default="{ node, data }">
+              <div
+                class="custom-tree-node"
+                @click="$emit('focus-node', data.id)"
+              >
+                <span>{{ data.title }}</span>
+              </div>
+            </template>
+          </el-tree>
+        </el-scrollbar>
+      </el-tab-pane>
+    </el-tabs>
   </div>
 </template>
 
 <script setup>
-import { computed } from 'vue'
-import { Plus, Close, Share, Delete, ArrowDown } from '@element-plus/icons-vue'
+import { ref, computed } from "vue";
+import { Plus, Close, Share, Delete, ArrowDown } from "@element-plus/icons-vue";
 
 const props = defineProps({
   sessions: { type: Array, required: true },
   activeSessionId: { type: String, default: null },
-  isSidebarOpen: { type: Boolean, default: false }
-})
+  isSidebarOpen: { type: Boolean, default: false },
+  rootData: { type: Object, required: true }, // 接收画布根数据用于渲染大纲
+});
 
-const emit = defineEmits(['update:isSidebarOpen', 'create', 'select', 'delete'])
+const emit = defineEmits([
+  "update:isSidebarOpen",
+  "create",
+  "select",
+  "delete",
+  "focus-node",
+  "push-undo",
+  "recalc",
+]);
+
+const activeTab = ref("sessions");
 
 const sortedSessions = computed(() => {
-  return [...props.sessions].sort((a, b) => b.updatedAt - a.updatedAt)
-})
+  return [...props.sessions].sort((a, b) => b.updatedAt - a.updatedAt);
+});
 
-// 透传 command 参数给父组件 (MindMapView.vue)
+// 大纲树的数据源包装
+const treeData = computed(() => {
+  return props.rootData ? [props.rootData] : [];
+});
+
 function handleCreate(command) {
-  emit('create', command)
+  emit("create", command);
+}
+
+// 大纲拖拽结束后，通知画布重新计算布局
+function handleOutlineDrop() {
+  emit("recalc");
 }
 </script>
 
 <style scoped>
 .mm-sidebar {
-  width: 260px;
+  width: 280px;
   background-color: var(--el-bg-color);
   border-right: 1px solid var(--el-border-color-lighter);
   display: flex;
@@ -94,7 +156,26 @@ function handleCreate(command) {
   width: 100%;
   font-weight: 500;
 }
-.session-list {
+.sidebar-tabs {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+}
+:deep(.el-tabs__content) {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+:deep(.el-tab-pane) {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.session-list,
+.outline-tree {
   flex: 1;
   padding: 8px;
 }
@@ -106,8 +187,6 @@ function handleCreate(command) {
   margin-bottom: 4px;
   border-radius: 8px;
   cursor: pointer;
-  transition: all 0.2s ease;
-  color: var(--el-text-color-regular);
 }
 .session-item:hover {
   background-color: var(--el-fill-color-light);
@@ -122,7 +201,6 @@ function handleCreate(command) {
   gap: 10px;
   overflow: hidden;
 }
-.session-icon { font-size: 16px; }
 .session-title {
   font-size: 13px;
   font-weight: 500;
@@ -139,21 +217,11 @@ function handleCreate(command) {
   opacity: 1;
   transform: scale(1);
 }
-
-@media (max-width: 768px) {
-  .mm-sidebar {
-    position: fixed;
-    top: 0;
-    left: 0;
-    height: 100%;
-    transform: translateX(-100%);
-  }
-  .mm-sidebar.sidebar-open {
-    transform: translateX(0);
-    box-shadow: 4px 0 24px rgba(0,0,0,0.15);
-  }
-}
-@media (min-width: 769px) {
-  .sidebar-close-btn { display: none; }
+.custom-tree-node {
+  font-size: 13px;
+  color: var(--el-text-color-primary);
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 </style>

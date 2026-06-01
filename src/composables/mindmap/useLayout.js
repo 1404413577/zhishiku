@@ -1,6 +1,7 @@
 import { ref } from 'vue'
 
-export function useLayout(rootData, currentTheme, lineStyle) {
+// 新增 layoutMode 参数: 'right' (向右展开) | 'centered' (两边散开)
+export function useLayout(rootData, currentTheme, lineStyle, layoutMode) {
   const flatNodes = ref([])
   const connections = ref([])
 
@@ -11,9 +12,7 @@ export function useLayout(rootData, currentTheme, lineStyle) {
   let measureCtx = null
 
   function getTextWidth(text, fontSize) {
-    if (!measureCtx) {
-      measureCtx = document.createElement('canvas').getContext('2d')
-    }
+    if (!measureCtx) measureCtx = document.createElement('canvas').getContext('2d')
     measureCtx.font = `400 ${fontSize}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`
     return measureCtx.measureText(text).width
   }
@@ -38,9 +37,11 @@ export function useLayout(rootData, currentTheme, lineStyle) {
     node._totalHeight = Math.max(node._height, total)
   }
 
-  function assignPositions(node, x, topY) {
-    node._x = x
+  // 增加 direction 参数：1向右，-1向左
+  function assignPositions(node, x, topY, direction = 1) {
+    node._x = direction === 1 ? x : x - node._width
     node._y = topY + node._totalHeight / 2 - node._height / 2
+    node._direction = direction // 记录节点朝向，用于画线
 
     if (!node.children || node.children.length === 0 || node.collapsed) return
 
@@ -48,7 +49,8 @@ export function useLayout(rootData, currentTheme, lineStyle) {
     let childY = topY + (node._totalHeight - childrenTotalH) / 2
 
     for (const child of node.children) {
-      assignPositions(child, x + node._width + GAP_X, childY)
+      const nextX = direction === 1 ? node._x + node._width + GAP_X : node._x - GAP_X
+      assignPositions(child, nextX, childY, direction)
       childY += child._totalHeight + GAP_Y
     }
   }
@@ -63,26 +65,21 @@ export function useLayout(rootData, currentTheme, lineStyle) {
       nodes.push(node)
       if (node.children && !node.collapsed) {
         for (const child of node.children) {
-          const parentRight = node._x + node._width
-          const parentCY = node._y + node._height / 2
-          const childLeft = child._x
-          const childCY = child._y + child._height / 2
-          const midX = (parentRight + childLeft) / 2
+          const isLeft = child._direction === -1
+          // 连线起点：根据左右方向决定是从右边缘出还是左边缘出
+          const startX = isLeft ? node._x : node._x + node._width
+          const startY = node._y + node._height / 2
+          // 连线终点
+          const endX = isLeft ? child._x + child._width : child._x
+          const endY = child._y + child._height / 2
+          const midX = (startX + endX) / 2
 
           let path = ''
-          if (style === 'curve') {
-            path = `M ${parentRight} ${parentCY} C ${midX} ${parentCY}, ${midX} ${childCY}, ${childLeft} ${childCY}`
-          } else if (style === 'orthogonal') {
-            path = `M ${parentRight} ${parentCY} L ${midX} ${parentCY} L ${midX} ${childCY} L ${childLeft} ${childCY}`
-          } else if (style === 'straight') {
-            path = `M ${parentRight} ${parentCY} L ${childLeft} ${childCY}`
-          }
+          if (style === 'curve') path = `M ${startX} ${startY} C ${midX} ${startY}, ${midX} ${endY}, ${endX} ${endY}`
+          else if (style === 'orthogonal') path = `M ${startX} ${startY} L ${midX} ${startY} L ${midX} ${endY} L ${endX} ${endY}`
+          else if (style === 'straight') path = `M ${startX} ${startY} L ${endX} ${endY}`
 
-          conns.push({
-            id: `${node.id}-${child.id}`,
-            path,
-            color,
-          })
+          conns.push({ id: `${node.id}-${child.id}`, path, color })
           walk(child)
         }
       }
@@ -95,13 +92,35 @@ export function useLayout(rootData, currentTheme, lineStyle) {
   function recalc() {
     if (!rootData.value) return
     computeLayout(rootData.value, 0)
-    assignPositions(rootData.value, 80, 60)
+
+    const mode = layoutMode?.value || 'right'
+    if (mode === 'centered' && rootData.value.children && rootData.value.children.length > 0) {
+      // 中心布局：子节点按奇偶分发到左右两边
+      rootData.value._x = 80 // 假定初始位置，后由 pan 控制
+      rootData.value._y = 60
+      rootData.value._direction = 1
+
+      const leftChildren = rootData.value.children.filter((_, i) => i % 2 !== 0)
+      const rightChildren = rootData.value.children.filter((_, i) => i % 2 === 0)
+
+      const calcHalfLayout = (children, direction) => {
+        if (!children.length) return
+        const totalH = children.reduce((s, c) => s + c._totalHeight, 0) + (children.length - 1) * GAP_Y
+        let startY = rootData.value._y + rootData.value._height / 2 - totalH / 2
+        children.forEach(child => {
+          const nextX = direction === 1 ? rootData.value._x + rootData.value._width + GAP_X : rootData.value._x - GAP_X
+          assignPositions(child, nextX, startY, direction)
+          startY += child._totalHeight + GAP_Y
+        })
+      }
+      calcHalfLayout(rightChildren, 1)
+      calcHalfLayout(leftChildren, -1)
+    } else {
+      // 传统的向右布局
+      assignPositions(rootData.value, 80, 60, 1)
+    }
     collectNodesAndConnections()
   }
 
-  return {
-    flatNodes,
-    connections,
-    recalc
-  }
+  return { flatNodes, connections, recalc }
 }
