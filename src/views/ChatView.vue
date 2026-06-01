@@ -1,78 +1,29 @@
 <template>
   <div class="chat-layout">
-    <div :class="['chat-sidebar', { 'sidebar-open': isSidebarOpen }]">
-      <div class="sidebar-header">
-        <el-button type="primary" :icon="Plus" class="new-chat-btn" @click="createNewSession" round>
-          创建新对话
-        </el-button>
-        <el-button class="sidebar-close-btn" :icon="Close" circle text @click="isSidebarOpen = false" />
-      </div>
-      <el-scrollbar class="session-list">
-        <div 
-          v-for="session in sortedSessions" 
-          :key="session.id"
-          :class="['session-item', { active: session.id === activeSessionId }]"
-          @click="selectSession(session.id)"
-        >
-          <div class="session-info">
-            <el-icon class="session-icon"><ChatDotRound /></el-icon>
-            <span class="session-title">{{ session.title || '新对话' }}</span>
-          </div>
-          <el-button 
-            type="danger" 
-            :icon="Delete" 
-            circle 
-            text
-            size="small" 
-            class="delete-btn" 
-            @click.stop="deleteSession(session.id)"
-            title="删除会话"
-          />
-        </div>
-      </el-scrollbar>
-    </div>
+    <ChatSidebar 
+      :sessions="sessions"
+      v-model:activeSessionId="activeSessionId"
+      v-model:isSidebarOpen="isSidebarOpen"
+      @create="createNewSession"
+      @delete="deleteSession"
+    />
 
     <div v-if="isSidebarOpen" class="sidebar-overlay" @click="isSidebarOpen = false"></div>
 
     <div class="chat-main">
-      <div class="chat-header">
-        <div class="header-left">
-          <el-button class="menu-toggle" :icon="Menu" text circle @click="isSidebarOpen = true" />
-          <h2 class="header-title">AI 对话</h2>
-        </div>
-        <div class="header-right">
-          <div class="engine-selector">
-            <el-select v-model="selectedEngine" placeholder="引擎" size="default" style="width: 110px" @change="onEngineChange">
-              <el-option label="在线 API" value="online" />
-              <el-option label="本地模型" value="local" />
-              <el-option label="Ollama" value="ollama" />
-            </el-select>
-          </div>
-          <div class="model-selector">
-            <el-select 
-              v-model="selectedModel" 
-              :placeholder="modelPlaceholder" 
-              size="default" 
-              style="width: 180px"
-              :loading="loadingModels"
-              @change="onModelChange"
-            >
-              <el-option
-                v-for="model in availableModels"
-                :key="model.value || model.name"
-                :label="model.label || model.name"
-                :value="model.value || model.name"
-              />
-            </el-select>
-            <el-button size="default" :icon="Refresh" circle text @click="fetchModels" title="刷新模型" />
-          </div>
-          <div class="header-actions">
-            <el-button size="default" type="primary" plain :icon="Download" @click="archiveToDocument" title="保存为 Markdown" :disabled="messages.length === 0">
-              归档
-            </el-button>
-          </div>
-        </div>
-      </div>
+      <ChatHeader 
+        v-model:selectedEngine="selectedEngine"
+        v-model:selectedModel="selectedModel"
+        :availableModels="availableModels"
+        :loadingModels="loadingModels"
+        :modelPlaceholder="modelPlaceholder"
+        :canArchive="messages.length > 0"
+        @refresh="fetchModels"
+        @archive="archiveToDocument"
+        @toggle-menu="isSidebarOpen = true"
+        @update:selectedEngine="onEngineChange"
+        @update:selectedModel="onModelChange"
+      />
 
       <div class="chat-body-container" ref="chatBodyRef">
         <div class="chat-body-inner">
@@ -127,54 +78,30 @@
         </div>
       </div>
 
-      <div class="chat-footer">
-        <div class="input-wrapper">
-          <el-input
-            v-model="userInput"
-            type="textarea"
-            :rows="1"
-            :autosize="{ minRows: 1, maxRows: 6 }"
-            placeholder="给 AI 发送消息... (Shift + Enter 换行)"
-            @keydown="handleKeydown"
-            resize="none"
-            class="chat-input"
-            :disabled="isGenerating"
-          />
-          <div class="input-actions">
-            <el-button
-              v-if="isGenerating"
-              type="danger"
-              circle
-              :icon="Close"
-              @click="stopGeneration"
-              title="停止生成"
-            />
-            <el-button
-              v-else
-              type="primary"
-              circle
-              :icon="Promotion"
-              @click="sendMessage"
-              :disabled="!userInput.trim() || !selectedModel"
-              class="send-btn"
-            />
-          </div>
-        </div>
-        <div class="footer-hint">AI 可能会产生错误，请核实重要信息。</div>
-      </div>
+      <ChatInput 
+        :isGenerating="isGenerating"
+        :disabled="!selectedModel"
+        @send="sendMessage"
+        @stop="stopGeneration"
+      />
     </div>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted, onUnmounted, nextTick, computed, watch } from 'vue'
-import { ChatLineRound, Refresh, MagicStick, User, Monitor, Promotion, Loading, Delete, Download, Plus, ChatDotRound, Close, Menu } from '@element-plus/icons-vue'
+import { MagicStick, Monitor, Loading, Delete } from '@element-plus/icons-vue'
 import { useSettingsStore } from '@/stores/settings'
 import { useDocumentsStore } from '@/stores/documents'
 import { AIService } from '@/services/ai'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { markdownProcessor } from '@/utils/markdown.js'
 import 'highlight.js/styles/github.css'
+
+// 导入拆分的子组件
+import ChatSidebar from '@/components/Chat/ChatSidebar.vue'
+import ChatHeader from '@/components/Chat/ChatHeader.vue'
+import ChatInput from '@/components/Chat/ChatInput.vue'
 
 const settings = useSettingsStore()
 const documentsStore = useDocumentsStore()
@@ -184,7 +111,6 @@ const selectedEngine = ref(settings.aiEngine || 'ollama')
 const availableModels = ref([])
 const selectedModel = ref('')
 const loadingModels = ref(false)
-const userInput = ref('')
 const isGenerating = ref(false)
 const currentReply = ref('')
 const chatBodyRef = ref(null)
@@ -210,12 +136,7 @@ const isSidebarOpen = ref(false)
 if (sessions.value.length === 0) {
   const oldHistory = safeJsonParse(localStorage.getItem('ollama-chat-history'), [])
   if (oldHistory.length > 0) {
-    sessions.value.push({
-      id: Date.now().toString(),
-      title: '历史对话',
-      updatedAt: Date.now(),
-      messages: oldHistory
-    })
+    sessions.value.push({ id: Date.now().toString(), title: '历史对话', updatedAt: Date.now(), messages: oldHistory })
     activeSessionId.value = sessions.value[0].id
     localStorage.removeItem('ollama-chat-history')
   } else {
@@ -229,22 +150,11 @@ if (!activeSessionId.value && sessions.value.length > 0) {
   activeSessionId.value = sessions.value[0].id
 }
 
-watch(sessions, (newVal) => {
-  localStorage.setItem('ollama-chat-sessions', JSON.stringify(newVal))
-}, { deep: true })
-
-watch(activeSessionId, (newVal) => {
-  if (newVal) localStorage.setItem('ollama-active-session', newVal)
-})
-
-const sortedSessions = computed(() => [...sessions.value].sort((a, b) => b.updatedAt - a.updatedAt))
+watch(sessions, (newVal) => localStorage.setItem('ollama-chat-sessions', JSON.stringify(newVal)), { deep: true })
+watch(activeSessionId, (newVal) => { if (newVal) localStorage.setItem('ollama-active-session', newVal) })
 
 const modelPlaceholder = computed(() => {
-  const placeholders = {
-    'online': '选择模型 (例如: gpt-3.5-turbo)',
-    'local': '选择本地模型',
-    'ollama': '正在加载模型...'
-  }
+  const placeholders = { 'online': '选择模型', 'local': '选择本地模型', 'ollama': '正在加载模型...' }
   return placeholders[selectedEngine.value] || '选择模型'
 })
 
@@ -255,18 +165,9 @@ const messageCount = computed(() => messages.value.length)
 const createNewSession = () => {
   if (isGenerating.value) return ElMessage.warning('请等待当前对话生成完毕再创建新对话')
   const hasEmpty = sessions.value.find(s => s.messages.length === 0)
-  if (hasEmpty) {
-    activeSessionId.value = hasEmpty.id
-    return
-  }
+  if (hasEmpty) { activeSessionId.value = hasEmpty.id; return }
   const id = Date.now().toString()
   sessions.value.push({ id, title: '新对话', updatedAt: Date.now(), messages: [] })
-  activeSessionId.value = id
-  scrollToBottom()
-}
-
-const selectSession = (id) => {
-  if (isGenerating.value) return ElMessage.warning('请等待当前对话生成完毕再切换')
   activeSessionId.value = id
   scrollToBottom()
 }
@@ -279,7 +180,7 @@ const deleteSession = async (id) => {
     if (index > -1) {
       sessions.value.splice(index, 1)
       if (activeSessionId.value === id) {
-        if (sessions.value.length > 0) activeSessionId.value = sortedSessions.value[0].id
+        if (sessions.value.length > 0) activeSessionId.value = sessions.value.sort((a, b) => b.updatedAt - a.updatedAt)[0].id
         else createNewSession()
       }
     }
@@ -296,75 +197,46 @@ const fetchModels = async () => {
       if (settings.aiModel) {
         availableModels.value.push({ label: settings.aiModel, value: settings.aiModel })
         selectedModel.value = settings.aiModel
-      } else {
-        ElMessage.info('请先在设置中配置在线 API 模型')
-      }
+      } else ElMessage.info('请先在设置中配置在线 API 模型')
     } else if (selectedEngine.value === 'local') {
       const localType = settings.localAiType || 'gpu'
       if (localType === 'gpu') {
-        availableModels.value = [
-          { label: 'SmolLM2-135M (轻量)', value: 'SmolLM2-135M-Instruct-q0f32-MLC' },
-          { label: 'Llama-3.2-1B (中量)', value: 'Llama-3.2-1B-Instruct-q4f16_1-MLC' }
-        ]
+        availableModels.value = [{ label: 'SmolLM2-135M', value: 'SmolLM2-135M-Instruct-q0f32-MLC' }, { label: 'Llama-3.2-1B', value: 'Llama-3.2-1B-Instruct-q4f16_1-MLC' }]
         selectedModel.value = settings.localModelId || availableModels.value[0].value
       } else {
-        availableModels.value = [
-          { label: 'Qwen1.5-0.5B-Chat', value: 'Xenova/Qwen1.5-0.5B-Chat' },
-          { label: 'TinyLlama-1.1B-Chat', value: 'Xenova/TinyLlama-1.1B-Chat-v1.0' }
-        ]
+        availableModels.value = [{ label: 'Qwen1.5-0.5B-Chat', value: 'Xenova/Qwen1.5-0.5B-Chat' }, { label: 'TinyLlama-1.1B-Chat', value: 'Xenova/TinyLlama-1.1B-Chat-v1.0' }]
         selectedModel.value = settings.localCpuModelId || availableModels.value[0].value
       }
     } else if (selectedEngine.value === 'ollama') {
-      if (!settings.ollamaBaseUrl) {
-        ElMessage.warning('请先在设置中配置 Ollama 地址')
-        loadingModels.value = false
-        return
-      }
+      if (!settings.ollamaBaseUrl) return ElMessage.warning('请先配置 Ollama 地址')
       availableModels.value = await AIService.listOllamaModels()
       if (availableModels.value.length > 0 && !selectedModel.value) {
         selectedModel.value = availableModels.value[0].name
         settings.ollamaModel = selectedModel.value
-      } else if (selectedModel.value) {
-        const exists = availableModels.value.some(m => m.name === selectedModel.value)
-        if (!exists && availableModels.value.length > 0) {
-          selectedModel.value = availableModels.value[0].name
-          settings.ollamaModel = selectedModel.value
-        }
       }
     }
-  } catch (error) {
-    ElMessage.error('无法获取模型列表，请检查配置')
-  } finally {
-    loadingModels.value = false
-  }
+  } catch (error) { ElMessage.error('无法获取模型列表，请检查配置') } finally { loadingModels.value = false }
 }
 
-const onEngineChange = (val) => {
-  selectedEngine.value = val
-  settings.aiEngine = val
+const onEngineChange = () => {
+  settings.aiEngine = selectedEngine.value
   selectedModel.value = ''
   availableModels.value = []
   fetchModels()
 }
 
-const onModelChange = (val) => {
-  selectedModel.value = val
-  if (selectedEngine.value === 'online') settings.aiModel = val
+const onModelChange = () => {
+  if (selectedEngine.value === 'online') settings.aiModel = selectedModel.value
   else if (selectedEngine.value === 'local') {
-    const localType = settings.localAiType || 'gpu'
-    if (localType === 'gpu') settings.localModelId = val
-    else settings.localCpuModelId = val
+    if ((settings.localAiType || 'gpu') === 'gpu') settings.localModelId = selectedModel.value
+    else settings.localCpuModelId = selectedModel.value
   } else if (selectedEngine.value === 'ollama') {
-    settings.ollamaModel = val
+    settings.ollamaModel = selectedModel.value
   }
 }
 
 const scrollToBottom = () => {
-  nextTick(() => {
-    if (chatBodyRef.value) {
-      chatBodyRef.value.scrollTop = chatBodyRef.value.scrollHeight
-    }
-  })
+  nextTick(() => { if (chatBodyRef.value) chatBodyRef.value.scrollTop = chatBodyRef.value.scrollHeight })
 }
 
 const archiveToDocument = async () => {
@@ -375,33 +247,20 @@ const archiveToDocument = async () => {
     else content += `**🤖 AI:**\n${msg.content}\n\n`
   }
   const title = activeSession.value?.title && activeSession.value.title !== '新对话' 
-    ? `AI 对话：${activeSession.value.title}`
-    : `AI 对话归档 - ${new Date().toLocaleDateString('zh-CN')}`
+    ? `AI 对话：${activeSession.value.title}` : `AI 对话归档 - ${new Date().toLocaleDateString('zh-CN')}`
   try {
     await documentsStore.createDocument(title, content)
-    ElMessage.success({ message: '对话已成功归档到“我的文档”！', duration: 3500 })
-  } catch (error) {
-    ElMessage.error('归档失败')
-  }
+    ElMessage.success('对话已成功归档到“我的文档”！')
+  } catch (error) { ElMessage.error('归档失败') }
 }
-
-const handleKeydown = (e) => {
-  if (e.key === 'Enter' && !e.shiftKey) {
-    e.preventDefault()
-    sendMessage()
-  }
-}
-
-const MAX_HISTORY_TOKENS = 3000
-const estimateTokens = (text) => Math.ceil(text.length / 2)
 
 const trimHistory = (messages) => {
   const selected = []
   let tokenCount = 0
   for (let i = messages.length - 1; i >= 0; i--) {
     const msg = messages[i]
-    const tokens = estimateTokens(msg.content || '')
-    if (tokenCount + tokens > MAX_HISTORY_TOKENS && selected.length > 0) break
+    const tokens = Math.ceil((msg.content || '').length / 2)
+    if (tokenCount + tokens > 3000 && selected.length > 0) break
     selected.unshift(msg)
     tokenCount += tokens
   }
@@ -412,49 +271,25 @@ const trimHistory = (messages) => {
   return selected
 }
 
-const stopGeneration = () => {
-  if (abortController.value) abortController.value.abort()
-}
+const stopGeneration = () => { if (abortController.value) abortController.value.abort() }
 
-// 核心更新：成对删除逻辑
 const deleteMessagePair = (index) => {
   const session = activeSession.value
-  if (!session) return
-  if (isGenerating.value) return ElMessage.warning('生成中无法删除消息')
-  
-  ElMessageBox.confirm('确定要删除此消息吗？(对应的问答将一起被删除)', '删除确认', { 
-    type: 'warning',
-    confirmButtonText: '删除',
-    cancelButtonText: '取消'
-  }).then(() => {
+  if (!session || isGenerating.value) return
+  ElMessageBox.confirm('确定要删除此消息吗？(对应的问答将一起被删除)', '删除确认', { type: 'warning' }).then(() => {
     const msg = session.messages[index]
     let startIndex = index
     let deleteCount = 1
-
-    // 如果删除的是用户的提问，顺带删除下一个 AI 回答
-    if (msg.role === 'user') {
-      if (index + 1 < session.messages.length && session.messages[index + 1].role === 'assistant') {
-        deleteCount = 2
-      }
-    } 
-    // 如果删除的是 AI 的回答，顺带删除上一个用户的提问
-    else if (msg.role === 'assistant') {
-      if (index - 1 >= 0 && session.messages[index - 1].role === 'user') {
-        startIndex = index - 1
-        deleteCount = 2
-      }
+    if (msg.role === 'user' && index + 1 < session.messages.length && session.messages[index + 1].role === 'assistant') deleteCount = 2
+    else if (msg.role === 'assistant' && index - 1 >= 0 && session.messages[index - 1].role === 'user') {
+      startIndex = index - 1; deleteCount = 2
     }
-
     session.messages.splice(startIndex, deleteCount)
     session.updatedAt = Date.now()
-    ElMessage.success('已删除对应问答')
   }).catch(() => {})
 }
 
-const sendMessage = async () => {
-  const text = userInput.value.trim()
-  if (!text || !selectedModel.value || isGenerating.value) return
-
+const sendMessage = async (text) => {
   let session = activeSession.value
   if (!session) return
 
@@ -462,19 +297,13 @@ const sendMessage = async () => {
   settings.aiEngine = selectedEngine.value
 
   session.messages.push({ role: 'user', content: text })
-  if (session.messages.length <= 2) {
-    session.title = text.length > 15 ? text.substring(0, 15) + '...' : text
-  }
-
+  if (session.messages.length <= 2) session.title = text.length > 15 ? text.substring(0, 15) + '...' : text
   session.updatedAt = Date.now()
-  userInput.value = ''
   currentReply.value = ''
   isGenerating.value = true
   scrollToBottom()
 
-  const allHistory = session.messages.map(m => ({ role: m.role, content: m.content }))
-  const history = trimHistory(allHistory)
-
+  const history = trimHistory(session.messages.map(m => ({ role: m.role, content: m.content })))
   session.messages.push({ role: 'assistant', content: '' })
   const assistantMsgIndex = session.messages.length - 1
   abortController.value = new AbortController()
@@ -482,39 +311,24 @@ const sendMessage = async () => {
   try {
     if (selectedEngine.value === 'local') {
       const { localAiService } = await import('@/services/localAi')
-      const localType = settings.localAiType || 'gpu'
       await localAiService.chatCompletion(
         selectedModel.value,
-        localType,
+        settings.localAiType || 'gpu',
         history,
-        (_delta, fullText) => {
-          currentReply.value = fullText
-          session.messages[assistantMsgIndex].content = fullText
-          scrollToBottom()
-        },
+        (_delta, fullText) => { currentReply.value = fullText; session.messages[assistantMsgIndex].content = fullText; scrollToBottom() },
         null,
         { signal: abortController.value.signal }
       )
     } else {
       await AIService.chatCompletion(
         history,
-        (_delta, fullText) => {
-          currentReply.value = fullText
-          session.messages[assistantMsgIndex].content = fullText
-          scrollToBottom()
-        },
+        (_delta, fullText) => { currentReply.value = fullText; session.messages[assistantMsgIndex].content = fullText; scrollToBottom() },
         null,
         { model: selectedModel.value, signal: abortController.value.signal }
       )
     }
   } catch (error) {
-    if (error.name !== 'AbortError') {
-      if (session.messages[assistantMsgIndex].content === '') {
-         session.messages[assistantMsgIndex].content = '请求失败: ' + (error.message || '网络异常')
-      } else {
-         session.messages[assistantMsgIndex].content += '\n\n**[中断: ' + (error.message || '未知错误') + ']**'
-      }
-    }
+    if (error.name !== 'AbortError') session.messages[assistantMsgIndex].content += '\n\n**[异常: ' + (error.message || '网络或配置错误') + ']**'
   } finally {
     isGenerating.value = false
     session.updatedAt = Date.now()
@@ -525,110 +339,28 @@ const sendMessage = async () => {
 }
 
 const previousAiEngine = ref(null)
-
 onMounted(() => {
   previousAiEngine.value = settings.aiEngine
   selectedEngine.value = settings.aiEngine || 'ollama'
   fetchModels()
   scrollToBottom()
 })
-
-onUnmounted(() => {
-  if (previousAiEngine.value && previousAiEngine.value !== selectedEngine.value) {
-    settings.aiEngine = previousAiEngine.value
-  }
-})
+onUnmounted(() => { if (previousAiEngine.value && previousAiEngine.value !== selectedEngine.value) settings.aiEngine = previousAiEngine.value })
 </script>
 
 <style scoped>
-/* 全局布局 */
 .chat-layout {
   display: flex;
   height: calc(100vh - 60px);
   background-color: var(--el-bg-color-page);
 }
-
-/* 侧边栏 */
-.chat-sidebar {
-  width: 260px;
-  background-color: var(--el-bg-color);
-  border-right: 1px solid var(--el-border-color-lighter);
-  display: flex;
-  flex-direction: column;
-  flex-shrink: 0;
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+.sidebar-overlay {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(0,0,0,0.4);
+  z-index: 999;
 }
-
-.sidebar-header {
-  padding: 16px;
-  border-bottom: 1px solid var(--el-border-color-lighter);
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.new-chat-btn {
-  flex: 1;
-  font-weight: 500;
-}
-
-.session-list {
-  flex: 1;
-  padding: 8px;
-}
-
-.session-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px 14px;
-  margin-bottom: 4px;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  color: var(--el-text-color-regular);
-}
-
-.session-item:hover {
-  background-color: var(--el-fill-color-light);
-}
-
-.session-item.active {
-  background-color: var(--el-color-primary-light-9);
-  color: var(--el-color-primary);
-}
-
-.session-info {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  overflow: hidden;
-}
-
-.session-icon {
-  font-size: 16px;
-}
-
-.session-title {
-  font-size: 13px;
-  font-weight: 500;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 140px;
-}
-
-.delete-btn {
-  opacity: 0;
-  transform: scale(0.8);
-}
-
-.session-item:hover .delete-btn {
-  opacity: 1;
-  transform: scale(1);
-}
-
-/* 右侧主工作区 */
 .chat-main {
   flex: 1;
   display: flex;
@@ -636,57 +368,17 @@ onUnmounted(() => {
   position: relative;
   background-color: var(--el-bg-color);
 }
-
-/* 顶部操作区 */
-.chat-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 14px 24px;
-  background-color: var(--el-bg-color);
-  border-bottom: 1px solid var(--el-border-color-lighter);
-  z-index: 10;
-}
-
-.header-left {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.header-title {
-  font-size: 16px;
-  font-weight: 600;
-  margin: 0;
-  color: var(--el-text-color-primary);
-}
-
-.header-right {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.engine-selector, .model-selector {
-  display: flex;
-  align-items: center;
-}
-
-/* 消息流区域 */
 .chat-body-container {
   flex: 1;
   overflow-y: auto;
   scroll-behavior: smooth;
   padding-bottom: 20px;
 }
-
 .chat-body-inner {
   max-width: 800px;
   margin: 0 auto;
   padding: 24px;
 }
-
-/* 空状态 */
 .empty-state {
   display: flex;
   flex-direction: column;
@@ -696,264 +388,55 @@ onUnmounted(() => {
   text-align: center;
   color: var(--el-text-color-primary);
 }
-
 .empty-icon-wrapper {
-  width: 64px;
-  height: 64px;
+  width: 64px; height: 64px;
   border-radius: 50%;
   background: var(--el-color-primary-light-9);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: flex; align-items: center; justify-content: center;
   margin-bottom: 20px;
 }
-
-.empty-icon {
-  font-size: 32px;
-  color: var(--el-color-primary);
-}
-
-.empty-state h3 {
-  font-size: 20px;
-  font-weight: 600;
-  margin-bottom: 12px;
-}
-
-.sub-text {
-  font-size: 14px;
-  color: var(--el-text-color-secondary);
-}
-
-/* 消息布局 */
-.messages {
-  display: flex;
-  flex-direction: column;
-  gap: 32px;
-}
-
-.message-row {
-  display: flex;
-  gap: 16px;
-  width: 100%;
-}
-
-.message-row.user {
-  flex-direction: row-reverse;
-}
-
-.message-row.assistant {
-  flex-direction: row;
-}
-
-.avatar-col {
-  flex-shrink: 0;
-  width: 32px;
-}
-
+.empty-icon { font-size: 32px; color: var(--el-color-primary); }
+.empty-state h3 { font-size: 20px; font-weight: 600; margin-bottom: 12px; }
+.sub-text { font-size: 14px; color: var(--el-text-color-secondary); }
+.messages { display: flex; flex-direction: column; gap: 32px; }
+.message-row { display: flex; gap: 16px; width: 100%; }
+.message-row.user { flex-direction: row-reverse; }
+.message-row.assistant { flex-direction: row; }
+.avatar-col { flex-shrink: 0; width: 32px; }
 .ai-avatar {
-  width: 32px;
-  height: 32px;
+  width: 32px; height: 32px;
   border-radius: 50%;
   background: var(--el-color-success-light-8);
   color: var(--el-color-success);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: flex; align-items: center; justify-content: center;
   font-size: 18px;
 }
-
-.content-col {
-  max-width: 80%;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-}
-
-.message-row.user .content-col {
-  align-items: flex-end;
-}
-
-.message-bubble {
-  font-size: 15px;
-  line-height: 1.6;
-}
-
-/* 用户气泡 */
+.content-col { max-width: 80%; display: flex; flex-direction: column; align-items: flex-start; }
+.message-row.user .content-col { align-items: flex-end; }
+.message-bubble { font-size: 15px; line-height: 1.6; }
 .message-row.user .message-bubble {
   background-color: var(--el-fill-color);
   padding: 12px 18px;
-  border-radius: 18px;
-  border-bottom-right-radius: 4px;
+  border-radius: 18px; border-bottom-right-radius: 4px;
   color: var(--el-text-color-primary);
 }
-
-.user-text {
-  white-space: pre-wrap;
-  word-break: break-word;
-}
-
-/* AI 内容区 (无气泡，更原生) */
-.message-row.assistant .message-bubble {
-  background: transparent;
-  padding: 4px 0;
-  width: 100%;
-  color: var(--el-text-color-primary);
-}
-
-.markdown-body {
-  word-break: break-word;
-  background-color: transparent !important;
-  font-size: 15px;
-}
-
-/* 消息操作悬浮条 */
-.message-actions {
-  display: flex;
-  margin-top: 6px;
-  opacity: 0;
-  transition: opacity 0.2s;
-}
-
-.message-actions.show-actions {
-  opacity: 1;
-}
-
-/* 底部输入区 */
-.chat-footer {
-  padding: 0 24px 24px;
-  max-width: 850px;
-  margin: 0 auto;
-  width: 100%;
-  box-sizing: border-box;
-}
-
-.input-wrapper {
-  position: relative;
-  background-color: var(--el-fill-color-light);
-  border: 1px solid var(--el-border-color);
-  border-radius: 20px;
-  padding: 4px;
-  box-shadow: var(--el-box-shadow-lighter);
-  transition: border-color 0.2s;
-}
-
-.input-wrapper:focus-within {
-  border-color: var(--el-color-primary);
-}
-
-.chat-input :deep(.el-textarea__inner) {
-  background-color: transparent;
-  border: none !important;
-  box-shadow: none !important;
-  padding: 12px 60px 12px 16px;
-  font-size: 15px;
-  line-height: 1.5;
-}
-
-.input-actions {
-  position: absolute;
-  right: 12px;
-  bottom: 8px;
-  display: flex;
-  align-items: center;
-}
-
-.send-btn {
-  width: 32px;
-  height: 32px;
-}
-
-.footer-hint {
-  text-align: center;
-  font-size: 12px;
-  color: var(--el-text-color-secondary);
-  margin-top: 12px;
-}
-
-.context-hint {
-  text-align: center;
-  font-size: 12px;
-  color: var(--el-color-warning);
-  margin-top: 24px;
-}
-
-/* 动画 */
+.user-text { white-space: pre-wrap; word-break: break-word; }
+.message-row.assistant .message-bubble { background: transparent; padding: 4px 0; width: 100%; color: var(--el-text-color-primary); }
+.markdown-body { word-break: break-word; background-color: transparent !important; font-size: 15px; }
+.message-actions { display: flex; margin-top: 6px; opacity: 0; transition: opacity 0.2s; }
+.message-actions.show-actions { opacity: 1; }
+.context-hint { text-align: center; font-size: 12px; color: var(--el-color-warning); margin-top: 24px; }
 .typing-indicator span {
-  display: inline-block;
-  width: 6px;
-  height: 6px;
-  background-color: var(--el-text-color-secondary);
-  border-radius: 50%;
-  margin: 0 3px;
+  display: inline-block; width: 6px; height: 6px;
+  background-color: var(--el-text-color-secondary); border-radius: 50%; margin: 0 3px;
   animation: typing 1.4s infinite ease-in-out both;
 }
 .typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
 .typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
-@keyframes typing {
-  0%, 80%, 100% { transform: scale(0); }
-  40% { transform: scale(1); }
-}
-
-/* 响应式设计 */
+@keyframes typing { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1); } }
 @media (max-width: 768px) {
-  .chat-sidebar {
-    position: fixed;
-    top: 0;
-    left: 0;
-    height: 100%;
-    z-index: 1000;
-    transform: translateX(-100%);
-  }
-
-  .chat-sidebar.sidebar-open {
-    transform: translateX(0);
-    box-shadow: 4px 0 24px rgba(0,0,0,0.15);
-  }
-
-  .sidebar-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0,0,0,0.4);
-    z-index: 999;
-  }
-
-  .chat-header {
-    padding: 10px 12px;
-    flex-wrap: wrap;
-    gap: 12px;
-  }
-
-  .header-right {
-    width: 100%;
-    justify-content: space-between;
-  }
-
-  .model-selector .el-select {
-    width: 140px !important;
-  }
-
-  .chat-body-inner {
-    padding: 16px 12px;
-  }
-
-  .message-row {
-    gap: 10px;
-  }
-
-  .content-col {
-    max-width: 90%;
-  }
-
-  .chat-footer {
-    padding: 0 12px 12px;
-  }
-}
-
-@media (min-width: 769px) {
-  .menu-toggle { display: none; }
-  .sidebar-close-btn { display: none; }
+  .chat-body-inner { padding: 16px 12px; }
+  .message-row { gap: 10px; }
+  .content-col { max-width: 90%; }
 }
 </style>
