@@ -1,14 +1,15 @@
 /**
  * 思维导图新建功能
  */
-import { createSampleData } from './useNodeModel'
+import { createNode } from './useNodeModel'
 
 export function useCreate() {
   /**
-   * 创建新的思维导图，返回根节点数据
+   * 创建新的空白思维导图（只包含一个中心主题）
    */
   function createNewMindMap() {
-    return createSampleData()
+    // 不再返回 createSampleData()，而是创建一个干净的根节点
+    return createNode('中心主题', 0)
   }
 
   /**

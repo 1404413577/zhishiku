@@ -1,69 +1,102 @@
-/**
- * 思维导图布局算法
- */
+import { ref } from 'vue'
 
-const GAP_X = 170
-const GAP_Y = 10
-const NODE_PADDING_X = 20
-const NODE_PADDING_Y = 8
-const NODE_MIN_WIDTH = 90
-const NODE_HEIGHT = 38
+export function useLayout(rootData, currentTheme) {
+  const flatNodes = ref([])
+  const connections = ref([])
 
-let measureCtx = null
+  const GAP_X = 170
+  const GAP_Y = 10
+  const NODE_PADDING_X = 20
+  const NODE_HEIGHT = 38
+  let measureCtx = null
 
-function getTextWidth(text, fontSize) {
-  if (!measureCtx) {
-    const canvas = document.createElement('canvas')
-    measureCtx = canvas.getContext('2d')
-  }
-  measureCtx.font = `400 ${fontSize}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`
-  return measureCtx.measureText(text).width
-}
-
-export function computeNodeWidth(node, fontSize) {
-  const w = getTextWidth(node.title, fontSize || 13) + NODE_PADDING_X * 2
-  return Math.max(NODE_MIN_WIDTH, Math.ceil(w))
-}
-
-export function computeLayout(node, level = 0) {
-  node._level = level
-  const fs = level === 0 ? 16 : (node.style?.fontSize || 13)
-  node._width = computeNodeWidth(node, fs)
-  node._height = level === 0 ? 48 : NODE_HEIGHT
-
-  const children = node.children
-  if (!children || children.length === 0 || node.collapsed) {
-    node._totalHeight = node._height
-    return
+  // 使用 Canvas API 测量文本宽度
+  function getTextWidth(text, fontSize) {
+    if (!measureCtx) {
+      measureCtx = document.createElement('canvas').getContext('2d')
+    }
+    measureCtx.font = `400 ${fontSize}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`
+    return measureCtx.measureText(text).width
   }
 
-  let total = 0
-  for (const child of children) {
-    computeLayout(child, level + 1)
-    total += child._totalHeight
+  // 递归计算宽高
+  function computeLayout(node, level = 0) {
+    node._level = level
+    const fs = level === 0 ? 16 : (node.style?.fontSize || 13)
+    node._width = Math.max(90, Math.ceil(getTextWidth(node.title, fs) + NODE_PADDING_X * 2))
+    node._height = level === 0 ? 48 : NODE_HEIGHT
+
+    if (!node.children || node.children.length === 0 || node.collapsed) {
+      node._totalHeight = node._height
+      return
+    }
+
+    let total = 0
+    for (const child of node.children) {
+      computeLayout(child, level + 1)
+      total += child._totalHeight
+    }
+    total += (node.children.length - 1) * GAP_Y
+    node._totalHeight = Math.max(node._height, total)
   }
-  total += (children.length - 1) * GAP_Y
-  node._totalHeight = Math.max(node._height, total)
-}
 
-export function assignPositions(node, x, topY) {
-  const centerY = topY + node._totalHeight / 2
-  node._x = x
-  node._y = centerY - node._height / 2
+  // 递归分配 X, Y 坐标
+  function assignPositions(node, x, topY) {
+    node._x = x
+    node._y = topY + node._totalHeight / 2 - node._height / 2
 
-  const children = node.children
-  if (!children || children.length === 0 || node.collapsed) return
+    if (!node.children || node.children.length === 0 || node.collapsed) return
 
-  const childrenTotalH = children.reduce((s, c) => s + c._totalHeight, 0) + (children.length - 1) * GAP_Y
-  let childY = topY + (node._totalHeight - childrenTotalH) / 2
+    const childrenTotalH = node.children.reduce((s, c) => s + c._totalHeight, 0) + (node.children.length - 1) * GAP_Y
+    let childY = topY + (node._totalHeight - childrenTotalH) / 2
 
-  for (const child of children) {
-    assignPositions(child, x + node._width + GAP_X, childY)
-    childY += child._totalHeight + GAP_Y
+    for (const child of node.children) {
+      assignPositions(child, x + node._width + GAP_X, childY)
+      childY += child._totalHeight + GAP_Y
+    }
   }
-}
 
-export function runLayout(rootData) {
-  computeLayout(rootData, 0)
-  assignPositions(rootData, 80, 60)
+  // 收集所有节点用于扁平渲染，并生成贝塞尔曲线连线
+  function collectNodesAndConnections() {
+    const nodes = []
+    const conns = []
+    const lineColor = currentTheme.value.lineColor
+
+    function walk(node) {
+      nodes.push(node)
+      if (node.children && !node.collapsed) {
+        for (const child of node.children) {
+          const parentRight = node._x + node._width
+          const parentCY = node._y + node._height / 2
+          const childLeft = child._x
+          const childCY = child._y + child._height / 2
+          const midX = (parentRight + childLeft) / 2
+
+          conns.push({
+            id: `${node.id}-${child.id}`,
+            path: `M ${parentRight} ${parentCY} C ${midX} ${parentCY}, ${midX} ${childCY}, ${childLeft} ${childCY}`,
+            color: lineColor,
+          })
+          walk(child)
+        }
+      }
+    }
+    walk(rootData.value)
+    flatNodes.value = nodes
+    connections.value = conns
+  }
+
+  // 触发一次完整的排版计算
+  function recalc() {
+    if (!rootData.value) return
+    computeLayout(rootData.value, 0)
+    assignPositions(rootData.value, 80, 60)
+    collectNodesAndConnections()
+  }
+
+  return {
+    flatNodes,
+    connections,
+    recalc
+  }
 }
