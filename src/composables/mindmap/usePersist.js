@@ -2,6 +2,7 @@ import { ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { createNode, createSampleData } from './useNodeModel'
 import { useCreate } from './useCreate' // 引入新建逻辑
+import { mindMapStorageService } from '@/services/mindMapStorageService'
 
 export function usePersist(rootData, onSessionChange) {
   const sessions = ref([])
@@ -12,27 +13,9 @@ export function usePersist(rootData, onSessionChange) {
 
   function loadSessions() {
     try {
-      const saved = localStorage.getItem('mindmap-sessions')
-      if (saved) {
-        sessions.value = JSON.parse(saved)
-      } else {
-        const oldData = localStorage.getItem('mindmap-data')
-        const id = Date.now().toString()
-        sessions.value = [{
-          id,
-          title: oldData ? JSON.parse(oldData).title : '示例导图',
-          updatedAt: Date.now(),
-          data: oldData ? JSON.parse(oldData) : createSampleData()
-        }]
-        localStorage.removeItem('mindmap-data')
-      }
-
-      const lastActiveId = localStorage.getItem('mindmap-active-id')
-      if (lastActiveId && sessions.value.some(s => s.id === lastActiveId)) {
-        activeSessionId.value = lastActiveId
-      } else {
-        activeSessionId.value = sessions.value[0]?.id
-      }
+      const loaded = mindMapStorageService.loadSessions(createSampleData)
+      sessions.value = loaded.sessions
+      activeSessionId.value = loaded.activeSessionId
       loadActiveSessionData()
     } catch (error) {
       console.error('加载思维导图记录失败:', error)
@@ -40,26 +23,22 @@ export function usePersist(rootData, onSessionChange) {
   }
 
   function saveToStorage() {
-    localStorage.setItem('mindmap-sessions', JSON.stringify(sessions.value))
-    localStorage.setItem('mindmap-active-id', activeSessionId.value || '')
+    mindMapStorageService.saveSessions(sessions.value, activeSessionId.value)
   }
 
   function loadActiveSessionData() {
     const session = sessions.value.find(s => s.id === activeSessionId.value)
-    if (session && session.data) {
-      rootData.value = JSON.parse(JSON.stringify(session.data))
-    } else {
-      rootData.value = createNode('中心主题', 0)
-    }
+    rootData.value = mindMapStorageService.getSessionData(
+      session,
+      () => createNode('中心主题', 0)
+    )
     if (onSessionChange) onSessionChange()
   }
 
   function saveMindMap(showMsg = true) {
     const session = sessions.value.find(s => s.id === activeSessionId.value)
     if (session) {
-      session.data = JSON.parse(JSON.stringify(rootData.value))
-      session.title = rootData.value.title || '未命名导图'
-      session.updatedAt = Date.now()
+      mindMapStorageService.updateSessionFromData(session, rootData.value)
       saveToStorage()
       if (showMsg) ElMessage.success('已保存到本地存储')
     }
@@ -68,19 +47,11 @@ export function usePersist(rootData, onSessionChange) {
   // 🚀 核心修改：接收 templateId 并应用模板
   function createNewSession(templateId = 'blank') {
     if (activeSessionId.value) saveMindMap(false) 
-    const id = Date.now().toString()
-    
     // 生成对应的模板树
     const newData = createNewMindMap(templateId)
-    
-    const newSession = {
-      id,
-      title: newData.title,
-      updatedAt: Date.now(),
-      data: newData
-    }
+    const newSession = mindMapStorageService.createSessionFromData(newData)
     sessions.value.unshift(newSession)
-    activeSessionId.value = id
+    activeSessionId.value = newSession.id
     saveToStorage()
     loadActiveSessionData()
   }
