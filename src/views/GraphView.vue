@@ -28,7 +28,7 @@
 import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useDocumentsStore } from '@/stores/documents'
-import { markdownService } from '@/services/markdownService'
+import { relationService } from '@/services/relationService'
 import { Refresh, Connection, InfoFilled } from '@element-plus/icons-vue'
 import * as echarts from 'echarts'
 import { useDark } from '@vueuse/core'
@@ -43,62 +43,15 @@ const graphDataSource = ref('tag') // 'tag' | 'wikilinks' | 'empty'
 let chartInstance = null
 let resizeObserver = null
 
-// 从文档 [[WikiLinks]] 构建标签模式数据 (当手动标签为空时的回退方案)
-const buildWikiLinkTagData = () => {
-  const documents = documentsStore.documents
-  const linkCounts = {}
-  const cooccurrence = {}
-  const linkSet = new Set()
-
-  documents.forEach(doc => {
-    if (!doc.content) return
-    const links = markdownService.extractWikiLinks(doc.content)
-    if (links.length > 0) {
-      links.forEach(link => {
-        linkSet.add(link)
-        linkCounts[link] = (linkCounts[link] || 0) + 1
-      })
-
-      for (let i = 0; i < links.length; i++) {
-        for (let j = i + 1; j < links.length; j++) {
-          const pair = [links[i], links[j]].sort().join('|')
-          cooccurrence[pair] = (cooccurrence[pair] || 0) + 1
-        }
-      }
-    }
-  })
-
-  const nodes = Array.from(linkSet).map(link => ({
-    id: link,
-    name: link,
-    value: linkCounts[link],
-    symbolSize: Math.min(Math.max(linkCounts[link] * 8, 20), 80),
-    category: 0,
-    label: { show: true }
-  }))
-
-  const links = Object.entries(cooccurrence).map(([pair, count]) => {
-    const [source, target] = pair.split('|')
-    return {
-      source,
-      target,
-      value: count,
-      lineStyle: { width: Math.min(count * 2, 8), opacity: 0.4 }
-    }
-  })
-
-  return { nodes, links }
-}
-
 // 构建节点和连线数据
 const buildGraphData = () => {
   if (graphMode.value === 'tag') {
-    let data = documentsStore.getTagCooccurrenceData
+    let data = relationService.buildTagGraph(documentsStore.documents)
     graphDataSource.value = 'tag'
 
     // 标签为空时，回退到 [[WikiLinks]] 作为隐含标签
     if (!data.nodes || data.nodes.length === 0) {
-      data = buildWikiLinkTagData()
+      data = relationService.buildWikiLinkTagGraph(documentsStore.documents)
       graphDataSource.value = data.nodes.length > 0 ? 'wikilinks' : 'empty'
     }
 
@@ -121,82 +74,7 @@ const buildGraphData = () => {
     return data
   }
 
-  const documents = documentsStore.documents
-  const nodes = []
-  const links = []
-
-  // 用于快速查改
-  const idToNode = new Map()
-  const titleToId = new Map()
-
-  // 1. 构建所有节点
-  documents.forEach(doc => {
-    let category = 0
-    let symbolSize = 25
-    let itemStyle = {}
-
-    if (doc.isFolder) {
-      category = 1
-      symbolSize = 35
-      itemStyle = { color: '#e6a23c' } // 文件夹橙色
-    } else if (doc.isPreset || doc.isDynamic) {
-      category = 2
-      symbolSize = 20
-      itemStyle = { color: '#909399' } // 静态/动态生成文档灰色
-    } else {
-      category = 0
-      symbolSize = 25
-      itemStyle = { color: '#409eff' } // 普通文档蓝色
-    }
-
-    // 强调置顶或收藏
-    if (doc.isPinned || doc.isFavorited) {
-      symbolSize += 5
-      itemStyle.borderColor = '#f56c6c'
-      itemStyle.borderWidth = 2
-    }
-
-    const node = {
-      id: doc.id,
-      name: doc.title,
-      category,
-      symbolSize,
-      itemStyle,
-      docData: doc
-    }
-    nodes.push(node)
-    idToNode.set(doc.id, node)
-    titleToId.set(doc.title, doc.id)
-  })
-
-  // 2. 构建关系连线
-  documents.forEach(doc => {
-    // 2.1 提取层级关联逻辑 (父子关系)
-    if (doc.parentId && idToNode.has(doc.parentId)) {
-      links.push({
-        source: doc.parentId,
-        target: doc.id,
-        lineStyle: { type: 'solid', color: isDark.value ? '#555' : '#ccc', width: 2 }
-      })
-    }
-
-    // 2.2 提取双链关系逻辑 (普通文档双击)
-    if (!doc.isFolder && doc.content) {
-      const wikiLinks = markdownService.extractWikiLinks(doc.content)
-      wikiLinks.forEach(targetTitle => {
-        if (titleToId.has(targetTitle)) {
-          const targetId = titleToId.get(targetTitle)
-          links.push({
-            source: doc.id,
-            target: targetId,
-            lineStyle: { type: 'dashed', curveness: 0.2, color: '#409eff', width: 1.5 }
-          })
-        }
-      })
-    }
-  })
-
-  return { nodes, links }
+  return relationService.buildDocumentGraph(documentsStore.documents, { isDark: isDark.value })
 }
 
 const renderChart = () => {

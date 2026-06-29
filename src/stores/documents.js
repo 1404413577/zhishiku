@@ -58,44 +58,6 @@ export const useDocumentsStore = defineStore('documents', {
         }
       })
       return Object.entries(counts).map(([date, count]) => [date, count])
-    },
-
-    getTagCooccurrenceData: (state) => {
-      const tagCounts = {}
-      const cooccurrence = {}
-      const tagsSet = new Set()
-
-      state.documents.forEach(doc => {
-        const tags = Array.isArray(doc.tags) ? doc.tags : []
-        if (tags.length > 0) {
-          const docTags = [...new Set(tags.filter(tag => typeof tag === 'string' && tag.trim()))]
-          docTags.forEach(tag => {
-            tagsSet.add(tag)
-            tagCounts[tag] = (tagCounts[tag] || 0) + 1
-          })
-          for (let i = 0; i < docTags.length; i++) {
-            for (let j = i + 1; j < docTags.length; j++) {
-              const pair = [docTags[i], docTags[j]].sort().join('|')
-              cooccurrence[pair] = (cooccurrence[pair] || 0) + 1
-            }
-          }
-        }
-      })
-
-      const nodes = Array.from(tagsSet).map(tag => ({
-        id: tag, name: tag, value: tagCounts[tag],
-        symbolSize: Math.min(Math.max(tagCounts[tag] * 8, 20), 80),
-        category: 0, label: { show: true }
-      }))
-
-      const links = Object.entries(cooccurrence).map(([pair, count]) => {
-        const [source, target] = pair.split('|')
-        return {
-          source, target, value: count,
-          lineStyle: { width: Math.min(count * 2, 8), opacity: 0.4 }
-        }
-      })
-      return { nodes, links }
     }
   },
 
