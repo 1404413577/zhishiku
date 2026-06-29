@@ -2,14 +2,16 @@
  * 思维导图导入导出功能
  */
 import { ElMessage } from 'element-plus'
+import {
+  cleanMindMapNodeForExport,
+  stringifyMindMapJSON,
+} from '@/domain/mindmap/exportRules'
 
 /**
  * 清理导出节点，删除临时属性
  */
 export function cleanNodeForExport(node) {
-  const { _level, _x, _y, _width, _height, _totalHeight, ...rest } = node
-  if (rest.children) rest.children = rest.children.map(cleanNodeForExport)
-  return rest
+  return cleanMindMapNodeForExport(node)
 }
 
 /**
@@ -28,7 +30,7 @@ export function calculateSVGBBox(flatNodes) {
 
 export function exportAsJSON(rootData) {
   try {
-    const json = JSON.stringify(cleanNodeForExport(rootData), null, 2)
+    const json = stringifyMindMapJSON(rootData)
     const blob = new Blob([json], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
