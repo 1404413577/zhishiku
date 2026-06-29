@@ -28,14 +28,14 @@ export function calculateSVGBBox(flatNodes) {
   return { x: minX, y: minY, width: maxX - minX, height: maxY - minY }
 }
 
-export function exportAsJSON(rootData) {
+export function exportAsJSON(rootData, filename = '思维导图.json') {
   try {
     const json = stringifyMindMapJSON(rootData)
     const blob = new Blob([json], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `思维导图_${new Date().toISOString().slice(0, 10)}.json`
+    a.download = filename
     a.click()
     URL.revokeObjectURL(url)
     ElMessage.success('导出 JSON 成功')

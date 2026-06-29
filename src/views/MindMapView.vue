@@ -311,7 +311,7 @@ import MindMapStylePanel from "@/components/MindMap/MindMapStylePanel.vue";
 import { createNode } from "@/composables/mindmap/useNodeModel";
 import { useCreate } from "@/composables/mindmap/useCreate";
 import {
-  cleanNodeForExport,
+  exportAsJSON,
   exportAsPNG,
 } from "@/composables/mindmap/useExport";
 import { useLayout } from "@/composables/mindmap/useLayout";
@@ -537,12 +537,7 @@ function zoomOut() {
   zoom.value = Math.max(0.2, zoom.value / 1.2);
 }
 function exportAsJSONFn() {
-  const json = JSON.stringify(cleanNodeForExport(rootData.value), null, 2);
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(new Blob([json], { type: "application/json" }));
-  a.download = "思维导图.json";
-  a.click();
-  ElMessage.success("导出成功");
+  exportAsJSON(rootData.value);
 }
 function exportAsPNGFn() {
   exportAsPNG(svgRef.value, flatNodes.value, currentTheme.value);
