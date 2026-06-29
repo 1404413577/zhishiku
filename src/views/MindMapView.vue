@@ -297,7 +297,7 @@
 </template>
 
 <script setup>
-import { AIService } from "@/services/ai";
+import { mindMapService } from "@/services/mindMapService";
 const aiDialogVisible = ref(false);
 const aiPrompt = ref("");
 const isAiGenerating = ref(false);
@@ -359,51 +359,18 @@ async function handleAiGenerate() {
   pushUndo();
 
   // 3. 在画布上立刻生成一个带有用户问题的“根节点”作为起点
-  const rootTitle = text.length > 15 ? text.substring(0, 15) + "..." : text;
+  const rootTitle = mindMapService.getRootTitle(text);
   rootData.value = createNode(rootTitle, 0);
   recalc();
   fitToCenter();
 
-  const systemPrompt = `你是一个顶级的思维导图架构师。
-请根据用户的输入，构建一个逻辑清晰、层级分明、结构严谨的思维导图大纲。
-【严格输出规则】：
-1. 只能使用 Markdown 的无序列表格式（如：- 主题、  - 子主题）。
-2. 不要输出任何问候语、解释性文字、总结性文字。
-3. 不要使用 \`\`\`markdown 代码块包裹内容，直接输出纯文本。
-4. 层级深度控制在 3~4 级为最佳，内容要精炼，适合做导图节点。
-
-用户需求：${text}`;
-
   try {
-    // 4. 调用 AI 流式接口
-    await AIService.chatCompletion(
-      [{ role: "user", content: systemPrompt }],
-      (_delta, fullText) => {
-        // ========== 这里是“野蛮生长”的魔法核心 ==========
-
-        // A. 实时清理 markdown 代码块标记
-        const cleanedText = fullText
-          .replace(/```markdown\n?/g, "")
-          .replace(/```\n?/g, "")
-          .trim();
-
-        if (cleanedText) {
-          // B. 把半成品的文本实时交给引擎解析为树状 AST
-          const parsedData = parseMarkdownToData(cleanedText);
-
-          // C. 锁定根节点名字（覆盖默认的“导入的导图”）
-          parsedData.title = rootTitle;
-
-          // D. 实时覆盖画板数据
-          rootData.value = parsedData;
-
-          // E. 重新排版（触发 Vue 响应式与 SVG 重绘）
-          recalc();
-        }
-      },
-      null,
-      { model: "gpt-3.5-turbo" }, // 💡 注意：这里可以替换成你们设置中选中的在线模型
-    );
+    await mindMapService.generateMarkdownOutline(text, (markdown) => {
+      const parsedData = parseMarkdownToData(markdown);
+      parsedData.title = rootTitle;
+      rootData.value = parsedData;
+      recalc();
+    });
 
     // 生成完全结束后，清空输入框提示成功，并让整个导图居中自适应
     aiPrompt.value = "";
