@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import { buildDocumentTree } from '@/domain/document/documentRules'
 import { documentService } from '@/services/documentService'
 import { searchService } from '@/services/searchService'
-import { FileSystem as FSService } from '@/services/fs.js'
+import { workspaceService } from '@/services/workspaceService'
 import { markdownService as markdownProcessor } from '@/services/markdownService'
 import { ElMessage } from 'element-plus'
 
@@ -65,20 +65,24 @@ export const useDocumentsStore = defineStore('documents', {
   actions: {
     async connectLocalWorkspace() {
       try {
-        const handle = await FSService.requestWorkspaceAccess()
+        const handle = await workspaceService.requestWorkspaceAccess()
+        if (!handle) return false
         this.localDirHandle = handle
         this.workspaceMode = 'local'
         documentService.setWorkspaceMode('local')
         await this.loadDocuments()
         ElMessage.success('已成功连接到本地工作区')
+        return true
       } catch (err) {
         ElMessage.error(err.message || '连接本地工作区失败')
+        return false
       }
     },
 
     async switchToIndexedDB() {
       this.workspaceMode = 'indexeddb'
       this.localDirHandle = null
+      await workspaceService.unmount()
       documentService.setWorkspaceMode('indexeddb')
       await this.loadDocuments()
       ElMessage.success('已切换回浏览器内建存储')
@@ -86,7 +90,7 @@ export const useDocumentsStore = defineStore('documents', {
 
     async tryRestoreLocalWorkspace() {
       try {
-        const handle = await FSService.loadStoredHandle()
+        const handle = await workspaceService.loadStoredHandle()
         if (handle) {
           this.localDirHandle = handle
           this.workspaceMode = 'local'

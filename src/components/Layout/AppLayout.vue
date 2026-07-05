@@ -694,7 +694,7 @@
 import { ref, computed, onMounted, watch } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import { useDocumentsStore } from "@/stores/documents.js";
-import { FileSystem as FSService } from "@/services/fs.js";
+import { workspaceService } from "@/services/workspaceService";
 import { ElMessage, ElMessageBox } from "element-plus";
 import ShortcutsPanel from "@/components/ShortcutsPanel.vue";
 import {
@@ -979,16 +979,10 @@ const disconnectWorkspace = async () => {
 
 const reconnectWorkspace = async () => {
   try {
-    const handle = await FSService.loadStoredHandle();
-    if (handle) {
-      if (await FSService.verifyPermission(handle)) {
-        documentsStore.localDirHandle = handle;
-        documentsStore.workspaceMode = "local";
-        await documentsStore.loadDocuments();
-        showReconnectPrompt.value = false;
-        ElMessage.success("已恢复本地文件夹访问权限");
-        return;
-      }
+    if (await documentsStore.tryRestoreLocalWorkspace()) {
+      showReconnectPrompt.value = false;
+      ElMessage.success("已恢复本地文件夹访问权限");
+      return;
     }
   } catch (e) {
     console.error(e);
@@ -998,8 +992,7 @@ const reconnectWorkspace = async () => {
 
 // 尝试自动恢复
 onMounted(async () => {
-  const storeHandle = await FSService.loadStoredHandle();
-  if (storeHandle) {
+  if (await workspaceService.hasStoredWorkspace()) {
     // 首次加载因为浏览器安全策略无法静默请求 user gesture 权限，
     // 所以如果是我们之前挂载了 handle 的，显示提示让用户主动点一下
     showReconnectPrompt.value = true;

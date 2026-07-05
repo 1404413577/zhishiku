@@ -10,6 +10,7 @@ import { watchEffect, onMounted, onUnmounted } from 'vue'
 import AppLayout from '@/components/Layout/AppLayout.vue'
 import { useSettingsStore } from '@/stores/settings.js'
 import { useDocumentsStore } from '@/stores/documents.js'
+import { syncService } from '@/services/syncService'
 import GlobalSearch from '@/components/GlobalSearch.vue'
 
 const settings = useSettingsStore()
@@ -39,15 +40,18 @@ watchEffect(() => {
 onMounted(async () => {
   // 自动同步逻辑 (WebDAV)
   const performSync = async () => {
-    if (settings.webdavUrl && settings.webdavUsername && settings.webdavPassword) {
-      const { syncWithWebDAV } = await import('@/utils/webdav.js')
-      const docsStore = useDocumentsStore()
-      try {
-        await syncWithWebDAV(settings, docsStore.documents)
-        console.log('✅ 自动同步完成')
-      } catch (err) {
-        console.warn('自动同步失败:', err.message)
-      }
+    if (!syncService.isWebDavConfigured(settings)) return
+
+    const docsStore = useDocumentsStore()
+    try {
+      await syncService.runAutoSync({
+        settings,
+        documents: docsStore.documents,
+        reason: 'open',
+      })
+      console.log('✅ 自动同步完成')
+    } catch (err) {
+      console.warn('自动同步失败:', err.message)
     }
   }
 
@@ -57,12 +61,10 @@ onMounted(async () => {
   }
 
   // 定期自动备份逻辑 (每10分钟)
-  const backupInterval = setInterval(() => {
-    if (settings.autoBackup) {
-      console.log('⏰ 正在执行定期自动备份...')
-      performSync()
-    }
-  }, 10 * 60 * 1000)
+  const backupInterval = syncService.startAutoBackup({
+    settings,
+    getDocuments: () => useDocumentsStore().documents,
+  })
 
   // 组件卸载时清理定时器
   onUnmounted(() => {

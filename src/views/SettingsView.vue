@@ -279,18 +279,19 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import { useSettingsStore } from '@/stores/settings'
 import { useDocumentsStore } from '@/stores/documents'
+import { useWorkspaceStore } from '@/stores/workspace'
 import { Brush, Refresh, Box, Download, Upload, Connection, ChatDotRound, FolderOpened, FolderChecked, Close } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { AIService } from '@/services/ai'
-import { syncWithWebDAV } from '@/utils/webdav'
-import { localAiService } from '@/services/localAi'
-import { FileSystem } from '@/services/fs.js'
+import { settingsAiService } from '@/services/settingsAiService'
+import { backupService } from '@/services/backupService'
+import { syncService } from '@/services/syncService'
 
 const settings = useSettingsStore()
 const documentsStore = useDocumentsStore()
+const workspaceStore = useWorkspaceStore()
 const testing = ref(false)
 const testingOnline = ref(false)
 const testingLocal = ref(false)
@@ -302,58 +303,39 @@ const loadingLocal = ref(false)
 const localAiProgress = ref(0)
 const localAiStatus = ref('')
 
-// 本地工作区状态
-const isWorkspaceMounted = ref(false)
+const isWorkspaceMounted = computed(() => workspaceStore.isMounted)
 
 onMounted(async () => {
   // 检查 WebGPU
-  webgpuSupport.value = await localAiService.constructor.checkWebGPUSupport()
+  webgpuSupport.value = await settingsAiService.checkWebGpuSupport()
   
   // 检查并恢复本地工作区权限
-  const hasPermission = await FileSystem.verifyPermission()
-  isWorkspaceMounted.value = hasPermission
+  await workspaceStore.checkMounted()
 })
 
 // --- 原生工作区相关方法 ---
 const handleMountWorkspace = async () => {
-  const handle = await FileSystem.mountWorkspace()
-  if (handle) {
-    isWorkspaceMounted.value = true
-    ElMessage.success('成功挂载本地文件夹！正在读取文档...')
-    
-    try {
-      const files = await FileSystem.readAllFiles()
-      console.log('读取到的本地文件:', files)
-      
-      // TODO: 这里您可以将 files 导入/合并到您的 documentsStore 中
-      // documentsStore.setDocuments(files) 
-      
-      ElMessage.success(`读取完毕，共 ${files.length} 个本地 Markdown 文件。`)
-    } catch (err) {
-      ElMessage.error('读取文件夹失败: ' + err.message)
+  try {
+    const connected = await documentsStore.connectLocalWorkspace()
+    await workspaceStore.checkMounted()
+    if (connected) {
+      ElMessage.success(`读取完毕，共 ${documentsStore.documents.length} 个本地 Markdown 文件。`)
     }
+  } catch (err) {
+    ElMessage.error('读取文件夹失败: ' + err.message)
   }
 }
 
 const handleUnmountWorkspace = async () => {
-  FileSystem.handle = null
-  isWorkspaceMounted.value = false
-  import('localforage').then(m => m.default.removeItem('zhishiku_workspace_handle'))
-  ElMessage.info('已断开本地工作区')
+  await documentsStore.switchToIndexedDB()
+  await workspaceStore.checkMounted()
 }
 // -------------------------
 
 const initLocalModel = async () => {
   loadingLocal.value = true
   try {
-    await localAiService.getEngine(
-      settings.localAiType === 'gpu' ? settings.localModelId : settings.localCpuModelId,
-      settings.localAiType,
-      (report) => {
-        localAiProgress.value = report.progress
-        localAiStatus.value = report.statusText
-      }
-    )
+    await settingsAiService.preloadLocalModel(settings, updateLocalAiProgress)
     ElMessage.success('本地模型加载成功！')
   } catch (err) {
     ElMessage.error('模型加载失败: ' + err.message)
@@ -363,25 +345,15 @@ const initLocalModel = async () => {
   }
 }
 
-const confirmAndTestLocal = async () => {
-  const type = settings.localAiType === 'gpu' ? 'gpu' : 'cpu'
-  const modelId = type === 'gpu' ? settings.localModelId : settings.localCpuModelId
-  if (!modelId) {
-    ElMessage.warning('请先选择本地模型')
-    return
-  }
+const updateLocalAiProgress = (report) => {
+  localAiProgress.value = report.progress
+  localAiStatus.value = report.statusText
+}
 
+const confirmAndTestLocal = async () => {
   testingLocal.value = true
   try {
-    await localAiService.getEngine(modelId, type, (report) => {
-      localAiProgress.value = report.progress
-      localAiStatus.value = report.statusText
-    })
-
-    const reply = await localAiService.chatCompletion(modelId, type, [
-      { role: 'user', content: '请返回一条简短的回复，确认本地模型可用。' }
-    ])
-
+    const reply = await settingsAiService.testLocalModel(settings, updateLocalAiProgress)
     ElMessage.success('本地模型测试成功：' + (reply ? reply.slice(0, 120) : '已连接'))
   } catch (err) {
     ElMessage.error('本地模型测试失败: ' + (err.message || err))
@@ -392,21 +364,13 @@ const confirmAndTestLocal = async () => {
 }
 
 const confirmAndTestOllama = async () => {
-  if (!settings.ollamaBaseUrl) {
-    ElMessage.warning('请输入 Ollama 服务地址')
-    return
-  }
-
   testingOllama.value = true
   try {
-    if (settings.ollamaModel) {
-      const reply = await AIService.chatCompletion([
-        { role: 'user', content: '请返回一条简短的回复，确认 Ollama 连接是否正常。' }
-      ], null, null, { model: settings.ollamaModel })
-      ElMessage.success('Ollama 测试成功：' + (reply ? reply.slice(0, 120) : '已连接'))
+    const result = await settingsAiService.testOllama(settings)
+    if (result.type === 'chat') {
+      ElMessage.success('Ollama 测试成功：' + result.message.slice(0, 120))
     } else {
-      const models = await AIService.listOllamaModels()
-      ElMessage.success('Ollama 可访问，发现模型数量：' + (models.length || 0))
+      ElMessage.success('Ollama 可访问，发现模型数量：' + result.count)
     }
   } catch (err) {
     ElMessage.error('Ollama 测试失败: ' + (err.message || err))
@@ -427,7 +391,7 @@ const testWebDAVConnection = async () => {
   }
   testing.value = true
   try {
-    await syncWithWebDAV(settings, documentsStore.documents)
+    await syncService.syncDocuments(settings, documentsStore.documents)
     ElMessage.success('WebDAV 连接并同步测试成功！')
   } catch (err) {
     ElMessage.error('连接失败: ' + err.message)
@@ -437,23 +401,10 @@ const testWebDAVConnection = async () => {
 }
 
 const confirmAndTestApi = async () => {
-  if (!settings.aiBaseUrl) {
-    ElMessage.warning('请输入 API Base URL')
-    return
-  }
-  if (!settings.aiApiKey) {
-    ElMessage.warning('请输入 API Key')
-    return
-  }
-
   testingOnline.value = true
   try {
-    const reply = await AIService.chatCompletion([
-      { role: 'user', content: '请返回一条简短的回复，确认连接是否正常。' }
-    ], null, null, { model: settings.aiModel })
-
-    const snippet = (reply || '').slice(0, 120)
-    ElMessage.success('在线 API 测试成功：' + (snippet || '已连接'))
+    const reply = await settingsAiService.testOnlineApi(settings)
+    ElMessage.success('在线 API 测试成功：' + reply.slice(0, 120))
   } catch (err) {
     ElMessage.error('在线 API 测试失败: ' + (err.message || err))
     console.error(err)
@@ -464,46 +415,26 @@ const confirmAndTestApi = async () => {
 
 const exportAllData = async () => {
   try {
-    const data = {
-      documents: documentsStore.documents,
-      settings: {
-        primaryColor: settings.primaryColor,
-        fontSize: settings.fontSize
-      },
-      exportTime: new Date().toISOString(),
-      version: '1.0.0'
-    }
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `zhishiku_backup_${new Date().toLocaleDateString()}.json`
-    a.click()
-    URL.revokeObjectURL(url)
+    backupService.exportAllData(documentsStore.documents, settings)
     ElMessage.success('数据导出成功')
   } catch (err) {
     ElMessage.error('导出失败: ' + err.message)
   }
 }
 
-const importData = (file) => {
-  const reader = new FileReader()
-  reader.onload = async (e) => {
-    try {
-      const data = JSON.parse(e.target.result)
-      if (!data.documents) throw new Error('无效的备份文件')
-      
-      await ElMessageBox.confirm('导入备份将合并当前数据，同名文档可能会冲突，是否继续？', '警告', {
-        type: 'warning'
-      })
+const importData = async (file) => {
+  try {
+    const data = await backupService.readBackupFile(file.raw)
 
-      // TODO: 实现合并逻辑
-      ElMessage.success('成功解析 ' + data.documents.length + ' 个文档 (导入合并逻辑开发中...)')
-    } catch (err) {
-      ElMessage.error('导入失败: ' + err.message)
-    }
+    await ElMessageBox.confirm('导入备份将合并当前数据，同名文档可能会冲突，是否继续？', '警告', {
+      type: 'warning'
+    })
+
+    await documentsStore.importData(JSON.stringify(data.documents))
+    ElMessage.success('成功导入 ' + data.documents.length + ' 个文档')
+  } catch (err) {
+    ElMessage.error('导入失败: ' + err.message)
   }
-  reader.readAsText(file.raw)
 }
 </script>
 
