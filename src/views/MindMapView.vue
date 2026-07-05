@@ -301,7 +301,7 @@ import { mindMapService } from "@/services/mindMapService";
 const aiDialogVisible = ref(false);
 const aiPrompt = ref("");
 const isAiGenerating = ref(false);
-import { ref, computed, onMounted, onUnmounted, nextTick, watch } from "vue";
+import { ref, computed, onMounted, watch } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 
 import MindMapSidebar from "@/components/MindMap/MindMapSidebar.vue";
@@ -309,12 +309,15 @@ import MindMapToolbar from "@/components/MindMap/MindMapToolbar.vue";
 import MindMapStylePanel from "@/components/MindMap/MindMapStylePanel.vue";
 
 import { createNode } from "@/composables/mindmap/useNodeModel";
-import { useCreate } from "@/composables/mindmap/useCreate";
 import {
   exportAsJSON,
   exportAsPNG,
 } from "@/composables/mindmap/useExport";
 import { useLayout } from "@/composables/mindmap/useLayout";
+import { useViewport } from "@/composables/mindmap/useViewport";
+import { useInlineEdit } from "@/composables/mindmap/useInlineEdit";
+import { useCanvasInteractions } from "@/composables/mindmap/useCanvasInteractions";
+import { useKeyboardShortcuts } from "@/composables/mindmap/useKeyboardShortcuts";
 import { useUndoRedo } from "@/composables/mindmap/useUndoRedo";
 import { useNodeOperations } from "@/composables/mindmap/useNodeOperations";
 import { usePersist } from "@/composables/mindmap/usePersist";
@@ -323,8 +326,6 @@ import { useMarkdown } from "@/composables/mindmap/useMarkdown";
 
 const rootData = ref(createNode("中心主题", 0));
 const selectedNodeId = ref(null);
-const editingNode = ref(null);
-const editText = ref("");
 const isSidebarOpen = ref(false);
 
 const lineStyle = ref("curve");
@@ -332,16 +333,6 @@ const layoutMode = ref("right"); // 新增：'right' 或 'centered'
 
 const canvasContainer = ref(null);
 const svgRef = ref(null);
-const editInputRef = ref(null);
-
-const zoom = ref(1);
-const panX = ref(40);
-const panY = ref(40);
-const isPanning = ref(false);
-const panStart = ref({ x: 0, y: 0 });
-const dragNodeId = ref(null);
-const dragStart = ref({ x: 0, y: 0 });
-const dragTargetParent = ref(null);
 
 /**
  * AI 一键生成思维导图核心算法 (流式实时渲染版)
@@ -443,6 +434,40 @@ const { canUndo, canRedo, pushUndo, undo, redo, clearHistory } = useUndoRedo(
   },
 );
 
+function resolveNode(id) {
+  return findNode(id);
+}
+
+const {
+  zoom,
+  panX,
+  panY,
+  fitToCenter,
+  zoomIn,
+  zoomOut,
+  focusNode,
+  onWheel,
+} = useViewport({
+  canvasContainer,
+  findNode: resolveNode,
+});
+
+const {
+  editingNode,
+  editText,
+  editInputRef,
+  editInputStyle,
+  startEdit,
+  finishEdit,
+  cancelEdit,
+} = useInlineEdit({
+  panX,
+  panY,
+  zoom,
+  pushUndo,
+  recalc,
+});
+
 const {
   findNode,
   findParent,
@@ -463,6 +488,29 @@ const selectedNode = computed(() =>
 );
 
 const {
+  isPanning,
+  dragNodeId,
+  onCanvasMouseDown,
+  onCanvasMouseMove,
+  onCanvasMouseUp,
+  onNodeMouseDown,
+} = useCanvasInteractions({
+  rootData,
+  selectedNodeId,
+  zoom,
+  panX,
+  panY,
+  svgRef,
+  editInputRef,
+  editingNode,
+  finishEdit,
+  findNode,
+  findParent,
+  pushUndo,
+  recalc,
+});
+
+const {
   sessions,
   activeSessionId,
   loadSessions,
@@ -481,17 +529,18 @@ watch(currentThemeName, () => recalc());
 watch(lineStyle, () => recalc());
 watch(layoutMode, () => recalc()); // 模式切换自动排版
 
-// 居中大纲选中的节点
-function focusNode(id) {
-  selectedNodeId.value = id;
-  const node = findNode(id);
-  if (node) {
-    panX.value =
-      -node._x * zoom.value + (canvasContainer.value?.clientWidth / 2 || 400);
-    panY.value =
-      -node._y * zoom.value + (canvasContainer.value?.clientHeight / 2 || 300);
-  }
-}
+useKeyboardShortcuts({
+  editingNode,
+  editInputRef,
+  selectedNode,
+  addChildNode,
+  addSiblingNode,
+  deleteNode,
+  toggleCollapse,
+  startEdit,
+  undo,
+  redo,
+});
 
 // 导入 Markdown 文本覆盖画布
 function handleImportMarkdown() {
@@ -523,19 +572,6 @@ function resetNodeStyle(node) {
   node.style = null;
   recalc();
 }
-const { getCenterViewport } = useCreate();
-function fitToCenter() {
-  const vp = getCenterViewport();
-  zoom.value = vp.zoom;
-  panX.value = vp.panX;
-  panY.value = vp.panY;
-}
-function zoomIn() {
-  zoom.value = Math.min(3, zoom.value * 1.2);
-}
-function zoomOut() {
-  zoom.value = Math.max(0.2, zoom.value / 1.2);
-}
 function exportAsJSONFn() {
   exportAsJSON(rootData.value);
 }
@@ -543,170 +579,8 @@ function exportAsPNGFn() {
   exportAsPNG(svgRef.value, flatNodes.value, currentTheme.value);
 }
 
-function onCanvasMouseDown(e) {
-  if (
-    e.target === svgRef.value ||
-    e.target.classList.contains("mm-svg") ||
-    e.target.tagName === "rect"
-  ) {
-    isPanning.value = true;
-    panStart.value = { x: e.clientX - panX.value, y: e.clientY - panY.value };
-  }
-  selectedNodeId.value = null;
-  if (editingNode.value && e.target !== editInputRef.value) finishEdit();
-}
-function onCanvasMouseMove(e) {
-  if (isPanning.value) {
-    panX.value = e.clientX - panStart.value.x;
-    panY.value = e.clientY - panStart.value.y;
-  }
-  if (dragNodeId.value) {
-    const scale = zoom.value;
-    const svgX = (e.clientX - panX.value) / scale;
-    const svgY = (e.clientY - panY.value) / scale;
-    let closest = null;
-    let closestDist = 80 / scale;
-    function findClosest(node) {
-      const cx = node._x + node._width / 2;
-      const cy = node._y + node._height / 2;
-      const dist = Math.hypot(svgX - cx, svgY - cy);
-      if (dist < closestDist && node.id !== dragNodeId.value) {
-        closest = node;
-        closestDist = dist;
-      }
-      if (node.children && !node.collapsed) {
-        for (const c of node.children) findClosest(c);
-      }
-    }
-    findClosest(rootData.value);
-    dragTargetParent.value = closest;
-  }
-}
-function onNodeMouseDown(e, node) {
-  selectedNodeId.value = node.id;
-  if (node !== rootData.value && e.button === 0) {
-    dragNodeId.value = node.id;
-    dragStart.value = { x: e.clientX, y: e.clientY };
-  }
-}
-function handleDrop() {
-  const node = findNode(dragNodeId.value);
-  const target = dragTargetParent.value;
-  if (!node || !target) return;
-  function isDescendant(ancestor, child) {
-    if (!child.children) return false;
-    for (const c of child.children) {
-      if (c.id === ancestor.id || isDescendant(ancestor, c)) return true;
-    }
-    return false;
-  }
-  if (node === target || isDescendant(target, node)) return;
-  pushUndo();
-  const oldParent = findParent(node.id);
-  if (oldParent)
-    oldParent.children = oldParent.children.filter((c) => c.id !== node.id);
-  if (!target.children) target.children = [];
-  target.children.push(node);
-  node._level = target._level + 1;
-  selectedNodeId.value = node.id;
-}
-function onCanvasMouseUp() {
-  isPanning.value = false;
-  if (dragNodeId.value) {
-    handleDrop();
-    dragNodeId.value = null;
-    dragTargetParent.value = null;
-    recalc();
-  }
-}
-function onWheel(e) {
-  const delta = e.deltaY > 0 ? 0.9 : 1.1;
-  const newZoom = Math.min(3, Math.max(0.2, zoom.value * delta));
-  const rect = canvasContainer.value.getBoundingClientRect();
-  const cx = e.clientX - rect.left;
-  const cy = e.clientY - rect.top;
-  const scale = newZoom / zoom.value;
-  panX.value = cx - scale * (cx - panX.value);
-  panY.value = cy - scale * (cy - panY.value);
-  zoom.value = newZoom;
-}
-
-const editInputStyle = computed(() => {
-  if (!editingNode.value) return {};
-  const node = editingNode.value;
-  return {
-    left: `${panX.value + (node._x + 4) * zoom.value}px`,
-    top: `${panY.value + (node._y + 4) * zoom.value}px`,
-    width: `${Math.max(node._width - 8, 60) * zoom.value}px`,
-    fontSize: `${(node._level === 0 ? 16 : node.style?.fontSize || 13) * zoom.value}px`,
-  };
-});
-function startEdit(node) {
-  editingNode.value = node;
-  editText.value = node.title;
-  nextTick(() => {
-    if (editInputRef.value) {
-      editInputRef.value.focus();
-      editInputRef.value.select();
-    }
-  });
-}
-function finishEdit() {
-  if (
-    editingNode.value &&
-    editText.value.trim() &&
-    editText.value !== editingNode.value.title
-  ) {
-    pushUndo();
-    editingNode.value.title = editText.value.trim();
-    recalc();
-  }
-  cancelEdit();
-}
-function cancelEdit() {
-  editingNode.value = null;
-}
-function onKeydown(e) {
-  if (
-    editingNode.value ||
-    ((e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") &&
-      e.target !== editInputRef.value)
-  )
-    return;
-  const node = selectedNode.value;
-  if (!node) return;
-  if (e.key === "Tab") {
-    e.preventDefault();
-    addChildNode(node);
-  } else if (e.key === "Enter") {
-    e.preventDefault();
-    addSiblingNode(node);
-  } else if (e.key === "Delete" || e.key === "Backspace") {
-    e.preventDefault();
-    deleteNode(node);
-  } else if (e.key === "F2") {
-    e.preventDefault();
-    startEdit(node);
-  } else if (e.ctrlKey && e.key === "z") {
-    e.preventDefault();
-    undo();
-  } else if (e.ctrlKey && e.key === "y") {
-    e.preventDefault();
-    redo();
-  } else if (e.key === " " && node.children?.length > 0) {
-    e.preventDefault();
-    toggleCollapse(node);
-  }
-}
-
 onMounted(() => {
   loadSessions();
-  window.addEventListener("keydown", onKeydown);
-  window.addEventListener("mouseup", onCanvasMouseUp);
-});
-onUnmounted(() => {
-  window.removeEventListener("keydown", onKeydown);
-  window.removeEventListener("mouseup", onCanvasMouseUp);
 });
 </script>
 

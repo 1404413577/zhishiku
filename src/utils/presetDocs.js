@@ -175,7 +175,7 @@ print(fibonacci(10))
 ### 3. 数据存储
 - 本地 IndexedDB 存储
 - 数据导入导出
-- 离线可用
+- 浏览器本地保存
 
 ### 4. 用户界面
 - 响应式设计
@@ -292,13 +292,9 @@ VITE_APP_TITLE=知识库
 VITE_APP_VERSION=1.0.0
 \`\`\`
 
-## 📱 PWA 支持
+## 缓存说明
 
-### 安装 PWA 插件
-
-\`\`\`bash
-npm install -D vite-plugin-pwa
-\`\`\`
+当前版本不启用 PWA 离线缓存，也不会注册 Service Worker。生产环境启动时会尝试清理旧版本遗留的浏览器缓存。
 
 ---
 

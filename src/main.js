@@ -1,19 +1,23 @@
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
-import ElementPlus from 'element-plus'
-import 'element-plus/dist/index.css'
+import 'element-plus/es/components/message/style/css'
+import 'element-plus/es/components/message-box/style/css'
 import 'element-plus/theme-chalk/dark/css-vars.css'
 import 'highlight.js/styles/github.css'
 import App from './App.vue'
 import router from './router'
 import { initPerformanceMonitoring } from './utils/performance.js'
-import { registerSW } from 'virtual:pwa-register'
 
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations()
+    .then((registrations) => registrations.forEach((registration) => registration.unregister()))
+    .catch((error) => console.warn('清理旧 Service Worker 失败:', error))
+}
 
-
-// 注册 PWA Service Worker
-if (import.meta.env.PROD) {
-  registerSW({ immediate: true })
+if (import.meta.env.PROD && 'caches' in window) {
+  caches.keys()
+    .then((keys) => Promise.all(keys.map((key) => caches.delete(key))))
+    .catch((error) => console.warn('清理旧离线缓存失败:', error))
 }
 
 const app = createApp(App)
@@ -21,20 +25,8 @@ const pinia = createPinia()
 
 app.use(pinia)
 app.use(router)
-app.use(ElementPlus)
 
 app.mount('#app')
-
-// 🚨 新增：立即注册 Service Worker，接管离线缓存
-registerSW({
-  immediate: true,
-  onOfflineReady() {
-    console.log('✅ PWA: 应用已准备好离线运行')
-  },
-  onNeedRefresh() {
-    console.log('🔄 PWA: 有新内容可用，请刷新页面')
-  }
-})
 
 // 在 Pinia 安装后再加载开发调试工具
 if (import.meta.env.DEV) {

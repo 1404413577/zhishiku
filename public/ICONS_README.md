@@ -18,8 +18,7 @@
 ### 社交媒体
 - `og-image.png` - Open Graph 图片 (1200x630)
 
-### PWA 支持
-- `manifest.json` - Web App Manifest 文件
+### 应用图标
 
 ## 设计说明
 
@@ -43,7 +42,7 @@ npm run icons:generate
 - ✅ Firefox - 支持所有格式  
 - ✅ Safari - 支持所有格式
 - ✅ iOS Safari - 使用 apple-touch-icon.png
-- ✅ Android Chrome - 使用 manifest.json 中的图标
+- ✅ Android Chrome - 使用网页图标
 
 ## 文件大小优化
 

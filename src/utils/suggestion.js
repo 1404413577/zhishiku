@@ -147,7 +147,7 @@ export const suggestionConfig = {
       },
       {
         title: '数学公式',
-        description: 'MathJax 公式块',
+        description: '轻量公式块',
         icon: More,
         command: ({ editor, range }) => {
           editor

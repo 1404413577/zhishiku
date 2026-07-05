@@ -1,12 +1,5 @@
 <template>
   <div id="app">
-    <transition name="slide-down">
-      <div v-if="!isOnline" class="offline-banner">
-        <el-icon class="offline-icon"><Warning /></el-icon>
-        <span>当前处于离线模式，您的浏览和修改将自动保存在本地</span>
-      </div>
-    </transition>
-
     <AppLayout />
     <GlobalSearch />
   </div>
@@ -18,14 +11,7 @@ import AppLayout from '@/components/Layout/AppLayout.vue'
 import { useSettingsStore } from '@/stores/settings.js'
 import GlobalSearch from '@/components/GlobalSearch.vue'
 
-// 🚨 新增：引入网络状态监听和 Element 图标
-import { useNetwork } from '@vueuse/core'
-import { Warning } from '@element-plus/icons-vue'
-
 const settings = useSettingsStore()
-
-// 解构出 isOnline，它会实时响应电脑/手机的网络状态
-const { isOnline } = useNetwork()
 
 // 应用全局样式设置
 watchEffect(() => {
@@ -104,42 +90,6 @@ body {
   height: 100vh;
   overflow: hidden;
 }
-
-/* --- 新增：离线横幅样式 --- */
-.offline-banner {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  background-color: #fdf6ec; /* 柔和的警告黄 */
-  color: #e6a23c;
-  text-align: center;
-  padding: 8px 0;
-  font-size: 13px;
-  font-weight: 500;
-  z-index: 999999;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-}
-
-.offline-icon {
-  font-size: 16px;
-}
-
-/* 动画效果 */
-.slide-down-enter-active,
-.slide-down-leave-active {
-  transition: transform 0.3s ease, opacity 0.3s ease;
-}
-.slide-down-enter-from,
-.slide-down-leave-to {
-  transform: translateY(-100%);
-  opacity: 0;
-}
-/* ------------------------ */
 
 /* Element Plus 样式覆盖 */
 .el-aside {
@@ -342,21 +292,24 @@ body {
   background: none !important;
 }
 
-/* MathJax 公式样式适配 */
-.mjx-container {
-  overflow-x: auto;
-  overflow-y: hidden;
-  max-width: 100%;
+/* 轻量公式样式，不再加载重型公式渲染库 */
+.math-inline {
+  padding: 0 4px;
+  border-radius: 4px;
+  font-family: "Times New Roman", "Cambria Math", serif;
+  color: var(--el-text-color-primary);
+  background: var(--el-fill-color-light);
 }
 
-.mjx-container svg {
-  fill: var(--el-text-color-primary) !important;
-  color: var(--el-text-color-primary) !important;
-}
-
-.mjx-container[display="true"] {
+.math-block {
   margin: 16px 0;
+  padding: 12px 16px;
+  overflow-x: auto;
+  border-radius: 6px;
   text-align: center;
+  font-family: "Times New Roman", "Cambria Math", serif;
+  color: var(--el-text-color-primary);
+  background: var(--el-fill-color-lighter);
 }
 
 /* 阅读进度条全局样式 */

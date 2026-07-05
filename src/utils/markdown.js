@@ -1,8 +1,8 @@
 import MarkdownIt from 'markdown-it'
 import hljs from 'highlight.js'
 import mermaid from 'mermaid'
-import mathjax3 from 'markdown-it-mathjax3'
 import taskLists from 'markdown-it-task-lists'
+import { basicMathPlugin } from './basicMathPlugin.js'
 
 import { ImageService } from '@/services/image.js'
 import { generateMarkdownAnchor, extractMarkdownText, generateMarkdownSummary } from '@/domain/markdown/markdownRules'
@@ -85,7 +85,7 @@ const obsidianLinkPlugin = (md) => {
 }
 
 // 注册插件
-md.use(mathjax3)
+md.use(basicMathPlugin)
 md.use(taskLists, { enabled: true, label: true })
 md.use(obsidianLinkPlugin)
 
