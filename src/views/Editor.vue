@@ -199,6 +199,10 @@ import { exportAsMarkdown, exportAsHTML, exportAsPDF } from "@/utils/export.js";
 import EditorToolbar from "@/components/Editor/EditorToolbar.vue";
 import EditorTags from "@/components/Editor/EditorTags.vue";
 import EditorToc from "@/components/Editor/EditorToc.vue";
+import { useAutoSave } from "@/composables/editor/useAutoSave";
+import { useEditorDocument } from "@/composables/editor/useEditorDocument";
+import { useEditorImages } from "@/composables/editor/useEditorImages";
+import { useEditorPreview } from "@/composables/editor/useEditorPreview";
 
 // Tiptap imports
 import { EditorContent, useEditor, mergeAttributes } from "@tiptap/vue-3";
@@ -230,18 +234,11 @@ const goBack = () => {
 };
 
 const documentId = ref(route.params.id);
-const documentTitle = ref("");
-const documentContent = ref("");
-const documentTags = ref([]);
 const editorMode = ref("edit");
 const isFocusMode = ref(false);
-const saving = ref(false);
-const lastSaved = ref(null);
-const readingProgress = ref(0);
 const previewRef = ref(null);
 const aiLoading = ref(false);
 const aiWritingLoading = ref(false);
-const tocActiveIndex = ref(0);
 const aiAbortController = ref(null);
 
 const LazyImage = Image.extend({
@@ -264,8 +261,6 @@ const LazyImage = Image.extend({
     ];
   },
 });
-
-let autoSaveTimer = null;
 
 const editor = useEditor({
   content: "",
@@ -362,77 +357,69 @@ const editor = useEditor({
   },
 });
 
-const resolveEditorImages = async () => {
-  if (editor.value && editor.value.view.dom) {
-    await markdownProcessor.resolveLazyImages(
-      editor.value.view.dom,
-      documentId.value,
-      documentsStore.workspaceMode,
-      documentsStore.localDirHandle,
-    );
-  }
-};
-
-const tocHeadings = computed(() => {
-  const content = documentContent.value || "";
-  const headingRegex = /^(#{1,3})\s+(.+)$/gm;
-  const headings = [];
-  let match;
-  while ((match = headingRegex.exec(content)) !== null) {
-    const level = match[1].length;
-    const text = match[2].trim();
-    const anchor = text
-      .toLowerCase()
-      .replace(/[^\w一-龥\s-]/g, "")
-      .replace(/\s+/g, "-")
-      .replace(/-+/g, "-")
-      .replace(/^-|-$/g, "");
-    headings.push({ level, text, anchor });
-  }
-  return headings;
+const {
+  documentTitle,
+  documentContent,
+  documentTags,
+  saving,
+  lastSaved,
+  loadDocument,
+  saveDocument,
+} = useEditorDocument({
+  documentId,
+  editor,
+  documentsStore,
+  router,
+  getEditorMarkdown: () =>
+    editor.value
+      ? editor.value.storage.markdown.getMarkdown()
+      : documentContent.value,
+  afterEditorContentLoaded: () => {
+    nextTick(() => {
+      resolveEditorImages();
+    });
+  },
 });
 
-const renderedContent = computed(() =>
-  markdownProcessor.render(documentContent.value || ""),
-);
-
-// 修复行数和时间计算，加入可选链防崩溃
-const lineCount = computed(
-  () => documentContent.value?.split("\n").length || 0,
-);
-
-const estimatedReadTime = computed(() => {
-  const len = documentContent.value?.length || 0;
-  if (len === 0) return 0;
-  const minutes = Math.ceil(len / 400);
-  return minutes <= 1 ? "1 分钟" : `${minutes} 分钟`;
+const {
+  resolveEditorImages,
+  resolvePreviewImages,
+  handleImageUpload,
+} = useEditorImages({
+  documentId,
+  documentTitle,
+  editor,
+  documentsStore,
+  markdownProcessor,
+  imageService: ImageService,
+  saveDocument,
 });
 
-const loadDocument = async () => {
-  if (!documentId.value) {
-    documentTitle.value = "新文档";
-    documentContent.value = "";
-    documentTags.value = [];
-    return;
-  }
-  try {
-    const doc = await documentsStore.getDocument(documentId.value);
-    if (doc) {
-      documentTitle.value = doc.title;
-      documentContent.value = doc.content || "";
-      documentTags.value = doc.tags || [];
-      if (editor.value) {
-        editor.value.commands.setContent(documentContent.value);
-        nextTick(() => {
-          resolveEditorImages();
-        });
-      }
-    }
-  } catch (error) {
-    ElMessage.error("加载文档失败");
-    router.push("/");
-  }
-};
+const {
+  readingProgress,
+  tocActiveIndex,
+  tocHeadings,
+  renderedContent,
+  lineCount,
+  estimatedReadTime,
+  refreshPreviewAssets,
+  cycleEditorMode,
+  scrollToHeading,
+  handleTocScroll,
+  handlePreviewScroll,
+} = useEditorPreview({
+  documentContent,
+  editorMode,
+  editor,
+  previewRef,
+  markdownProcessor,
+  resolvePreviewImages: () => resolvePreviewImages(previewRef.value),
+});
+
+const { handleContentChange, clearAutoSave } = useAutoSave({
+  save: saveDocument,
+  afterChange: () => refreshPreviewAssets(100),
+});
 
 const handleAIPolish = async () => {
   if (!editor.value) return;
@@ -533,108 +520,8 @@ const handleAIWrite = async () => {
   }
 };
 
-const saveDocument = async () => {
-  if (saving.value) return;
-  saving.value = true;
-  try {
-    const updates = {
-      title: documentTitle.value,
-      content: editor.value
-        ? editor.value.storage.markdown.getMarkdown()
-        : documentContent.value,
-      tags: documentTags.value,
-    };
-    if (documentId.value) {
-      await documentsStore.saveDocument(documentId.value, updates);
-    } else {
-      const doc = await documentsStore.createDocument(
-        documentTitle.value,
-        documentContent.value,
-      );
-      documentId.value = doc.id;
-      router.replace(`/editor/${doc.id}`);
-    }
-    lastSaved.value = new Date();
-    ElMessage.success("保存成功");
-  } catch (error) {
-    ElMessage.error("保存失败");
-  } finally {
-    saving.value = false;
-  }
-};
-
 const stopAIWrite = () => {
   aiAbortController.value?.abort();
-};
-
-const handleImageUpload = async (file) => {
-  try {
-    const defaultTitle = "未命名文档";
-    if (!documentId.value) {
-      if (!documentTitle.value || documentTitle.value === "新文档")
-        documentTitle.value = defaultTitle;
-      await saveDocument();
-      if (!documentId.value) return;
-    }
-    const mode = documentsStore.workspaceMode;
-    const handle = documentsStore.localDirHandle;
-    const uploadMessage = ElMessage({
-      message: "图片保存中...",
-      type: "info",
-      duration: 0,
-    });
-    const imagePath = await ImageService.saveImage(
-      file,
-      documentId.value,
-      mode,
-      handle,
-    );
-    uploadMessage.close();
-    if (editor.value && imagePath) {
-      const markdownImage = `\n![](${imagePath})\n`;
-      editor.value.chain().focus().insertContent(markdownImage).run();
-      ElMessage.success("图片粘帖成功");
-    }
-  } catch (err) {
-    console.error(err);
-    ElMessage.error("图片保存失败: " + err.message);
-  }
-};
-
-const handleContentChange = () => {
-  if (autoSaveTimer) clearTimeout(autoSaveTimer);
-  autoSaveTimer = setTimeout(() => {
-    saveDocument();
-  }, 3000);
-  setTimeout(() => {
-    markdownProcessor.renderMermaid();
-    if (previewRef.value) {
-      markdownProcessor.resolveLazyImages(
-        previewRef.value,
-        documentId.value,
-        documentsStore.workspaceMode,
-        documentsStore.localDirHandle,
-      );
-    }
-  }, 100);
-};
-
-const cycleEditorMode = () => {
-  const modes = ["edit", "split", "preview"];
-  const idx = modes.indexOf(editorMode.value);
-  editorMode.value = modes[(idx + 1) % 3];
-  if (editorMode.value !== "edit") {
-    nextTick(() => {
-      markdownProcessor.renderMermaid();
-      if (previewRef.value)
-        markdownProcessor.resolveLazyImages(
-          previewRef.value,
-          documentId.value,
-          documentsStore.workspaceMode,
-          documentsStore.localDirHandle,
-        );
-    });
-  }
 };
 
 const toggleFocusMode = () => {
@@ -659,65 +546,7 @@ const insertTable = ({ rows, cols }) => {
     .run();
 };
 
-const scrollToHeading = (heading) => {
-  if (editorMode.value !== "edit") {
-    const previewEl = previewRef.value;
-    if (!previewEl) return;
-    const allHeadings = previewEl.querySelectorAll("h1, h2, h3");
-    for (const h of allHeadings) {
-      if (h.textContent?.trim() === heading.text) {
-        h.scrollIntoView({ behavior: "smooth", block: "start" });
-        return;
-      }
-    }
-  }
-  if (editor.value) {
-    const content = editor.value.storage.markdown.getMarkdown();
-    const headingLine = new RegExp(
-      `^#{1,3}\\s+${heading.text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`,
-      "m",
-    );
-    const match = content.match(headingLine);
-    if (match) {
-      const pos = match.index;
-      editor.value.commands.setTextSelection(Math.min(pos + 1, content.length));
-      editor.value.commands.scrollIntoView();
-    }
-  }
-};
-
-const handleTocScroll = () => {
-  if (editorMode.value === "edit" || tocHeadings.value.length === 0) return;
-  const previewEl = previewRef.value;
-  if (!previewEl) return;
-  const allHeadings = previewEl.querySelectorAll("h1, h2, h3");
-  if (allHeadings.length === 0) return;
-
-  const containerTop = previewEl.getBoundingClientRect().top;
-  let activeIndex = 0;
-  for (let i = 0; i < allHeadings.length; i++) {
-    const rect = allHeadings[i].getBoundingClientRect();
-    if (rect.top <= containerTop + 100) activeIndex = i;
-  }
-  tocActiveIndex.value = activeIndex;
-};
-
 const formatTime = (date) => date.toLocaleTimeString("zh-CN");
-
-const handlePreviewScroll = ({ scrollTop }) => {
-  const scrollWrap = document.querySelector(
-    ".preview-panel .el-scrollbar__wrap",
-  );
-  if (!scrollWrap) return;
-  const scrollHeight = scrollWrap.scrollHeight;
-  const clientHeight = scrollWrap.clientHeight;
-  if (scrollHeight <= clientHeight) {
-    readingProgress.value = 0;
-    return;
-  }
-  const percent = (scrollTop / (scrollHeight - clientHeight)) * 100;
-  readingProgress.value = Math.min(100, Math.max(0, percent));
-};
 
 const handlePreviewClick = async (event) => {
   markdownProcessor.handleCopyClick(event);
@@ -814,15 +643,13 @@ onMounted(async () => {
   document.addEventListener("keydown", handleKeydown);
   window.addEventListener("editor-ai-action", handleEditorAiAction);
   documentsStore.setEditMode(true);
-  setTimeout(() => {
-    markdownProcessor.renderMermaid();
-  }, 300);
+  refreshPreviewAssets(300);
 });
 
 onUnmounted(() => {
   document.removeEventListener("keydown", handleKeydown);
   window.removeEventListener("editor-ai-action", handleEditorAiAction);
-  if (autoSaveTimer) clearTimeout(autoSaveTimer);
+  clearAutoSave();
   documentsStore.setEditMode(false);
 });
 
