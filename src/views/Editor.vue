@@ -189,7 +189,6 @@ import { ref, computed, onMounted, onUnmounted, nextTick, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useDocumentsStore } from "@/stores/documents.js";
 import { markdownService as markdownProcessor } from "@/services/markdownService";
-import { AIService } from "@/services/ai.js";
 import { ImageService } from "@/services/image.js";
 import { Close, MagicStick } from "@element-plus/icons-vue";
 
@@ -331,7 +330,6 @@ const {
   editor,
   documentTitle,
   documentContent,
-  aiService: AIService,
   markdownProcessor,
   saveDocument,
 });

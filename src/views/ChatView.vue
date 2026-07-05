@@ -93,7 +93,7 @@ import { ref, onMounted, onUnmounted, nextTick, computed, watch } from 'vue'
 import { MagicStick, Monitor, Loading, Delete } from '@element-plus/icons-vue'
 import { useSettingsStore } from '@/stores/settings'
 import { useDocumentsStore } from '@/stores/documents'
-import { AIService } from '@/services/ai'
+import { chatService } from '@/services/chatService'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { markdownService as markdownProcessor } from '@/services/markdownService'
 import 'highlight.js/styles/github.css'
@@ -193,27 +193,16 @@ const fetchModels = async () => {
   loadingModels.value = true
   availableModels.value = []
   try {
-    if (selectedEngine.value === 'online') {
-      if (settings.aiModel) {
-        availableModels.value.push({ label: settings.aiModel, value: settings.aiModel })
-        selectedModel.value = settings.aiModel
-      } else ElMessage.info('请先在设置中配置在线 API 模型')
-    } else if (selectedEngine.value === 'local') {
-      const localType = settings.localAiType || 'gpu'
-      if (localType === 'gpu') {
-        availableModels.value = [{ label: 'SmolLM2-135M', value: 'SmolLM2-135M-Instruct-q0f32-MLC' }, { label: 'Llama-3.2-1B', value: 'Llama-3.2-1B-Instruct-q4f16_1-MLC' }]
-        selectedModel.value = settings.localModelId || availableModels.value[0].value
-      } else {
-        availableModels.value = [{ label: 'Qwen1.5-0.5B-Chat', value: 'Xenova/Qwen1.5-0.5B-Chat' }, { label: 'TinyLlama-1.1B-Chat', value: 'Xenova/TinyLlama-1.1B-Chat-v1.0' }]
-        selectedModel.value = settings.localCpuModelId || availableModels.value[0].value
-      }
-    } else if (selectedEngine.value === 'ollama') {
-      if (!settings.ollamaBaseUrl) return ElMessage.warning('请先配置 Ollama 地址')
-      availableModels.value = await AIService.listOllamaModels()
-      if (availableModels.value.length > 0 && !selectedModel.value) {
-        selectedModel.value = availableModels.value[0].name
-        settings.ollamaModel = selectedModel.value
-      }
+    const { models, selectedModel: defaultModel } = await chatService.listAvailableModels(selectedEngine.value, settings)
+    availableModels.value = models
+    selectedModel.value = defaultModel
+
+    if (selectedEngine.value === 'online' && !selectedModel.value) {
+      ElMessage.info('请先在设置中配置在线 API 模型')
+    }
+
+    if (selectedModel.value) {
+      chatService.persistSelectedModel(selectedEngine.value, selectedModel.value, settings)
     }
   } catch (error) { ElMessage.error('无法获取模型列表，请检查配置') } finally { loadingModels.value = false }
 }
@@ -226,13 +215,7 @@ const onEngineChange = () => {
 }
 
 const onModelChange = () => {
-  if (selectedEngine.value === 'online') settings.aiModel = selectedModel.value
-  else if (selectedEngine.value === 'local') {
-    if ((settings.localAiType || 'gpu') === 'gpu') settings.localModelId = selectedModel.value
-    else settings.localCpuModelId = selectedModel.value
-  } else if (selectedEngine.value === 'ollama') {
-    settings.ollamaModel = selectedModel.value
-  }
+  chatService.persistSelectedModel(selectedEngine.value, selectedModel.value, settings)
 }
 
 const scrollToBottom = () => {
@@ -252,23 +235,6 @@ const archiveToDocument = async () => {
     await documentsStore.createDocument(title, content)
     ElMessage.success('对话已成功归档到“我的文档”！')
   } catch (error) { ElMessage.error('归档失败') }
-}
-
-const trimHistory = (messages) => {
-  const selected = []
-  let tokenCount = 0
-  for (let i = messages.length - 1; i >= 0; i--) {
-    const msg = messages[i]
-    const tokens = Math.ceil((msg.content || '').length / 2)
-    if (tokenCount + tokens > 3000 && selected.length > 0) break
-    selected.unshift(msg)
-    tokenCount += tokens
-  }
-  if (selected.length > 0 && selected[0].role === 'assistant') {
-    const firstIdx = messages.indexOf(selected[0])
-    if (firstIdx > 0) selected.unshift(messages[firstIdx - 1])
-  }
-  return selected
 }
 
 const stopGeneration = () => { if (abortController.value) abortController.value.abort() }
@@ -293,9 +259,6 @@ const sendMessage = async (text) => {
   let session = activeSession.value
   if (!session) return
 
-  const previousEngine = settings.aiEngine
-  settings.aiEngine = selectedEngine.value
-
   session.messages.push({ role: 'user', content: text })
   if (session.messages.length <= 2) session.title = text.length > 15 ? text.substring(0, 15) + '...' : text
   session.updatedAt = Date.now()
@@ -303,36 +266,29 @@ const sendMessage = async (text) => {
   isGenerating.value = true
   scrollToBottom()
 
-  const history = trimHistory(session.messages.map(m => ({ role: m.role, content: m.content })))
+  const history = chatService.trimHistory(session.messages.map(m => ({ role: m.role, content: m.content })))
   session.messages.push({ role: 'assistant', content: '' })
   const assistantMsgIndex = session.messages.length - 1
   abortController.value = new AbortController()
 
   try {
-    if (selectedEngine.value === 'local') {
-      const { localAiService } = await import('@/services/localAi')
-      await localAiService.chatCompletion(
-        selectedModel.value,
-        settings.localAiType || 'gpu',
-        history,
-        (_delta, fullText) => { currentReply.value = fullText; session.messages[assistantMsgIndex].content = fullText; scrollToBottom() },
-        null,
-        { signal: abortController.value.signal }
-      )
-    } else {
-      await AIService.chatCompletion(
-        history,
-        (_delta, fullText) => { currentReply.value = fullText; session.messages[assistantMsgIndex].content = fullText; scrollToBottom() },
-        null,
-        { model: selectedModel.value, signal: abortController.value.signal }
-      )
-    }
+    await chatService.completeChat({
+      engine: selectedEngine.value,
+      model: selectedModel.value,
+      localAiType: settings.localAiType || 'gpu',
+      messages: history,
+      signal: abortController.value.signal,
+      onChunk: (_delta, fullText) => {
+        currentReply.value = fullText
+        session.messages[assistantMsgIndex].content = fullText
+        scrollToBottom()
+      },
+    })
   } catch (error) {
     if (error.name !== 'AbortError') session.messages[assistantMsgIndex].content += '\n\n**[异常: ' + (error.message || '网络或配置错误') + ']**'
   } finally {
     isGenerating.value = false
     session.updatedAt = Date.now()
-    settings.aiEngine = previousEngine
     abortController.value = null
     scrollToBottom()
   }

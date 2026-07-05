@@ -1,243 +1,96 @@
 import { useSettingsStore } from '@/stores/settings'
-import { localAiService } from './localAi'
+import { createAiProvider } from './ai/providerFactory'
+import { OllamaAiProvider } from './ai/ollamaProvider'
+import { SUMMARY_SYSTEM_PROMPT, TEXT_EDIT_SYSTEM_PROMPT } from './ai/prompts'
 
-const DEFAULT_TIMEOUT_MS = 120000 // 2 分钟超时
-
-/**
- * 创建一个带超时的 AbortSignal
- */
-function createTimeoutSignal(timeoutMs = DEFAULT_TIMEOUT_MS) {
-  const controller = new AbortController()
-  const timer = setTimeout(() => controller.abort(new Error('AI 请求超时，请检查网络或服务状态')), timeoutMs)
-  return { signal: controller.signal, clear: () => clearTimeout(timer) }
+function normalizeBaseUrl(value, fallback) {
+  return (value || fallback).replace(/\/$/, '')
 }
 
 /**
- * 通用 AI 服务 — 统一调度 online / local / ollama 三种引擎
+ * 通用 AI 服务，统一调度 online / local / ollama 三种引擎。
+ *
+ * 调用方继续使用 chatCompletion / generateSummary / polishText，
+ * 底层差异由 provider 处理。
  */
 export class AIService {
-  static getConfigs() {
+  static getConfigs(overrides = {}) {
     const settings = useSettingsStore()
-    const aiEngine = settings.aiEngine || 'online'
+    const aiEngine = overrides.aiEngine || overrides.engine || settings.aiEngine || 'online'
 
     if (aiEngine === 'ollama') {
       return {
         aiEngine: 'ollama',
-        baseUrl: (settings.ollamaBaseUrl || 'http://localhost:11434').replace(/\/$/, ''),
-        model: settings.ollamaModel || ''
+        baseUrl: normalizeBaseUrl(overrides.baseUrl || settings.ollamaBaseUrl, 'http://localhost:11434'),
+        model: overrides.model || settings.ollamaModel || '',
       }
     }
 
     if (aiEngine === 'local') {
-      const localAiType = settings.localAiType || 'gpu'
-      const localModelId = localAiType === 'gpu'
+      const localAiType = overrides.localAiType || settings.localAiType || 'gpu'
+      const fallbackModel = localAiType === 'gpu'
         ? (settings.localModelId || 'SmolLM2-135M-Instruct-q0f32-MLC')
         : (settings.localCpuModelId || 'Xenova/Qwen1.5-0.5B-Chat')
-      return { aiEngine: 'local', localAiType, localModelId }
+      return {
+        aiEngine: 'local',
+        localAiType,
+        localModelId: overrides.localModelId || overrides.model || fallbackModel,
+      }
     }
 
-    // online
     return {
       aiEngine: 'online',
-      apiKey: settings.aiApiKey || '',
-      baseUrl: settings.aiBaseUrl || 'https://api.openai.com/v1',
-      model: settings.aiModel || 'gpt-3.5-turbo'
+      apiKey: overrides.apiKey || settings.aiApiKey || '',
+      baseUrl: normalizeBaseUrl(overrides.baseUrl || settings.aiBaseUrl, 'https://api.openai.com/v1'),
+      model: overrides.model || settings.aiModel || 'gpt-3.5-turbo',
     }
   }
 
   /**
-   * 获取 Ollama 可用模型列表
+   * 获取 Ollama 可用模型列表。
    */
-  static async listOllamaModels() {
-    const { baseUrl } = this.getConfigs()
-    const { signal, clear } = createTimeoutSignal(15000)
-    try {
-      const response = await fetch(`${baseUrl}/api/tags`, { signal })
-      if (!response.ok) throw new Error(`Ollama 请求失败: ${response.status}`)
-      const data = await response.json()
-      return data.models || []
-    } finally {
-      clear()
-    }
+  static async listOllamaModels(options = {}) {
+    const settings = useSettingsStore()
+    const provider = new OllamaAiProvider({
+      aiEngine: 'ollama',
+      baseUrl: normalizeBaseUrl(options.baseUrl || settings.ollamaBaseUrl, 'http://localhost:11434'),
+      model: options.model || settings.ollamaModel || '',
+    })
+    return provider.listModels(options)
   }
 
   /**
-   * 发送聊天补全请求
+   * 发送聊天补全请求。
+   *
    * @param {Array} messages - 消息列表 [{ role, content }]
    * @param {Function} onChunk - 流式回调 (delta, fullText)
-   * @param {Function} onProgress - 本地模型加载进度回调 (仅 local 模式)
-   * @param {Object} options - { model, signal } 覆盖模型或传入 AbortSignal
-   * @returns {Promise<string>} - 完整回复文本
+   * @param {Function} onProgress - 本地模型加载进度回调
+   * @param {Object} options - { aiEngine, model, signal } 等临时覆盖项
+   * @returns {Promise<string>} 完整回复文本
    */
   static async chatCompletion(messages, onChunk = null, onProgress = null, options = {}) {
-    const configs = this.getConfigs()
-
-    if (configs.aiEngine === 'local') {
-      return localAiService.chatCompletion(configs.localModelId, configs.localAiType, messages, onChunk, onProgress)
-    }
-
-    if (configs.aiEngine === 'ollama') {
-      return this._ollamaChatCompletion(configs, messages, onChunk, options)
-    }
-
-    // online (OpenAI 兼容)
-    if (!configs.apiKey) {
-      throw new Error('请先在"设置"中配置 AI API Key。')
-    }
-
-    const apiUrl = configs.baseUrl.endsWith('/')
-      ? `${configs.baseUrl}chat/completions`
-      : `${configs.baseUrl}/chat/completions`
-
-    const { signal, clear } = options.signal
-      ? { signal: options.signal, clear: () => {} }
-      : createTimeoutSignal()
-
-    try {
-      const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${configs.apiKey}`
-        },
-        body: JSON.stringify({
-          model: configs.model,
-          messages,
-          stream: !!onChunk
-        }),
-        signal
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}))
-        throw new Error(errorData.error?.message || `请求失败，状态码: ${response.status}`)
-      }
-
-      if (!onChunk) {
-        const data = await response.json()
-        return data.choices?.[0]?.message?.content || ''
-      }
-
-      // SSE 流式处理
-      const reader = response.body.getReader()
-      const decoder = new TextDecoder('utf-8')
-      let fullText = ''
-
-      while (true) {
-        const { done, value } = await reader.read()
-        if (done) break
-
-        const chunk = decoder.decode(value, { stream: true })
-        const lines = chunk.split('\n')
-        for (const line of lines) {
-          if (line.startsWith('data: ') && line !== 'data: [DONE]') {
-            try {
-              const data = JSON.parse(line.slice(6))
-              const delta = data.choices[0]?.delta?.content || ''
-              fullText += delta
-              if (delta) onChunk(delta, fullText)
-            } catch (e) {
-              console.warn('SSE 解析异常', e)
-            }
-          }
-        }
-      }
-      return fullText
-    } finally {
-      clear()
-    }
+    const provider = createAiProvider(this.getConfigs(options))
+    return provider.chatCompletion(messages, onChunk, onProgress, options)
   }
 
   /**
-   * Ollama 聊天补全 (NDJSON 流式)
-   */
-  static async _ollamaChatCompletion(configs, messages, onChunk, options) {
-    const model = options.model || configs.model
-    if (!model) throw new Error('请先在右上角选择 Ollama 模型')
-
-    const { signal, clear } = options.signal
-      ? { signal: options.signal, clear: () => {} }
-      : createTimeoutSignal()
-
-    try {
-      const response = await fetch(`${configs.baseUrl}/api/chat`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ model, messages, stream: !!onChunk }),
-        signal
-      })
-
-      if (!response.ok) {
-        throw new Error(`Ollama 请求失败: ${response.status}`)
-      }
-
-      if (!onChunk) {
-        const data = await response.json()
-        return data.message?.content || ''
-      }
-
-      // NDJSON 流式
-      const reader = response.body.getReader()
-      const decoder = new TextDecoder('utf-8')
-      let fullText = ''
-      let buffer = ''
-
-      while (true) {
-        const { done, value } = await reader.read()
-        if (done) break
-
-        buffer += decoder.decode(value, { stream: true })
-        const lines = buffer.split('\n')
-        buffer = lines.pop() || ''
-
-        for (const line of lines) {
-          if (!line.trim()) continue
-          try {
-            const parsed = JSON.parse(line)
-            if (parsed.message?.content) {
-              fullText += parsed.message.content
-              onChunk(parsed.message.content, fullText)
-            }
-          } catch (e) {
-            console.warn('Ollama NDJSON 解析失败:', line, e)
-          }
-        }
-      }
-
-      if (buffer.trim()) {
-        try {
-          const parsed = JSON.parse(buffer)
-          if (parsed.message?.content) {
-            fullText += parsed.message.content
-            onChunk(parsed.message.content, fullText)
-          }
-        } catch {}
-      }
-
-      return fullText
-    } finally {
-      clear()
-    }
-  }
-
-  /**
-   * 生成文章总结
+   * 生成文章总结。
    */
   static async generateSummary(content, onChunk = null) {
     const messages = [
-      { role: 'system', content: '你是一个擅长知识提炼的 AI 助手。请你用一段简洁精炼的中文（大概200-300字），为我总结以下这篇文档的内容。返回纯文本，少用Markdown格式。' },
-      { role: 'user', content: content.substring(0, 10000) }
+      { role: 'system', content: SUMMARY_SYSTEM_PROMPT },
+      { role: 'user', content: String(content || '').substring(0, 10000) },
     ]
     return this.chatCompletion(messages, onChunk)
   }
 
   /**
-   * 润色/续写/翻译/解释 文本
+   * 润色/续写/翻译/解释文本。
    */
   static async polishText(text, instruction, onChunk = null) {
     const messages = [
-      { role: 'system', content: `你是一个专业的文字编辑，请根据用户的指令处理文本。直接返回处理后的结果，不要有任何无关的开头或结尾。指令：${instruction}` },
-      { role: 'user', content: text }
+      { role: 'system', content: TEXT_EDIT_SYSTEM_PROMPT(instruction) },
+      { role: 'user', content: text },
     ]
     return this.chatCompletion(messages, onChunk)
   }

@@ -36,6 +36,26 @@ const siteBaseUrl = (
   process.env.VITE_SITE_URL || `https://1404413577.github.io${basePath}`
 ).replace(/\/?$/, '/')
 
+const normalizeWarningId = (id = '') => id.replace(/\\/g, '/')
+
+const isIgnoredRollupWarning = (warning) => {
+  const id = normalizeWarningId(warning.id || warning.loc?.file || '')
+
+  if (warning.code === 'INVALID_ANNOTATION' && id.includes('/node_modules/element-plus/node_modules/@vueuse/core/')) {
+    return true
+  }
+
+  if (warning.code === 'MODULE_LEVEL_DIRECTIVE' && id.includes('/node_modules/@radix-ui/')) {
+    return true
+  }
+
+  if (warning.code === 'EVAL' && id.includes('/node_modules/onnxruntime-web/')) {
+    return true
+  }
+
+  return false
+}
+
 // https://vite.dev/config/
 export default defineConfig({
   base: basePath,
@@ -133,6 +153,10 @@ export default defineConfig({
   // 生产环境优化
   build: {
     rollupOptions: {
+      onwarn(warning, defaultHandler) {
+        if (isIgnoredRollupWarning(warning)) return
+        defaultHandler(warning)
+      },
       output: {
         manualChunks(id) {
           const normalizedId = id.replace(/\\/g, '/')
@@ -192,7 +216,9 @@ export default defineConfig({
         }
       }
     },
-    chunkSizeWarningLimit: 1000,
+    // WebLLM、Transformers、Excalidraw、图表和 Markdown 解析器都是按需加载的大型能力包。
+    // 保留明确的 manualChunks，再把阈值设到当前最大懒加载 chunk 之上，避免生产构建被已知体积告警淹没。
+    chunkSizeWarningLimit: 6500,
     // 确保构建时包含所有必要的文件
     assetsInclude: ['**/*.md'],
     // 压缩配置

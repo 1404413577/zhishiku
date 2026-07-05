@@ -3,6 +3,7 @@ import { buildDocumentTree } from '@/domain/document/documentRules'
 import { documentService } from '@/services/documentService'
 import { searchService } from '@/services/searchService'
 import { FileSystem as FSService } from '@/services/fs.js'
+import { markdownService as markdownProcessor } from '@/services/markdownService'
 import { ElMessage } from 'element-plus'
 
 export const useDocumentsStore = defineStore('documents', {
@@ -344,7 +345,6 @@ export const useDocumentsStore = defineStore('documents', {
 
     async generateSummariesForExistingDocs() {
       let updatedCount = 0
-      const { markdownService: markdownProcessor } = await import('@/services/markdownService')
       for (const doc of this.documents) {
         if (doc.summary && doc.summary.trim()) continue
         if (!doc.content || !doc.content.trim()) continue

@@ -1,4 +1,6 @@
 // 延迟加载 AI 库，防止主 bundle 过大
+import { assertNotAborted, emitDelta } from './ai/aiProviderUtils'
+
 let webllm = null;
 let transformersPipeline = null;
 let transformersEnv = null;
@@ -109,25 +111,43 @@ export class LocalAIService {
   /**
    * 执行对话补全
    */
-  async chatCompletion(modelId, type, messages, onChunk = null, onProgress = null) {
+  async chatCompletion(modelId, type, messages, onChunk = null, onProgress = null, options = {}) {
+    const { signal } = options;
+    assertNotAborted(signal);
+
     const instance = await this.getEngine(modelId, type, onProgress);
+    assertNotAborted(signal);
 
     if (type === 'gpu') {
-      const completion = await instance.chat.completions.create({
-        messages,
-        stream: !!onChunk
-      });
-
-      if (!onChunk) {
-        return completion.choices[0].message.content || "";
-      } else {
-        let fullText = "";
-        for await (const chunk of completion) {
-          const delta = chunk.choices[0]?.delta?.content || "";
-          fullText += delta;
-          if (delta) onChunk(delta, fullText);
+      const interruptGenerate = () => {
+        if (typeof instance.interruptGenerate === 'function') {
+          instance.interruptGenerate();
         }
-        return fullText;
+      };
+
+      signal?.addEventListener('abort', interruptGenerate, { once: true });
+
+      try {
+        const completion = await instance.chat.completions.create({
+          messages,
+          stream: !!onChunk
+        });
+
+        if (!onChunk) {
+          assertNotAborted(signal);
+          return completion.choices[0].message.content || "";
+        } else {
+          let fullText = "";
+          for await (const chunk of completion) {
+            assertNotAborted(signal);
+            const delta = chunk.choices[0]?.delta?.content || "";
+            fullText += delta;
+            emitDelta(onChunk, delta, fullText);
+          }
+          return fullText;
+        }
+      } finally {
+        signal?.removeEventListener('abort', interruptGenerate);
       }
     } else {
       // Transformers.js (CPU) 逻辑
@@ -138,20 +158,23 @@ export class LocalAIService {
       ).join('') + "Assistant: ";
 
       this.statusText = "正在思考 (CPU)...";
+      assertNotAborted(signal);
       
       const output = await instance(prompt, {
         max_new_tokens: 512,
         temperature: 0.7,
         do_sample: true,
         callback_function: (beams) => {
+          assertNotAborted(signal);
           if (onChunk && beams.length > 0) {
             // Transformers.js 的流式输出处理较为初步，通常在完成后返回
           }
         }
       });
 
+      assertNotAborted(signal);
       const fullText = output[0].generated_text.slice(prompt.length);
-      if (onChunk) onChunk(fullText, fullText);
+      emitDelta(onChunk, fullText, fullText);
       return fullText;
     }
   }

@@ -9,6 +9,7 @@
 import { watchEffect, onMounted, onUnmounted } from 'vue'
 import AppLayout from '@/components/Layout/AppLayout.vue'
 import { useSettingsStore } from '@/stores/settings.js'
+import { useDocumentsStore } from '@/stores/documents.js'
 import GlobalSearch from '@/components/GlobalSearch.vue'
 
 const settings = useSettingsStore()
@@ -39,7 +40,6 @@ onMounted(async () => {
   // 自动同步逻辑 (WebDAV)
   const performSync = async () => {
     if (settings.webdavUrl && settings.webdavUsername && settings.webdavPassword) {
-      const { useDocumentsStore } = await import('@/stores/documents.js')
       const { syncWithWebDAV } = await import('@/utils/webdav.js')
       const docsStore = useDocumentsStore()
       try {

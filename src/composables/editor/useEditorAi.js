@@ -1,14 +1,11 @@
 import { ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-
-const AI_WRITE_SYSTEM_PROMPT =
-  '你是一个专业的文档撰写助手。请根据用户提供的标题，撰写一篇完整、结构清晰的Markdown文档。要求：\n1. 使用适当的标题层级（##、###）\n2. 包含段落、列表、代码块等丰富的内容结构\n3. 内容专业、准确、有条理\n4. 直接返回Markdown内容，不要包含"好的"、"以下是"等开头语'
+import { aiUseCases } from '@/services/aiUseCases'
 
 export function useEditorAi({
   editor,
   documentTitle,
   documentContent,
-  aiService,
   markdownProcessor,
   saveDocument,
 }) {
@@ -30,9 +27,8 @@ export function useEditorAi({
 
     aiLoading.value = true
     try {
-      const polishedText = await aiService.polishText(
+      const polishedText = await aiUseCases.polishEditorSelection(
         selectedText,
-        '请润色并优化这段文字，使其更加通顺、专业，修正错别字。',
         null,
       )
       editor.value.chain().focus().insertContent(polishedText).run()
@@ -84,16 +80,12 @@ export function useEditorAi({
       ElMessage.info('正在生成文档内容，请稍候...')
 
       try {
-        await aiService.chatCompletion(
-          [
-            { role: 'system', content: AI_WRITE_SYSTEM_PROMPT },
-            { role: 'user', content: `标题：${title}` },
-          ],
+        await aiUseCases.writeDocumentFromTitle(
+          title,
           (_delta, fullText) => {
             editor.value?.commands.setContent(fullText)
             documentContent.value = fullText
           },
-          null,
           { signal: aiAbortController.value.signal },
         )
         await saveDocument()
@@ -130,7 +122,7 @@ export function useEditorAi({
       }
 
       aiLoading.value = true
-      aiService
+      aiUseCases
         .generateSummary(content, () => {})
         .then((summary) => {
           ElMessageBox.alert(
