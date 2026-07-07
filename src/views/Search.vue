@@ -16,7 +16,7 @@
       </el-input>
     </div>
 
-    <div class="search-filters" v-if="allTags.length > 0">
+    <div class="search-filters" v-if="documentsStore.documents.length > 0">
       <el-select
         v-model="selectedTags"
         multiple
@@ -30,6 +30,57 @@
           :label="tag"
           :value="tag"
         />
+      </el-select>
+
+      <el-select
+        v-model="knowledgeTypeFilter"
+        placeholder="知识类型"
+        class="knowledge-filter"
+        clearable
+      >
+        <el-option
+          v-for="item in knowledgeTypeOptions"
+          :key="item.value"
+          :label="item.label"
+          :value="item.value"
+        />
+      </el-select>
+
+      <el-select
+        v-model="knowledgeStatusFilter"
+        placeholder="知识状态"
+        class="knowledge-filter"
+        clearable
+      >
+        <el-option
+          v-for="item in knowledgeStatusOptions"
+          :key="item.value"
+          :label="item.label"
+          :value="item.value"
+        />
+      </el-select>
+
+      <el-select
+        v-model="confidenceFilter"
+        placeholder="可信度"
+        class="knowledge-filter"
+        clearable
+      >
+        <el-option label="高可信" value="high" />
+        <el-option label="中可信" value="medium" />
+        <el-option label="低可信" value="low" />
+      </el-select>
+
+      <el-select
+        v-model="qualityFilter"
+        placeholder="维护状态"
+        class="knowledge-filter"
+        clearable
+      >
+        <el-option label="待复核" value="needsReview" />
+        <el-option label="无标签" value="missingTags" />
+        <el-option label="缺摘要" value="missingSummary" />
+        <el-option label="孤立知识" value="isolated" />
       </el-select>
 
       <el-select
@@ -47,10 +98,10 @@
 
     <div class="search-results">
       <div class="results-info" v-if="searchQuery">
-        找到 {{ searchResults.length }} 个结果
+        找到 {{ displayDocuments.length }} 个结果
       </div>
 
-      <div v-if="searchResults.length === 0 && searchQuery" class="no-results">
+      <div v-if="displayDocuments.length === 0 && searchQuery" class="no-results">
         <el-empty description="没有找到相关文档" />
       </div>
 
@@ -89,6 +140,17 @@
 
           <div class="doc-meta">
             <span class="doc-date">{{ formatDate(doc.updatedAt) }}</span>
+            <div class="doc-knowledge">
+              <el-tag size="small" effect="plain">
+                {{ getKnowledgeTypeLabel(doc.knowledgeType) }}
+              </el-tag>
+              <el-tag size="small" :type="getKnowledgeStatusTagType(doc.knowledgeStatus)" effect="plain">
+                {{ getKnowledgeStatusLabel(doc.knowledgeStatus) }}
+              </el-tag>
+              <el-tag size="small" :type="getConfidenceTagType(doc.confidence)" effect="plain">
+                {{ getConfidenceLabel(doc.confidence) }}
+              </el-tag>
+            </div>
             <div class="doc-tags" v-if="doc.tags && doc.tags.length > 0">
               <el-tag
                 v-for="tag in doc.tags.slice(0, 3)"
@@ -112,6 +174,10 @@ import { useRouter, useRoute } from "vue-router";
 import { useDocumentsStore } from "@/stores/documents.js";
 import { markdownService as markdownProcessor } from "@/services/markdownService";
 import { Search, Edit } from "@element-plus/icons-vue";
+import {
+  KNOWLEDGE_STATUS_LABELS,
+  KNOWLEDGE_TYPE_LABELS
+} from "@/domain/knowledge/knowledgeAnalytics";
 
 const router = useRouter();
 const route = useRoute();
@@ -120,15 +186,52 @@ const documentsStore = useDocumentsStore();
 // 响应式数据
 const searchQuery = ref("");
 const selectedTags = ref([]);
+const knowledgeTypeFilter = ref("");
+const knowledgeStatusFilter = ref("");
+const confidenceFilter = ref("");
+const qualityFilter = ref("");
 const sortBy = ref("relevance");
 
 // 计算属性
 const allTags = computed(() => documentsStore.allTags);
 const searchResults = computed(() => documentsStore.searchResults);
 const filteredDocuments = computed(() => documentsStore.filteredDocuments);
+const knowledgeAnalysis = computed(() => documentsStore.knowledgeAnalysis);
+const isolatedIds = computed(() => new Set(knowledgeAnalysis.value.maintenance.isolated.map(doc => String(doc.id))));
+const reviewIds = computed(() => new Set(knowledgeAnalysis.value.maintenance.needsReview.map(doc => String(doc.id))));
+const knowledgeTypeOptions = computed(() => Object.entries(KNOWLEDGE_TYPE_LABELS).map(([value, label]) => ({ value, label })));
+const knowledgeStatusOptions = computed(() => Object.entries(KNOWLEDGE_STATUS_LABELS).map(([value, label]) => ({ value, label })));
 
 const displayDocuments = computed(() => {
   let docs = searchQuery.value ? searchResults.value : filteredDocuments.value;
+
+  docs = docs.filter(doc => {
+    if (doc.isFolder) return false;
+
+    if (selectedTags.value.length > 0) {
+      const tags = Array.isArray(doc.tags) ? doc.tags : [];
+      if (!selectedTags.value.some(tag => tags.includes(tag))) return false;
+    }
+
+    if (knowledgeTypeFilter.value && (doc.knowledgeType || "note") !== knowledgeTypeFilter.value) {
+      return false;
+    }
+
+    if (knowledgeStatusFilter.value && (doc.knowledgeStatus || "draft") !== knowledgeStatusFilter.value) {
+      return false;
+    }
+
+    if (confidenceFilter.value && (doc.confidence || "medium") !== confidenceFilter.value) {
+      return false;
+    }
+
+    if (qualityFilter.value === "needsReview" && !reviewIds.value.has(String(doc.id))) return false;
+    if (qualityFilter.value === "missingTags" && Array.isArray(doc.tags) && doc.tags.length > 0) return false;
+    if (qualityFilter.value === "missingSummary" && doc.summary && doc.summary.trim()) return false;
+    if (qualityFilter.value === "isolated" && !isolatedIds.value.has(String(doc.id))) return false;
+
+    return true;
+  });
 
   // 排序
   if (sortBy.value !== "relevance") {
@@ -176,6 +279,11 @@ const syncRouteParams = () => {
     documentsStore.setTagFilter(tagsArray);
     console.log("🏷️ Search页面: 从路由同步标签过滤:", tagsArray);
   }
+
+  knowledgeTypeFilter.value = typeof route.query.knowledgeType === "string" ? route.query.knowledgeType : "";
+  knowledgeStatusFilter.value = typeof route.query.knowledgeStatus === "string" ? route.query.knowledgeStatus : "";
+  confidenceFilter.value = typeof route.query.confidence === "string" ? route.query.confidence : "";
+  qualityFilter.value = typeof route.query.quality === "string" ? route.query.quality : "";
 };
 
 const handleTagFilter = (tags) => {
@@ -198,6 +306,33 @@ const formatDate = (dateString) => {
   return new Date(dateString).toLocaleDateString("zh-CN");
 };
 
+const getKnowledgeTypeLabel = (type) => {
+  return KNOWLEDGE_TYPE_LABELS[type] || KNOWLEDGE_TYPE_LABELS.note;
+};
+
+const getKnowledgeStatusLabel = (status) => {
+  return KNOWLEDGE_STATUS_LABELS[status] || KNOWLEDGE_STATUS_LABELS.draft;
+};
+
+const getKnowledgeStatusTagType = (status) => {
+  if (status === "verified") return "success";
+  if (status === "outdated") return "warning";
+  if (status === "archived") return "info";
+  return "";
+};
+
+const getConfidenceLabel = (confidence) => {
+  if (confidence === "high") return "高可信";
+  if (confidence === "low") return "低可信";
+  return "中可信";
+};
+
+const getConfidenceTagType = (confidence) => {
+  if (confidence === "high") return "success";
+  if (confidence === "low") return "warning";
+  return "info";
+};
+
 // 生命周期
 onMounted(async () => {
   if (documentsStore.documents.length === 0) {
@@ -208,6 +343,13 @@ onMounted(async () => {
 
 watch(
   () => route.query.tags,
+  () => {
+    syncRouteParams();
+  },
+);
+
+watch(
+  () => [route.query.knowledgeType, route.query.knowledgeStatus, route.query.confidence, route.query.quality],
   () => {
     syncRouteParams();
   },
@@ -244,6 +386,7 @@ watch(
 }
 
 .tag-filter,
+.knowledge-filter,
 .sort-select {
   min-width: 200px;
 }
@@ -323,9 +466,8 @@ watch(
 }
 
 .doc-meta {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+  display: grid;
+  gap: 10px;
   margin-top: auto;
 }
 
@@ -340,6 +482,12 @@ watch(
   flex-wrap: wrap;
 }
 
+.doc-knowledge {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
 @media (max-width: 768px) {
   .search-page {
     padding: 20px;
@@ -351,6 +499,7 @@ watch(
   }
 
   .tag-filter,
+  .knowledge-filter,
   .sort-select {
     width: 100%;
     max-width: 300px;

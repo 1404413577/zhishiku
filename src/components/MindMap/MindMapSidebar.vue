@@ -8,7 +8,7 @@
       >
         <el-button type="primary" class="new-mm-btn" round>
           <el-icon><Plus /></el-icon>
-          <span style="margin-left: 4px; margin-right: 4px">新建</span>
+          <span>新建</span>
           <el-icon><ArrowDown /></el-icon>
         </el-button>
         <template #dropdown>
@@ -34,6 +34,9 @@
     <el-tabs v-model="activeTab" class="sidebar-tabs" stretch>
       <el-tab-pane label="文档列表" name="sessions">
         <el-scrollbar class="session-list">
+          <div v-if="sortedSessions.length === 0" class="empty-panel">
+            暂无导图，点击新建开始
+          </div>
           <div
             v-for="session in sortedSessions"
             :key="session.id"
@@ -64,7 +67,11 @@
 
       <el-tab-pane label="大纲视图" name="outline">
         <el-scrollbar class="outline-tree">
+          <div v-if="!rootData" class="empty-panel">
+            当前导图没有大纲
+          </div>
           <el-tree
+            v-else
             :data="treeData"
             node-key="id"
             default-expand-all
@@ -155,6 +162,8 @@ function handleOutlineDrop() {
 .new-mm-btn {
   width: 100%;
   font-weight: 500;
+  display: inline-flex;
+  gap: 4px;
 }
 .sidebar-tabs {
   display: flex;
@@ -187,6 +196,7 @@ function handleOutlineDrop() {
   margin-bottom: 4px;
   border-radius: 8px;
   cursor: pointer;
+  transition: background-color 0.18s ease, color 0.18s ease;
 }
 .session-item:hover {
   background-color: var(--el-fill-color-light);
@@ -212,6 +222,7 @@ function handleOutlineDrop() {
 .delete-btn {
   opacity: 0;
   transform: scale(0.8);
+  transition: opacity 0.16s ease, transform 0.16s ease;
 }
 .session-item:hover .delete-btn {
   opacity: 1;
@@ -223,5 +234,36 @@ function handleOutlineDrop() {
   width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.empty-panel {
+  margin: 8px;
+  padding: 22px 12px;
+  color: var(--el-text-color-secondary);
+  background: var(--el-fill-color-extra-light);
+  border: 1px dashed var(--el-border-color);
+  border-radius: 8px;
+  font-size: 13px;
+  text-align: center;
+}
+@media (max-width: 768px) {
+  .mm-sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: min(84vw, 320px);
+    height: 100%;
+    transform: translateX(-100%);
+  }
+
+  .mm-sidebar.sidebar-open {
+    transform: translateX(0);
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.16);
+  }
+}
+@media (min-width: 769px) {
+  .sidebar-close-btn {
+    display: none;
+  }
 }
 </style>

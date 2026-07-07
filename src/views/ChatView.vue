@@ -14,16 +14,56 @@
       <ChatHeader 
         v-model:selectedEngine="selectedEngine"
         v-model:selectedModel="selectedModel"
+        v-model:knowledgeMode="knowledgeMode"
         :availableModels="availableModels"
         :loadingModels="loadingModels"
         :modelPlaceholder="modelPlaceholder"
         :canArchive="messages.length > 0"
+        :knowledgeHitCount="lastKnowledgeSources.length"
         @refresh="fetchModels"
         @archive="archiveToDocument"
         @toggle-menu="isSidebarOpen = true"
         @update:selectedEngine="onEngineChange"
         @update:selectedModel="onModelChange"
       />
+
+      <section class="knowledge-workbench" v-if="knowledgeMode">
+        <div class="workbench-controls">
+          <el-select
+            v-model="selectedKnowledgeDocId"
+            filterable
+            placeholder="选择要整理的知识"
+            size="small"
+            class="workbench-doc-select"
+          >
+            <el-option
+              v-for="doc in knowledgeDocuments"
+              :key="doc.id"
+              :label="doc.title"
+              :value="String(doc.id)"
+            />
+          </el-select>
+          <el-button size="small" :loading="knowledgeActionLoading === 'organize'" @click="organizeSelectedDocument">
+            整理当前文档
+          </el-button>
+          <el-button size="small" :loading="knowledgeActionLoading === 'summary'" @click="autoSummarySelectedDocument">
+            自动摘要
+          </el-button>
+          <el-button size="small" :loading="knowledgeActionLoading === 'tags'" @click="autoTagSelectedDocument">
+            自动标签
+          </el-button>
+          <el-button size="small" :loading="knowledgeActionLoading === 'relations'" @click="recommendRelationsForSelectedDocument">
+            推荐关联
+          </el-button>
+          <el-button size="small" type="primary" plain :loading="knowledgeActionLoading === 'concept'" @click="createConceptFromSelectedSource">
+            资料转概念
+          </el-button>
+        </div>
+        <div class="workbench-preview" v-if="selectedKnowledgeDoc">
+          <span>{{ getSourceMeta(selectedKnowledgeDoc) }}</span>
+          <strong>{{ selectedKnowledgeDoc.summary || summarizeDoc(selectedKnowledgeDoc) }}</strong>
+        </div>
+      </section>
 
       <div class="chat-body-container" ref="chatBodyRef">
         <div class="chat-body-inner">
@@ -50,7 +90,31 @@
               <div class="content-col">
                 <div class="message-bubble">
                   <div v-if="msg.role === 'user'" class="user-text">{{ msg.content }}</div>
-                  <div v-else class="markdown-body" v-html="renderMarkdown(msg.content)"></div>
+                  <div v-else>
+                    <div
+                      v-if="msg.knowledgeNotice"
+                      class="knowledge-notice"
+                    >
+                      {{ msg.knowledgeNotice }}
+                    </div>
+                    <div class="markdown-body" v-html="renderMarkdown(msg.content)"></div>
+                    <div v-if="msg.sources && msg.sources.length" class="source-panel">
+                      <div class="source-heading">来源</div>
+                      <button
+                        v-for="source in msg.sources"
+                        :key="source.id"
+                        type="button"
+                        class="source-item"
+                        @click="openSource(source)"
+                      >
+                        <span class="source-index">[{{ source.index }}]</span>
+                        <span class="source-title">{{ source.title }}</span>
+                        <span class="source-meta">
+                          {{ getSourceMeta(source) }}
+                        </span>
+                      </button>
+                    </div>
+                  </div>
                 </div>
 
                 <div class="message-actions" :class="{ 'show-actions': hoveredMessageIndex === index }">
@@ -96,6 +160,26 @@ import { useDocumentsStore } from '@/stores/documents'
 import { chatService } from '@/services/chatService'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { markdownService as markdownProcessor } from '@/services/markdownService'
+import { useRouter } from 'vue-router'
+import {
+  buildKnowledgeContext,
+  buildAutoSummaryMessages,
+  buildAutoTagMessages,
+  buildConceptCardMessages,
+  buildDocumentOrganizeMessages,
+  buildKnowledgeQaMessages,
+  buildLowConfidenceNotice,
+  buildRelatedRecommendationQuery,
+  extractMarkdownTitle,
+  normalizeAiKnowledgePatch,
+  normalizeAiTags,
+  parseAiJsonObject,
+  retrieveRelevantDocuments
+} from '@/domain/knowledge/knowledgeQa'
+import {
+  KNOWLEDGE_STATUS_LABELS,
+  KNOWLEDGE_TYPE_LABELS
+} from '@/domain/knowledge/knowledgeAnalytics'
 import 'highlight.js/styles/github.css'
 
 // 导入拆分的子组件
@@ -105,6 +189,7 @@ import ChatInput from '@/components/Chat/ChatInput.vue'
 
 const settings = useSettingsStore()
 const documentsStore = useDocumentsStore()
+const router = useRouter()
 
 // AI 模型状态
 const selectedEngine = ref(settings.aiEngine || 'ollama')
@@ -116,6 +201,10 @@ const currentReply = ref('')
 const chatBodyRef = ref(null)
 const abortController = ref(null)
 const hoveredMessageIndex = ref(-1)
+const knowledgeMode = ref(localStorage.getItem('chat-knowledge-mode') !== 'false')
+const lastKnowledgeSources = ref([])
+const selectedKnowledgeDocId = ref('')
+const knowledgeActionLoading = ref('')
 
 const safeJsonParse = (str, fallback = []) => {
   if (!str) return fallback
@@ -152,6 +241,7 @@ if (!activeSessionId.value && sessions.value.length > 0) {
 
 watch(sessions, (newVal) => localStorage.setItem('ollama-chat-sessions', JSON.stringify(newVal)), { deep: true })
 watch(activeSessionId, (newVal) => { if (newVal) localStorage.setItem('ollama-active-session', newVal) })
+watch(knowledgeMode, (newVal) => localStorage.setItem('chat-knowledge-mode', String(newVal)))
 
 const modelPlaceholder = computed(() => {
   const placeholders = { 'online': '选择模型', 'local': '选择本地模型', 'ollama': '正在加载模型...' }
@@ -161,6 +251,16 @@ const modelPlaceholder = computed(() => {
 const activeSession = computed(() => sessions.value.find(s => s.id === activeSessionId.value) || null)
 const messages = computed(() => activeSession.value ? activeSession.value.messages : [])
 const messageCount = computed(() => messages.value.length)
+const knowledgeDocuments = computed(() => documentsStore.documents.filter(doc => !doc.isFolder))
+const selectedKnowledgeDoc = computed(() => (
+  knowledgeDocuments.value.find(doc => String(doc.id) === String(selectedKnowledgeDocId.value)) || knowledgeDocuments.value[0] || null
+))
+
+watch(knowledgeDocuments, (docs) => {
+  if (!selectedKnowledgeDocId.value && docs.length > 0) {
+    selectedKnowledgeDocId.value = String(docs[0].id)
+  }
+}, { immediate: true })
 
 const createNewSession = () => {
   if (isGenerating.value) return ElMessage.warning('请等待当前对话生成完毕再创建新对话')
@@ -188,6 +288,193 @@ const deleteSession = async (id) => {
 }
 
 const renderMarkdown = (text) => markdownProcessor.render(text || '')
+
+const summarizeDoc = (doc) => markdownProcessor.generateSummary(doc?.content || '', 120)
+
+const getSourceMeta = (source) => {
+  const type = KNOWLEDGE_TYPE_LABELS[source.knowledgeType] || KNOWLEDGE_TYPE_LABELS.note
+  const status = KNOWLEDGE_STATUS_LABELS[source.knowledgeStatus] || KNOWLEDGE_STATUS_LABELS.draft
+  const confidence = source.confidence === 'high' ? '高可信' : source.confidence === 'low' ? '低可信' : '中可信'
+  return `${type} / ${status} / ${confidence}`
+}
+
+const openSource = (source) => {
+  if (!source?.id) return
+  router.push(`/view/${encodeURIComponent(source.id)}`)
+}
+
+const ensureKnowledgeDocuments = async () => {
+  if (documentsStore.documents.length > 0) return true
+  try {
+    await documentsStore.loadDocuments()
+    return true
+  } catch (error) {
+    ElMessage.error('无法加载知识库文档')
+    return false
+  }
+}
+
+const completeKnowledgeAction = async ({ loadingKey, messages, onDone }) => {
+  if (!selectedModel.value) {
+    ElMessage.warning('请先选择 AI 模型')
+    return
+  }
+  if (!await ensureKnowledgeDocuments()) return
+
+  knowledgeActionLoading.value = loadingKey
+  try {
+    const reply = await chatService.completeChat({
+      engine: selectedEngine.value,
+      model: selectedModel.value,
+      localAiType: settings.localAiType || 'gpu',
+      messages
+    })
+    await onDone(reply)
+  } catch (error) {
+    ElMessage.error(error.message || '知识库操作失败')
+  } finally {
+    knowledgeActionLoading.value = ''
+  }
+}
+
+const appendAssistantNote = (content, sources = []) => {
+  const session = activeSession.value
+  if (!session) return
+  session.messages.push({
+    role: 'assistant',
+    content,
+    sources,
+    knowledgeNotice: ''
+  })
+  session.updatedAt = Date.now()
+  scrollToBottom()
+}
+
+const organizeSelectedDocument = async () => {
+  const doc = selectedKnowledgeDoc.value
+  if (!doc) return ElMessage.warning('请选择一篇知识')
+
+  await completeKnowledgeAction({
+    loadingKey: 'organize',
+    messages: buildDocumentOrganizeMessages(doc),
+    onDone: async (reply) => {
+      const data = parseAiJsonObject(reply)
+      const updates = normalizeAiKnowledgePatch(data, {
+        ...doc,
+        summary: doc.summary || summarizeDoc(doc)
+      })
+      await documentsStore.saveDocument(doc.id, updates)
+      appendAssistantNote(
+        `已整理《${updates.title}》。\n\n- 类型：${getSourceMeta(updates)}\n- 标签：${updates.tags.join('、') || '无'}\n- 摘要：${updates.summary || '无'}`,
+        [{ id: String(doc.id), title: updates.title, index: 1, knowledgeType: updates.knowledgeType, knowledgeStatus: updates.knowledgeStatus, confidence: updates.confidence }]
+      )
+      ElMessage.success('已整理并保存元数据')
+    }
+  })
+}
+
+const autoTagSelectedDocument = async () => {
+  const doc = selectedKnowledgeDoc.value
+  if (!doc) return ElMessage.warning('请选择一篇知识')
+
+  await completeKnowledgeAction({
+    loadingKey: 'tags',
+    messages: buildAutoTagMessages(doc),
+    onDone: async (reply) => {
+      const data = parseAiJsonObject(reply)
+      const tags = normalizeAiTags(data.tags)
+      if (tags.length === 0) throw new Error('AI 未返回有效标签')
+      await documentsStore.saveDocument(doc.id, {
+        tags,
+        summary: data.summary || doc.summary || summarizeDoc(doc)
+      })
+      appendAssistantNote(
+        `已为《${doc.title}》生成标签：${tags.join('、')}`,
+        [{ id: String(doc.id), title: doc.title, index: 1, knowledgeType: doc.knowledgeType || 'note', knowledgeStatus: doc.knowledgeStatus || 'draft', confidence: doc.confidence || 'medium' }]
+      )
+      ElMessage.success('已生成并保存标签')
+    }
+  })
+}
+
+const autoSummarySelectedDocument = async () => {
+  const doc = selectedKnowledgeDoc.value
+  if (!doc) return ElMessage.warning('请选择一篇知识')
+
+  await completeKnowledgeAction({
+    loadingKey: 'summary',
+    messages: buildAutoSummaryMessages(doc),
+    onDone: async (reply) => {
+      const data = parseAiJsonObject(reply)
+      const summary = String(data.summary || '').trim()
+      if (!summary) throw new Error('AI 未返回有效摘要')
+      await documentsStore.saveDocument(doc.id, { summary })
+      appendAssistantNote(
+        `已为《${doc.title}》生成摘要。\n\n${summary}`,
+        [{ id: String(doc.id), title: doc.title, index: 1, knowledgeType: doc.knowledgeType || 'note', knowledgeStatus: doc.knowledgeStatus || 'draft', confidence: doc.confidence || 'medium' }]
+      )
+      ElMessage.success('已生成并保存摘要')
+    }
+  })
+}
+
+const recommendRelationsForSelectedDocument = async () => {
+  const doc = selectedKnowledgeDoc.value
+  if (!doc) return ElMessage.warning('请选择一篇知识')
+  if (!await ensureKnowledgeDocuments()) return
+
+  knowledgeActionLoading.value = 'relations'
+  try {
+    const query = buildRelatedRecommendationQuery(doc)
+    const results = retrieveRelevantDocuments(query, documentsStore.documents, {
+      limit: 6,
+      excludeIds: [doc.id]
+    })
+    const relatedIds = results.map(item => String(item.id))
+    await documentsStore.saveDocument(doc.id, { relatedIds })
+    lastKnowledgeSources.value = results
+    appendAssistantNote(
+      `已为《${doc.title}》推荐 ${relatedIds.length} 条关联知识。`,
+      results.map(({ doc: _doc, ...source }) => source)
+    )
+    ElMessage.success(`已推荐 ${relatedIds.length} 条关联知识`)
+  } catch (error) {
+    ElMessage.error(error.message || '推荐关联失败')
+  } finally {
+    knowledgeActionLoading.value = ''
+  }
+}
+
+const createConceptFromSelectedSource = async () => {
+  const doc = selectedKnowledgeDoc.value
+  if (!doc) return ElMessage.warning('请选择一篇资料')
+
+  await completeKnowledgeAction({
+    loadingKey: 'concept',
+    messages: buildConceptCardMessages(doc),
+    onDone: async (reply) => {
+      const title = extractMarkdownTitle(reply, `${doc.title} - 概念卡片`)
+      const created = await documentsStore.createDocument(title, reply)
+      await documentsStore.saveDocument(created.id, {
+        knowledgeType: 'concept',
+        knowledgeStatus: 'draft',
+        confidence: doc.confidence || 'medium',
+        sourceUrl: doc.sourceUrl || '',
+        relatedIds: [String(doc.id)],
+        tags: Array.isArray(doc.tags) ? doc.tags : []
+      })
+      appendAssistantNote(
+        `已从《${doc.title}》生成概念卡片《${title}》。`,
+        [
+          { id: String(doc.id), title: doc.title, index: 1, knowledgeType: doc.knowledgeType || 'source', knowledgeStatus: doc.knowledgeStatus || 'draft', confidence: doc.confidence || 'medium' },
+          { id: String(created.id), title, index: 2, knowledgeType: 'concept', knowledgeStatus: 'draft', confidence: doc.confidence || 'medium' }
+        ]
+      )
+      ElMessage.success('已创建概念卡片')
+      router.push(`/editor/${encodeURIComponent(created.id)}`)
+    }
+  })
+}
 
 const fetchModels = async () => {
   loadingModels.value = true
@@ -227,7 +514,16 @@ const archiveToDocument = async () => {
   let content = `# AI 对话归档 (${new Date().toLocaleString('zh-CN')})\n\n**AI 引擎**: ${selectedEngine.value} | **模型**: ${selectedModel.value}\n\n---\n\n`
   for (const msg of messages.value) {
     if (msg.role === 'user') content += `**🧑 User:**\n${msg.content}\n\n`
-    else content += `**🤖 AI:**\n${msg.content}\n\n`
+    else {
+      content += `**🤖 AI:**\n${msg.content}\n\n`
+      if (msg.sources && msg.sources.length) {
+        content += `**来源：**\n`
+        msg.sources.forEach((source) => {
+          content += `- [${source.index}] ${source.title} (${getSourceMeta(source)})\n`
+        })
+        content += '\n'
+      }
+    }
   }
   const title = activeSession.value?.title && activeSession.value.title !== '新对话' 
     ? `AI 对话：${activeSession.value.title}` : `AI 对话归档 - ${new Date().toLocaleDateString('zh-CN')}`
@@ -258,6 +554,13 @@ const deleteMessagePair = (index) => {
 const sendMessage = async (text) => {
   let session = activeSession.value
   if (!session) return
+  if (documentsStore.documents.length === 0) {
+    try {
+      await documentsStore.loadDocuments()
+    } catch (error) {
+      ElMessage.warning('知识库暂时不可用，将使用普通对话')
+    }
+  }
 
   session.messages.push({ role: 'user', content: text })
   if (session.messages.length <= 2) session.title = text.length > 15 ? text.substring(0, 15) + '...' : text
@@ -266,13 +569,44 @@ const sendMessage = async (text) => {
   isGenerating.value = true
   scrollToBottom()
 
-  const history = chatService.trimHistory(session.messages.map(m => ({ role: m.role, content: m.content })))
-  session.messages.push({ role: 'assistant', content: '' })
+  let knowledgeSources = []
+  let knowledgeNotice = ''
+  let history = chatService.trimHistory(session.messages.map(m => ({ role: m.role, content: m.content })))
+
+  if (knowledgeMode.value) {
+    knowledgeSources = retrieveRelevantDocuments(text, documentsStore.documents)
+    lastKnowledgeSources.value = knowledgeSources
+    knowledgeNotice = buildLowConfidenceNotice(knowledgeSources)
+
+    if (knowledgeSources.length === 0) {
+      knowledgeNotice = '知识库中没有检索到足够相关的内容，本次回答会明确标注依据不足。'
+    }
+
+    const context = buildKnowledgeContext(knowledgeSources)
+    const trimmedHistory = chatService.trimHistory(
+      session.messages.slice(0, -1).map(m => ({ role: m.role, content: m.content })),
+      1200
+    )
+    history = buildKnowledgeQaMessages({
+      question: text,
+      history: trimmedHistory,
+      context
+    })
+  } else {
+    lastKnowledgeSources.value = []
+  }
+
+  session.messages.push({
+    role: 'assistant',
+    content: '',
+    sources: knowledgeMode.value ? knowledgeSources.map(({ doc, ...source }) => source) : [],
+    knowledgeNotice
+  })
   const assistantMsgIndex = session.messages.length - 1
   abortController.value = new AbortController()
 
   try {
-    await chatService.completeChat({
+    const finalReply = await chatService.completeChat({
       engine: selectedEngine.value,
       model: selectedModel.value,
       localAiType: settings.localAiType || 'gpu',
@@ -284,6 +618,9 @@ const sendMessage = async (text) => {
         scrollToBottom()
       },
     })
+    if (finalReply && !session.messages[assistantMsgIndex].content) {
+      session.messages[assistantMsgIndex].content = finalReply
+    }
   } catch (error) {
     if (error.name !== 'AbortError') session.messages[assistantMsgIndex].content += '\n\n**[异常: ' + (error.message || '网络或配置错误') + ']**'
   } finally {
@@ -330,6 +667,48 @@ onUnmounted(() => { if (previousAiEngine.value && previousAiEngine.value !== sel
   overflow-y: auto;
   scroll-behavior: smooth;
   padding-bottom: 20px;
+}
+.knowledge-workbench {
+  flex-shrink: 0;
+  display: grid;
+  gap: 8px;
+  padding: 10px 20px;
+  background:
+    linear-gradient(90deg, rgba(15, 159, 110, 0.07), transparent 72%),
+    var(--el-bg-color);
+  border-bottom: 1px solid var(--el-border-color-lighter);
+}
+.workbench-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.workbench-doc-select {
+  width: min(360px, 100%);
+}
+.workbench-preview {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 8px;
+  align-items: center;
+  color: var(--el-text-color-secondary);
+  font-size: 12px;
+}
+.workbench-preview span {
+  padding: 3px 6px;
+  color: #087752;
+  background: rgba(15, 159, 110, 0.08);
+  border-radius: 6px;
+  white-space: nowrap;
+}
+.workbench-preview strong {
+  min-width: 0;
+  color: var(--el-text-color-regular);
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .chat-body-inner {
   max-width: 800px;
@@ -380,6 +759,66 @@ onUnmounted(() => { if (previousAiEngine.value && previousAiEngine.value !== sel
 .user-text { white-space: pre-wrap; word-break: break-word; }
 .message-row.assistant .message-bubble { background: transparent; padding: 4px 0; width: 100%; color: var(--el-text-color-primary); }
 .markdown-body { word-break: break-word; background-color: transparent !important; font-size: 15px; }
+.knowledge-notice {
+  margin-bottom: 10px;
+  padding: 9px 11px;
+  color: #8a5a00;
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.24);
+  border-radius: 8px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.source-panel {
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--el-border-color-lighter);
+}
+.source-heading {
+  color: var(--el-text-color-secondary);
+  font-size: 12px;
+  font-weight: 700;
+}
+.source-item {
+  width: 100%;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 4px 8px;
+  padding: 9px 10px;
+  text-align: left;
+  background: var(--el-fill-color-extra-light);
+  border: 1px solid var(--el-border-color-lighter);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: border-color 0.18s ease, background-color 0.18s ease, transform 0.18s ease;
+}
+.source-item:hover {
+  transform: translateY(-1px);
+  border-color: rgba(15, 159, 110, 0.3);
+  background: rgba(15, 159, 110, 0.06);
+}
+.source-index {
+  color: #087752;
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.source-title {
+  min-width: 0;
+  color: var(--el-text-color-primary);
+  font-size: 13px;
+  font-weight: 650;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.source-meta {
+  grid-column: 2;
+  color: var(--el-text-color-secondary);
+  font-size: 12px;
+}
 .message-actions { display: flex; margin-top: 6px; opacity: 0; transition: opacity 0.2s; }
 .message-actions.show-actions { opacity: 1; }
 .context-hint { text-align: center; font-size: 12px; color: var(--el-color-warning); margin-top: 24px; }
@@ -395,6 +834,20 @@ onUnmounted(() => { if (previousAiEngine.value && previousAiEngine.value !== sel
   .chat-body-inner { padding: 16px 12px; }
   .message-row { gap: 10px; }
   .content-col { max-width: 90%; }
+  .knowledge-workbench {
+    padding: 10px 12px;
+  }
+  .workbench-controls {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+  .workbench-doc-select {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+  .workbench-preview {
+    grid-template-columns: 1fr;
+  }
 }
 
 .sidebar-overlay {

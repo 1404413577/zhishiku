@@ -35,6 +35,7 @@ function createIndex() {
       id: "id",
       index: [
         { field: "title", tokenize: "full", resolution: 9 },
+        { field: "aliases", tokenize: "forward", resolution: 8 },
         { field: "searchText", tokenize: "full", resolution: 5 },
         { field: "tags", tokenize: "forward", resolution: 7 }
       ],
@@ -53,7 +54,12 @@ function toIndexDocument(doc) {
   return {
     id: doc.id,
     title: doc.title,
-    searchText: extractMarkdownText(doc.content),
+    aliases: Array.isArray(doc.aliases) ? doc.aliases.join(' ') : '',
+    searchText: [
+      extractMarkdownText(doc.content),
+      doc.summary || '',
+      doc.sourceUrl || ''
+    ].join(' '),
     tags: doc.tags ? doc.tags.join(' ') : '',
     rawDoc: doc
   }

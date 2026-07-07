@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { buildDocumentTree } from '@/domain/document/documentRules'
+import { analyzeKnowledgeBase } from '@/domain/knowledge/knowledgeAnalytics'
 import { documentService } from '@/services/documentService'
 import { searchService } from '@/services/searchService'
 import { workspaceService } from '@/services/workspaceService'
@@ -59,6 +60,10 @@ export const useDocumentsStore = defineStore('documents', {
         }
       })
       return Object.entries(counts).map(([date, count]) => [date, count])
+    },
+
+    knowledgeAnalysis: (state) => {
+      return analyzeKnowledgeBase(state.documents)
     }
   },
 

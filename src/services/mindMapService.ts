@@ -35,9 +35,7 @@ export const mindMapService = {
       (_delta: string, fullText: string) => {
         const markdown = stripMarkdownFence(fullText)
         if (markdown) onUpdate(markdown)
-      },
-      null,
-      { model: 'gpt-3.5-turbo' }
+      }
     )
   }
 }

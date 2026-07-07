@@ -9,6 +9,9 @@ export function useLayout(rootData, currentTheme, lineStyle, layoutMode) {
   const GAP_Y = 10
   const NODE_PADDING_X = 20
   const NODE_HEIGHT = 38
+  const ROOT_MAX_WIDTH = 280
+  const NODE_MAX_WIDTH = 220
+  const LINE_HEIGHT = 18
   let measureCtx = null
 
   function getTextWidth(text, fontSize) {
@@ -17,11 +20,44 @@ export function useLayout(rootData, currentTheme, lineStyle, layoutMode) {
     return measureCtx.measureText(text).width
   }
 
+  function wrapText(text, fontSize, maxTextWidth, maxLines = 2) {
+    const source = String(text || '未命名')
+    const chars = Array.from(source)
+    const lines = []
+    let current = ''
+
+    for (const char of chars) {
+      const next = current + char
+      if (current && getTextWidth(next, fontSize) > maxTextWidth) {
+        lines.push(current)
+        current = char
+        if (lines.length === maxLines - 1) break
+      } else {
+        current = next
+      }
+    }
+
+    const consumed = lines.join('').length + current.length
+    if (consumed < chars.length && current) {
+      while (current.length > 1 && getTextWidth(`${current}…`, fontSize) > maxTextWidth) {
+        current = current.slice(0, -1)
+      }
+      current = `${current}…`
+    }
+
+    if (current) lines.push(current)
+    return lines.length > 0 ? lines : [source]
+  }
+
   function computeLayout(node, level = 0) {
     node._level = level
     const fs = level === 0 ? 16 : (node.style?.fontSize || 13)
-    node._width = Math.max(90, Math.ceil(getTextWidth(node.title, fs) + NODE_PADDING_X * 2))
-    node._height = level === 0 ? 48 : NODE_HEIGHT
+    const maxWidth = level === 0 ? ROOT_MAX_WIDTH : NODE_MAX_WIDTH
+    const maxTextWidth = maxWidth - NODE_PADDING_X * 2
+    node._lines = wrapText(node.title, fs, maxTextWidth, level === 0 ? 2 : 2)
+    const widestLine = Math.max(...node._lines.map(line => getTextWidth(line, fs)))
+    node._width = Math.min(maxWidth, Math.max(90, Math.ceil(widestLine + NODE_PADDING_X * 2)))
+    node._height = Math.max(level === 0 ? 48 : NODE_HEIGHT, node._lines.length * LINE_HEIGHT + (level === 0 ? 22 : 16))
 
     if (!node.children || node.children.length === 0 || node.collapsed) {
       node._totalHeight = node._height

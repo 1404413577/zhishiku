@@ -84,9 +84,10 @@
               :key="conn.id"
               :d="conn.path"
               :stroke="conn.color"
-              stroke-width="2"
+              stroke-width="2.2"
               fill="none"
               stroke-linecap="round"
+              class="mm-connection"
             />
             <g
               v-for="node in flatNodes"
@@ -129,7 +130,7 @@
               />
               <text
                 :x="node._width / 2"
-                :y="node._height / 2 + 1"
+                :y="node._height / 2 - ((node._lines?.length || 1) - 1) * 9"
                 text-anchor="middle"
                 dominant-baseline="central"
                 :fill="
@@ -144,11 +145,14 @@
                 :font-weight="node._level === 0 ? 600 : 400"
                 style="pointer-events: none; user-select: none"
               >
-                {{
-                  node.title.length > 18
-                    ? node.title.slice(0, 17) + "…"
-                    : node.title
-                }}
+                <tspan
+                  v-for="(line, lineIndex) in node._lines || [node.title]"
+                  :key="`${node.id}-${lineIndex}`"
+                  :x="node._width / 2"
+                  :dy="lineIndex === 0 ? 0 : 18"
+                >
+                  {{ line }}
+                </tspan>
               </text>
               <g
                 v-if="node.note"
@@ -223,6 +227,14 @@
           @keydown.escape="cancelEdit"
           @mousedown.stop
         />
+        <div class="canvas-status">
+          <span>{{ flatNodes.length }} 个节点</span>
+          <span>{{ Math.round(zoom * 100) }}%</span>
+          <span>{{ layoutMode === 'centered' ? '两边散开' : '向右展开' }}</span>
+        </div>
+        <div class="canvas-help">
+          拖动画布移动，滚轮缩放，双击节点编辑
+        </div>
       </div>
     </div>
 
@@ -257,21 +269,15 @@
     </el-dialog>
     <el-dialog
       v-model="aiDialogVisible"
-      title="✨ AI 一键生成思维导图"
+      title="AI 生成思维导图"
       width="500px"
     >
       <div
         v-loading="isAiGenerating"
-        element-loading-text="AI 正在疯狂思考并构建导图，请稍候..."
+        element-loading-text="正在生成结构化大纲..."
       >
-        <p
-          style="
-            margin-bottom: 12px;
-            font-size: 13px;
-            color: var(--el-text-color-secondary);
-          "
-        >
-          输入一个主题或一句话，AI 将自动为你发散思维并生成完整的导图大纲。
+        <p class="ai-dialog-copy">
+          输入主题、目标或一段材料，系统会生成可编辑的层级大纲并实时铺到画布上。
         </p>
         <el-input
           v-model="aiPrompt"
@@ -365,7 +371,7 @@ async function handleAiGenerate() {
 
     // 生成完全结束后，清空输入框提示成功，并让整个导图居中自适应
     aiPrompt.value = "";
-    ElMessage.success("✨ 导图生成完毕！");
+    ElMessage.success("导图生成完成");
     fitToCenter();
   } catch (error) {
     ElMessage.error("AI 生成失败：" + error.message);
@@ -585,7 +591,7 @@ onMounted(() => {
 .mindmap-app {
   display: flex;
   flex-direction: row;
-  height: calc(100vh - 60px);
+  height: calc(100dvh - 60px);
   position: relative;
   overflow: hidden;
   user-select: none;
@@ -610,6 +616,9 @@ onMounted(() => {
   flex: 1;
   overflow: hidden;
   position: relative;
+  background:
+    radial-gradient(circle at 20% 15%, rgba(64, 158, 255, 0.08), transparent 26%),
+    radial-gradient(circle at 82% 78%, rgba(15, 159, 110, 0.08), transparent 28%);
 }
 .mm-svg {
   width: 100%;
@@ -618,12 +627,19 @@ onMounted(() => {
 }
 .mm-node-group {
   cursor: pointer;
+  transition: opacity 0.18s ease;
+}
+.mm-node-group rect:first-child {
+  transition: stroke-width 0.18s ease, filter 0.18s ease, stroke 0.18s ease;
+}
+.mm-node-group:hover rect:first-child {
+  filter: drop-shadow(0 8px 18px rgba(33, 56, 84, 0.16)) !important;
 }
 .mm-node-group:hover .add-child-btn {
   opacity: 1 !important;
 }
 .mm-node-group.selected rect:first-child {
-  filter: drop-shadow(0 0 0 2px var(--el-color-primary)) !important;
+  filter: drop-shadow(0 8px 22px rgba(64, 158, 255, 0.24)) !important;
 }
 .mm-node-group.drop-target rect:first-child {
   stroke: var(--el-color-success) !important;
@@ -639,5 +655,63 @@ onMounted(() => {
   z-index: 100;
   background: #fff;
   box-sizing: border-box;
+}
+.mm-connection {
+  opacity: 0.9;
+}
+.canvas-status {
+  position: absolute;
+  left: 16px;
+  bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px;
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid rgba(148, 163, 184, 0.26);
+  border-radius: 8px;
+  box-shadow: 0 10px 28px rgba(47, 72, 96, 0.1);
+  backdrop-filter: blur(10px);
+  pointer-events: none;
+}
+.canvas-status span {
+  padding: 3px 7px;
+  color: #334155;
+  background: rgba(248, 250, 252, 0.9);
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+.canvas-help {
+  position: absolute;
+  right: 16px;
+  bottom: 18px;
+  max-width: min(360px, calc(100% - 32px));
+  color: rgba(51, 65, 85, 0.72);
+  font-size: 12px;
+  pointer-events: none;
+}
+.ai-dialog-copy {
+  margin: 0 0 12px;
+  color: var(--el-text-color-secondary);
+  font-size: 13px;
+  line-height: 1.7;
+}
+@media (max-width: 768px) {
+  .mindmap-app {
+    height: calc(100dvh - 50px);
+  }
+
+  .canvas-status {
+    left: 10px;
+    right: 10px;
+    bottom: 10px;
+    justify-content: center;
+  }
+
+  .canvas-help {
+    display: none;
+  }
 }
 </style>

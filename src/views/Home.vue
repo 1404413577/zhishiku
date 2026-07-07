@@ -28,6 +28,66 @@
       </div>
     </div>
 
+    <section class="knowledge-dashboard" v-if="knowledgeHealth.total > 0">
+      <div class="health-overview">
+        <div class="health-score" :style="{ '--score': `${knowledgeHealth.score}%` }">
+          <div class="score-ring">
+            <strong>{{ knowledgeHealth.score }}</strong>
+            <span>健康分</span>
+          </div>
+        </div>
+        <div class="health-copy">
+          <h2>知识库健康仪表盘</h2>
+          <p>
+            这里优先显示需要整理、复核和建立关系的知识，让首页成为维护入口，而不只是文档统计页。
+          </p>
+        </div>
+      </div>
+
+      <div class="health-metrics">
+        <button class="health-metric" type="button" @click="openMaintenanceCollection('knowledgeStatus', 'draft')">
+          <span>待整理</span>
+          <strong>{{ knowledgeHealth.drafts }}</strong>
+        </button>
+        <button class="health-metric" type="button" @click="openMaintenanceCollection('knowledgeStatus', 'outdated')">
+          <span>待复核</span>
+          <strong>{{ knowledgeHealth.outdated }}</strong>
+        </button>
+        <button class="health-metric" type="button" @click="openMaintenanceCollection('quality', 'missingTags')">
+          <span>无标签</span>
+          <strong>{{ knowledgeHealth.missingTags }}</strong>
+        </button>
+        <button class="health-metric" type="button" @click="openMaintenanceCollection('quality', 'isolated')">
+          <span>孤立知识</span>
+          <strong>{{ knowledgeHealth.isolated }}</strong>
+        </button>
+      </div>
+    </section>
+
+    <section class="maintenance-section" v-if="knowledgeHealth.total > 0">
+      <div class="maintenance-column" v-for="group in maintenanceGroups" :key="group.key">
+        <div class="maintenance-heading">
+          <h2>{{ group.title }}</h2>
+          <span>{{ group.docs.length }}</span>
+        </div>
+        <div v-if="group.docs.length === 0" class="maintenance-empty">
+          当前没有需要处理的知识
+        </div>
+        <button
+          v-for="doc in group.docs"
+          :key="doc.id"
+          class="maintenance-item"
+          type="button"
+          @click="viewDocument(doc)"
+        >
+          <span class="maintenance-title">{{ doc.title }}</span>
+          <span class="maintenance-meta">
+            {{ getKnowledgeTypeLabel(doc.knowledgeType) }} · {{ maintenanceReason(doc, group.key) }}
+          </span>
+        </button>
+      </div>
+    </section>
+
     <!-- 数据分析图表 -->
     <div class="charts-section" v-if="stats.total > 0">
       <h2>数据分析</h2>
@@ -112,6 +172,18 @@
         >
           {{ selectMode ? "退出批量操作" : "批量操作" }}
         </el-button>
+      </div>
+      <div class="knowledge-create-strip">
+        <button
+          v-for="item in knowledgeCreateActions"
+          :key="item.templateId"
+          class="knowledge-create-button"
+          type="button"
+          @click="createFromTemplate(item.templateId)"
+        >
+          <span>{{ item.label }}</span>
+          <small>{{ item.description }}</small>
+        </button>
       </div>
     </div>
 
@@ -254,6 +326,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Search, Upload, Select, CollectionTag, Delete, Refresh, Download } from '@element-plus/icons-vue'
 import { exportMultipleAsJSON } from '@/utils/export.js'
 import { templates } from '@/utils/templates.js'
+import { KNOWLEDGE_TYPE_LABELS } from '@/domain/knowledge/knowledgeAnalytics'
 import * as echarts from 'echarts'
 import 'echarts-wordcloud'
 import { useDark } from '@vueuse/core'
@@ -288,6 +361,35 @@ const handleResize = () => allChartInstances().forEach(i => i.resize())
 
 // 计算属性
 const stats = computed(() => documentsStore.stats)
+const knowledgeAnalysis = computed(() => documentsStore.knowledgeAnalysis)
+const knowledgeHealth = computed(() => knowledgeAnalysis.value.health)
+const maintenanceGroups = computed(() => [
+  {
+    key: 'organizing',
+    title: '待整理',
+    docs: knowledgeAnalysis.value.maintenance.needsOrganizing
+  },
+  {
+    key: 'review',
+    title: '待复核',
+    docs: knowledgeAnalysis.value.maintenance.needsReview
+  },
+  {
+    key: 'isolated',
+    title: '孤立知识',
+    docs: knowledgeAnalysis.value.maintenance.isolated
+  }
+])
+
+const knowledgeCreateActions = [
+  { templateId: 'knowledge-concept', label: '概念', description: '术语、模型、方法论' },
+  { templateId: 'knowledge-guide', label: '指南', description: '流程、教程、SOP' },
+  { templateId: 'knowledge-decision', label: '决策', description: '方案取舍和依据' },
+  { templateId: 'knowledge-faq', label: 'FAQ', description: '问题和答案沉淀' },
+  { templateId: 'knowledge-source', label: '资料', description: '文章、书籍、网页摘录' },
+  { templateId: 'knowledge-case', label: '案例', description: '问题复盘和经验' }
+]
+
 const recentDocs = computed(() => {
   return documentsStore.documents
     .slice(0, 5) // 取前5条
@@ -492,9 +594,25 @@ const showNewDocDialog = ref(false)
 const newDocTitle = ref('')
 const selectedTemplate = ref('blank')
 
+const templateKnowledgeTypeMap = {
+  'knowledge-concept': 'concept',
+  'knowledge-guide': 'guide',
+  'knowledge-decision': 'decision',
+  'knowledge-faq': 'faq',
+  'knowledge-source': 'source',
+  'knowledge-case': 'case'
+}
+
 const createNewDocument = () => {
   newDocTitle.value = ''
   selectedTemplate.value = 'blank'
+  showNewDocDialog.value = true
+}
+
+const createFromTemplate = (templateId) => {
+  const tpl = templates.find(t => t.id === templateId)
+  newDocTitle.value = tpl ? tpl.name : ''
+  selectedTemplate.value = templateId
   showNewDocDialog.value = true
 }
 
@@ -504,6 +622,13 @@ const confirmCreateDocument = async () => {
     const tpl = templates.find(t => t.id === selectedTemplate.value)
     const content = tpl ? tpl.content : ''
     const doc = await documentsStore.createDocument(newDocTitle.value.trim(), content)
+    const knowledgeType = templateKnowledgeTypeMap[selectedTemplate.value]
+    if (knowledgeType) {
+      await documentsStore.saveDocument(doc.id, {
+        knowledgeType,
+        knowledgeStatus: 'draft'
+      })
+    }
     showNewDocDialog.value = false
     router.push(`/editor/${encodeURIComponent(doc.id)}`)
   } catch (error) {
@@ -513,6 +638,25 @@ const confirmCreateDocument = async () => {
 
 const viewDocument = (doc) => {
   router.push(`/view/${encodeURIComponent(doc.id)}`)
+}
+
+const getKnowledgeTypeLabel = (type) => {
+  return KNOWLEDGE_TYPE_LABELS[type] || KNOWLEDGE_TYPE_LABELS.note
+}
+
+const maintenanceReason = (doc, groupKey) => {
+  if (groupKey === 'review') return '需要复核'
+  if (groupKey === 'isolated') return '缺少关联'
+  if (!doc.tags || doc.tags.length === 0) return '缺少标签'
+  if (!doc.summary || !doc.summary.trim()) return '缺少摘要'
+  return '草稿状态'
+}
+
+const openMaintenanceCollection = (key, value) => {
+  router.push({
+    path: '/search',
+    query: { [key]: value }
+  })
 }
 
 const importData = () => {
@@ -1261,12 +1405,212 @@ watch([() => documentsStore.documents, isDark], () => {
 
 .quick-actions {
   grid-column: 1 / -1;
-  order: 2;
+  order: 4;
   margin-bottom: 0;
   padding: 16px 18px;
   background: var(--el-fill-color-extra-light);
   border: 1px solid var(--el-border-color-lighter);
   border-radius: 8px;
+}
+
+.knowledge-dashboard {
+  grid-column: 1 / -1;
+  order: 2;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(420px, 0.8fr);
+  gap: 18px;
+  padding: 22px;
+  background:
+    radial-gradient(circle at 88% 10%, rgba(15, 159, 110, 0.1), transparent 28%),
+    var(--el-bg-color);
+  border: 1px solid var(--el-border-color-lighter);
+  border-radius: 10px;
+  box-shadow: 0 16px 42px rgba(72, 91, 113, 0.08);
+}
+
+.health-overview {
+  display: grid;
+  grid-template-columns: 112px minmax(0, 1fr);
+  gap: 20px;
+  align-items: center;
+}
+
+.health-score {
+  --score: 0%;
+  width: 112px;
+  height: 112px;
+  border-radius: 50%;
+  background:
+    conic-gradient(#0f9f6e var(--score), #e7edf3 0),
+    #eef3f8;
+  display: grid;
+  place-items: center;
+}
+
+.score-ring {
+  width: 84px;
+  height: 84px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  border-radius: 50%;
+  background: var(--el-bg-color);
+  box-shadow: inset 0 0 0 1px var(--el-border-color-lighter);
+}
+
+.score-ring strong {
+  color: #0f9f6e;
+  font-size: 30px;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.score-ring span {
+  margin-top: 4px;
+  color: var(--el-text-color-secondary);
+  font-size: 12px;
+}
+
+.health-copy h2 {
+  margin: 0 0 8px;
+  color: var(--el-text-color-primary);
+  font-size: 22px;
+}
+
+.health-copy p {
+  max-width: 62ch;
+  margin: 0;
+  color: var(--el-text-color-regular);
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.health-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.health-metric {
+  min-height: 94px;
+  padding: 14px;
+  text-align: left;
+  background: rgba(248, 250, 252, 0.86);
+  border: 1px solid var(--el-border-color-lighter);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: transform 0.18s ease, border-color 0.18s ease, background-color 0.18s ease;
+}
+
+.health-metric:hover {
+  transform: translateY(-2px);
+  border-color: rgba(15, 159, 110, 0.32);
+  background: rgba(15, 159, 110, 0.055);
+}
+
+.health-metric span,
+.health-metric strong {
+  display: block;
+}
+
+.health-metric span {
+  color: var(--el-text-color-secondary);
+  font-size: 13px;
+}
+
+.health-metric strong {
+  margin-top: 14px;
+  color: #0f9f6e;
+  font-size: 28px;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.maintenance-section {
+  grid-column: 1 / -1;
+  order: 3;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.maintenance-column {
+  min-width: 0;
+  padding: 16px;
+  background: var(--el-bg-color);
+  border: 1px solid var(--el-border-color-lighter);
+  border-radius: 10px;
+}
+
+.maintenance-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.maintenance-heading h2 {
+  margin: 0;
+  color: var(--el-text-color-primary);
+  font-size: 17px;
+}
+
+.maintenance-heading span {
+  min-width: 28px;
+  height: 24px;
+  display: inline-grid;
+  place-items: center;
+  color: #087752;
+  background: rgba(15, 159, 110, 0.08);
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.maintenance-empty {
+  padding: 22px 12px;
+  color: var(--el-text-color-secondary);
+  background: var(--el-fill-color-extra-light);
+  border-radius: 8px;
+  font-size: 13px;
+  text-align: center;
+}
+
+.maintenance-item {
+  width: 100%;
+  display: grid;
+  gap: 5px;
+  padding: 12px;
+  text-align: left;
+  background: transparent;
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.18s ease;
+}
+
+.maintenance-item + .maintenance-item {
+  margin-top: 4px;
+}
+
+.maintenance-item:hover {
+  background: var(--el-fill-color-extra-light);
+}
+
+.maintenance-title {
+  color: var(--el-text-color-primary);
+  font-size: 14px;
+  font-weight: 650;
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.maintenance-meta {
+  color: var(--el-text-color-secondary);
+  font-size: 12px;
 }
 
 .quick-actions h2,
@@ -1289,6 +1633,47 @@ watch([() => documentsStore.documents, isDark], () => {
 
 .action-buttons .el-button {
   margin-left: 0 !important;
+}
+
+.knowledge-create-strip {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.knowledge-create-button {
+  min-height: 72px;
+  padding: 12px;
+  text-align: left;
+  background: var(--el-bg-color);
+  border: 1px solid var(--el-border-color-lighter);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: transform 0.18s ease, border-color 0.18s ease;
+}
+
+.knowledge-create-button:hover {
+  transform: translateY(-1px);
+  border-color: rgba(15, 159, 110, 0.34);
+}
+
+.knowledge-create-button span,
+.knowledge-create-button small {
+  display: block;
+}
+
+.knowledge-create-button span {
+  color: var(--el-text-color-primary);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.knowledge-create-button small {
+  margin-top: 6px;
+  color: var(--el-text-color-secondary);
+  font-size: 12px;
+  line-height: 1.4;
 }
 
 .recent-documents,
@@ -1395,9 +1780,16 @@ watch([() => documentsStore.documents, isDark], () => {
 
   .recent-documents,
   .getting-started,
+  .knowledge-dashboard,
+  .maintenance-section,
   .stats-section,
   .charts-section {
     grid-column: 1 / -1;
+  }
+
+  .knowledge-dashboard,
+  .maintenance-section {
+    grid-template-columns: 1fr;
   }
 
   .charts-grid {
@@ -1425,8 +1817,18 @@ watch([() => documentsStore.documents, isDark], () => {
   }
 
   .stats-cards,
+  .health-metrics,
+  .knowledge-create-strip,
   .guide-steps,
   .charts-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .knowledge-dashboard {
+    padding: 16px;
+  }
+
+  .health-overview {
     grid-template-columns: 1fr;
   }
 

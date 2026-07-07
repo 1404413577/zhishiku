@@ -26,11 +26,13 @@
         <el-slider v-model="nodeStyle.fontSize" :min="10" :max="24" size="small" @change="applyStyle" />
       </div>
       <el-divider />
-      <el-button size="small" @click="$emit('add-child', selectedNode)" :icon="Plus">添加子节点</el-button>
-      <el-button size="small" style="margin-left:8px" @click="$emit('add-sibling', selectedNode)" :icon="Plus">添加同级</el-button>
-      <el-button size="small" style="margin-left:8px" type="danger" @click="$emit('delete', selectedNode)" :icon="Delete">删除</el-button>
+      <div class="panel-actions">
+        <el-button size="small" @click="$emit('add-child', selectedNode)" :icon="Plus">子节点</el-button>
+        <el-button size="small" @click="$emit('add-sibling', selectedNode)" :icon="Plus">同级</el-button>
+        <el-button size="small" type="danger" @click="$emit('delete', selectedNode)" :icon="Delete">删除</el-button>
+      </div>
       <el-divider />
-      <el-button size="small" type="warning" @click="$emit('reset-style', selectedNode)">重置样式</el-button>
+      <el-button class="reset-button" size="small" type="warning" @click="$emit('reset-style', selectedNode)">重置样式</el-button>
     </div>
   </div>
 </template>
@@ -73,12 +75,14 @@ const applyStyle = () => {
 <style scoped>
 .mm-style-panel {
   position: absolute;
-  top: 56px;
-  right: 12px;
+  top: 68px;
+  right: 14px;
   width: 260px;
-  background: #fff;
-  border-radius: 8px;
-  box-shadow: 0 4px 24px rgba(0,0,0,0.12);
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid var(--el-border-color-lighter);
+  border-radius: 10px;
+  box-shadow: 0 16px 42px rgba(47, 72, 96, 0.14);
+  backdrop-filter: blur(12px);
   z-index: 20;
   overflow: hidden;
 }
@@ -90,7 +94,7 @@ const applyStyle = () => {
   font-weight: 600;
   font-size: 14px;
   border-bottom: 1px solid var(--el-border-color-lighter);
-  background: var(--el-color-primary-light-9);
+  background: rgba(64, 158, 255, 0.08);
 }
 .panel-body {
   padding: 16px;
@@ -109,5 +113,25 @@ const applyStyle = () => {
 }
 .style-row .el-slider {
   flex: 1;
+}
+.panel-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+.panel-actions :deep(.el-button) {
+  margin: 0;
+}
+.reset-button {
+  width: 100%;
+}
+@media (max-width: 768px) {
+  .mm-style-panel {
+    top: auto;
+    right: 10px;
+    left: 10px;
+    bottom: 62px;
+    width: auto;
+  }
 }
 </style>

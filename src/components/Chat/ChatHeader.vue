@@ -3,6 +3,17 @@
     <div class="header-left">
       <el-button class="menu-toggle" :icon="Menu" text circle @click="$emit('toggle-menu')" />
       <h2 class="header-title">AI 对话</h2>
+      <el-switch
+        class="knowledge-switch"
+        :model-value="knowledgeMode"
+        active-text="知识库"
+        inactive-text="普通"
+        size="small"
+        @update:model-value="$emit('update:knowledgeMode', $event)"
+      />
+      <span v-if="knowledgeMode && knowledgeHitCount > 0" class="knowledge-count">
+        {{ knowledgeHitCount }} 条引用
+      </span>
     </div>
     <div class="header-right">
       <div class="engine-selector">
@@ -54,10 +65,12 @@ defineProps({
   availableModels: Array,
   loadingModels: Boolean,
   modelPlaceholder: String,
-  canArchive: Boolean
+  canArchive: Boolean,
+  knowledgeMode: Boolean,
+  knowledgeHitCount: { type: Number, default: 0 }
 })
 
-defineEmits(['update:selectedEngine', 'update:selectedModel', 'refresh', 'archive', 'toggle-menu'])
+defineEmits(['update:selectedEngine', 'update:selectedModel', 'update:knowledgeMode', 'refresh', 'archive', 'toggle-menu'])
 </script>
 
 <style scoped>
@@ -85,6 +98,20 @@ defineEmits(['update:selectedEngine', 'update:selectedModel', 'refresh', 'archiv
   color: var(--el-text-color-primary);
   line-height: 32px;
 }
+.knowledge-switch {
+  margin-left: 2px;
+}
+.knowledge-count {
+  padding: 4px 7px;
+  color: #087752;
+  background: rgba(15, 159, 110, 0.08);
+  border: 1px solid rgba(15, 159, 110, 0.18);
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 650;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
 .header-right {
   display: flex;
   align-items: center;
@@ -111,6 +138,7 @@ defineEmits(['update:selectedEngine', 'update:selectedModel', 'refresh', 'archiv
   }
   .header-left {
     width: 100%;
+    flex-wrap: wrap;
   }
   .header-right {
     width: 100%;

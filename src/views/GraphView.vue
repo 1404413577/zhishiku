@@ -28,7 +28,7 @@
 import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useDocumentsStore } from '@/stores/documents'
-import { relationService } from '@/services/relationService'
+import { documentGraphCategories, relationService } from '@/services/relationService'
 import { Refresh, Connection, InfoFilled } from '@element-plus/icons-vue'
 import * as echarts from 'echarts'
 import { useDark } from '@vueuse/core'
@@ -116,7 +116,10 @@ const renderChart = () => {
         if (params.dataType === 'node') {
           if (graphMode.value === 'document') {
             const doc = params.data.docData
-            return `${doc.isFolder ? '📁 ' : '📄 '} ${doc.title}`
+            const typeName = params.data.category != null && documentGraphCategories[params.data.category]
+              ? documentGraphCategories[params.data.category].name
+              : '文档'
+            return `${typeName}: ${doc.title}`
           } else {
             const label = graphDataSource.value === 'wikilinks' ? '🔗 双向链接' : '🏷️ 标签'
             return `${label}: ${params.data.name}<br/>关联次数: ${params.data.value}`
@@ -127,7 +130,7 @@ const renderChart = () => {
     },
     legend: [{
       data: graphMode.value === 'document'
-        ? ['普通文档', '文件夹', '预设/动态生成']
+        ? documentGraphCategories.map(category => category.name)
         : [graphDataSource.value === 'wikilinks' ? '双向链接' : '标签'],
       textStyle: {
         color: isDark.value ? '#ccc' : '#333'
@@ -140,7 +143,7 @@ const renderChart = () => {
         data: nodes,
         links: links,
         categories: graphMode.value === 'document'
-          ? [ { name: '普通文档' }, { name: '文件夹' }, { name: '预设/动态生成' } ]
+          ? documentGraphCategories
           : [ { name: graphDataSource.value === 'wikilinks' ? '双向链接' : '标签' } ],
         roam: true,
         label: {

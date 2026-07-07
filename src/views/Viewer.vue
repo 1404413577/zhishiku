@@ -35,6 +35,15 @@
               {{ tag }}
             </el-tag>
           </div>
+          <div class="knowledge-badges" v-if="currentDoc">
+            <el-tag size="small" effect="plain">{{ getKnowledgeTypeLabel(currentDoc.knowledgeType) }}</el-tag>
+            <el-tag size="small" :type="getKnowledgeStatusTagType(currentDoc.knowledgeStatus)" effect="plain">
+              {{ getKnowledgeStatusLabel(currentDoc.knowledgeStatus) }}
+            </el-tag>
+            <el-tag size="small" :type="getConfidenceTagType(currentDoc.confidence)" effect="plain">
+              {{ getConfidenceLabel(currentDoc.confidence) }}
+            </el-tag>
+          </div>
         </div>
       </div>
       
@@ -140,7 +149,7 @@
     </div>
 
     <!-- 文档内容区域 -->
-    <div class="document-content-wrapper">
+    <div class="document-content-wrapper" :class="{ 'with-knowledge-panel': currentDoc }">
       <!-- 文档内容 -->
       <div class="document-content" :class="{ 'with-toc': headings.length > 0 }">
         <!-- 加载状态 -->
@@ -162,6 +171,110 @@
           <el-empty description="文档不存在" />
         </div>
       </div>
+
+      <aside v-if="currentDoc" class="knowledge-side-panel" aria-label="知识侧栏">
+        <section class="knowledge-card">
+          <div class="card-heading">
+            <h2>知识摘要</h2>
+            <el-button text size="small" @click="editDocument">编辑元数据</el-button>
+          </div>
+          <p class="knowledge-summary">{{ currentDoc.summary || fallbackSummary(currentDoc) }}</p>
+          <div class="knowledge-meta-list">
+            <div>
+              <span>类型</span>
+              <strong>{{ getKnowledgeTypeLabel(currentDoc.knowledgeType) }}</strong>
+            </div>
+            <div>
+              <span>状态</span>
+              <strong>{{ getKnowledgeStatusLabel(currentDoc.knowledgeStatus) }}</strong>
+            </div>
+            <div>
+              <span>可信度</span>
+              <strong>{{ getConfidenceLabel(currentDoc.confidence) }}</strong>
+            </div>
+            <div>
+              <span>复核</span>
+              <strong>{{ currentDoc.reviewedAt ? formatDate(currentDoc.reviewedAt) : '未复核' }}</strong>
+            </div>
+          </div>
+          <a
+            v-if="currentDoc.sourceUrl"
+            class="source-link"
+            :href="currentDoc.sourceUrl"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            打开来源
+          </a>
+          <div class="alias-list" v-if="currentDoc.aliases && currentDoc.aliases.length">
+            <span v-for="alias in currentDoc.aliases" :key="alias">{{ alias }}</span>
+          </div>
+        </section>
+
+        <section class="knowledge-card relation-card">
+          <div class="card-heading">
+            <h2>相关知识</h2>
+            <span>{{ relationTotal }}</span>
+          </div>
+
+          <div class="relation-group">
+            <h3>引用的文档</h3>
+            <button
+              v-for="item in relationDetail.outgoing"
+              :key="item.doc.id"
+              type="button"
+              class="relation-item"
+              @click="openDoc(item.doc)"
+            >
+              {{ item.doc.title }}
+            </button>
+            <p v-if="relationDetail.outgoing.length === 0" class="empty-relation">暂无双链引用</p>
+          </div>
+
+          <div class="relation-group">
+            <h3>被引用的文档</h3>
+            <button
+              v-for="item in relationDetail.backlinks"
+              :key="item.doc.id"
+              type="button"
+              class="relation-item"
+              @click="openDoc(item.doc)"
+            >
+              {{ item.doc.title }}
+            </button>
+            <p v-if="relationDetail.backlinks.length === 0" class="empty-relation">暂无反向链接</p>
+          </div>
+
+          <div class="relation-group">
+            <h3>手动关联</h3>
+            <button
+              v-for="item in relationDetail.manual"
+              :key="item.doc.id"
+              type="button"
+              class="relation-item"
+              @click="openDoc(item.doc)"
+            >
+              {{ item.doc.title }}
+            </button>
+            <p v-if="relationDetail.manual.length === 0" class="empty-relation">未设置手动关联</p>
+          </div>
+
+          <div class="relation-group">
+            <h3>未链接提及</h3>
+            <button
+              v-for="item in relationDetail.unlinkedMentions"
+              :key="item.doc.id"
+              type="button"
+              class="relation-item mention-item"
+              @click="openDoc(item.doc)"
+            >
+              <span>{{ item.doc.title }}</span>
+              <small>{{ item.matchedText }}</small>
+            </button>
+            <p v-if="relationDetail.unlinkedMentions.length === 0" class="empty-relation">没有发现未链接提及</p>
+          </div>
+        </section>
+      </aside>
     </div>
 
     <!-- 返回顶部按钮 -->
@@ -226,7 +339,11 @@ import { AIService } from '@/services/ai.js'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Edit, Download, Share, Expand, Fold, ArrowLeft, MagicStick, ArrowDown, Document, Notebook, Printer } from '@element-plus/icons-vue'
 import { exportAsMarkdown, exportAsHTML, exportAsPDF } from '@/utils/export.js'
-import { saveAs } from 'file-saver'
+import {
+  KNOWLEDGE_STATUS_LABELS,
+  KNOWLEDGE_TYPE_LABELS
+} from '@/domain/knowledge/knowledgeAnalytics'
+import { buildKnowledgeRelations } from '@/domain/knowledge/knowledgeRelations'
 
 // 在开发环境中引入调试工具
 if (import.meta.env.DEV) {
@@ -275,6 +392,18 @@ const headings = computed(() => {
 
 const shareUrl = computed(() => {
   return `${window.location.origin}${window.location.pathname}#/view/${currentDoc.value?.id}`
+})
+
+const relationDetail = computed(() => (
+  buildKnowledgeRelations(currentDoc.value, documentsStore.documents)
+))
+
+const relationTotal = computed(() => {
+  const detail = relationDetail.value
+  return detail.outgoing.length +
+    detail.backlinks.length +
+    detail.manual.length +
+    detail.unlinkedMentions.length
 })
 
 // 开发环境标识
@@ -335,6 +464,11 @@ const generateSummary = async () => {
 const editDocument = () => {
   if (!currentDoc.value) return
   router.push(`/editor/${currentDoc.value.id}`)
+}
+
+const openDoc = (doc) => {
+  if (!doc) return
+  router.push(`/view/${encodeURIComponent(doc.id)}`)
 }
 
 const handleExportCommand = (format) => {
@@ -533,6 +667,38 @@ const formatDate = (dateString) => {
   return new Date(dateString).toLocaleString('zh-CN')
 }
 
+const fallbackSummary = (doc) => {
+  if (!doc?.content) return '暂无摘要。'
+  return markdownProcessor.generateSummary(doc.content, 120) || '暂无摘要。'
+}
+
+const getKnowledgeTypeLabel = (type) => {
+  return KNOWLEDGE_TYPE_LABELS[type] || KNOWLEDGE_TYPE_LABELS.note
+}
+
+const getKnowledgeStatusLabel = (status) => {
+  return KNOWLEDGE_STATUS_LABELS[status] || KNOWLEDGE_STATUS_LABELS.draft
+}
+
+const getKnowledgeStatusTagType = (status) => {
+  if (status === 'verified') return 'success'
+  if (status === 'outdated') return 'warning'
+  if (status === 'archived') return 'info'
+  return ''
+}
+
+const getConfidenceLabel = (confidence) => {
+  if (confidence === 'high') return '高可信'
+  if (confidence === 'low') return '低可信'
+  return '中可信'
+}
+
+const getConfidenceTagType = (confidence) => {
+  if (confidence === 'high') return 'success'
+  if (confidence === 'low') return 'warning'
+  return 'info'
+}
+
 // 调试方法
 // const runTocDiagnosis = () => {
 //   if (window.tocDebug) {
@@ -695,6 +861,13 @@ const addHeadingIds = () => {
   flex-wrap: wrap;
 }
 
+.knowledge-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
 .header-actions {
   display: flex;
   gap: 10px;
@@ -836,18 +1009,207 @@ const addHeadingIds = () => {
   position: relative;
 }
 
+.document-content-wrapper.with-knowledge-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 24px;
+  align-items: start;
+}
+
 .document-content {
   line-height: var(--md-line-height, 1.8);
   transition: margin-right 0.3s ease;
+  min-width: 0;
 }
 
 .document-content.with-toc {
   margin-right: 320px; /* 为目录面板留出空间 */
 }
 
+.with-knowledge-panel .document-content.with-toc {
+  margin-right: 0;
+}
+
+.knowledge-side-panel {
+  position: sticky;
+  top: 20px;
+  display: grid;
+  gap: 14px;
+}
+
+.knowledge-card {
+  min-width: 0;
+  padding: 16px;
+  background:
+    radial-gradient(circle at 92% 0%, rgba(15, 159, 110, 0.08), transparent 32%),
+    var(--el-fill-color-extra-light);
+  border: 1px solid var(--el-border-color-lighter);
+  border-radius: 10px;
+}
+
+.card-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.card-heading h2 {
+  margin: 0;
+  color: var(--el-text-color-primary);
+  font-size: 16px;
+}
+
+.card-heading span {
+  min-width: 24px;
+  height: 22px;
+  display: inline-grid;
+  place-items: center;
+  color: #087752;
+  background: rgba(15, 159, 110, 0.09);
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.knowledge-summary {
+  margin: 0 0 14px;
+  color: var(--el-text-color-regular);
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.knowledge-meta-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.knowledge-meta-list div {
+  min-width: 0;
+  padding: 10px;
+  background: var(--el-bg-color);
+  border-radius: 8px;
+}
+
+.knowledge-meta-list span,
+.knowledge-meta-list strong {
+  display: block;
+}
+
+.knowledge-meta-list span {
+  color: var(--el-text-color-secondary);
+  font-size: 12px;
+}
+
+.knowledge-meta-list strong {
+  margin-top: 4px;
+  color: var(--el-text-color-primary);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.source-link {
+  display: block;
+  margin-top: 12px;
+  color: #087752;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.alias-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.alias-list span {
+  padding: 4px 7px;
+  color: var(--el-text-color-regular);
+  background: var(--el-bg-color);
+  border: 1px solid var(--el-border-color-lighter);
+  border-radius: 6px;
+  font-size: 12px;
+}
+
+.relation-card {
+  background: var(--el-bg-color);
+}
+
+.relation-group + .relation-group {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--el-border-color-lighter);
+}
+
+.relation-group h3 {
+  margin: 0 0 8px;
+  color: var(--el-text-color-secondary);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.relation-item {
+  width: 100%;
+  display: block;
+  padding: 9px 10px;
+  color: var(--el-text-color-primary);
+  text-align: left;
+  background: transparent;
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.18s ease, color 0.18s ease;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.relation-item:hover {
+  color: #087752;
+  background: rgba(15, 159, 110, 0.07);
+}
+
+.mention-item {
+  display: grid;
+  gap: 3px;
+  white-space: normal;
+}
+
+.mention-item span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mention-item small {
+  color: var(--el-text-color-secondary);
+  font-size: 12px;
+}
+
+.empty-relation {
+  margin: 0;
+  padding: 10px;
+  color: var(--el-text-color-secondary);
+  background: var(--el-fill-color-extra-light);
+  border-radius: 8px;
+  font-size: 12px;
+}
+
 @media (max-width: 768px) {
   .document-content.with-toc {
     margin-right: 0;
+  }
+
+  .document-content-wrapper.with-knowledge-panel {
+    grid-template-columns: 1fr;
+  }
+
+  .knowledge-side-panel {
+    position: static;
   }
   
   .document-header {
@@ -1073,6 +1435,14 @@ html {
   /* 移动端目录样式 */
   .document-content.with-toc {
     margin-right: 0;
+  }
+
+  .document-content-wrapper.with-knowledge-panel {
+    grid-template-columns: 1fr;
+  }
+
+  .knowledge-side-panel {
+    position: static;
   }
 
   .toc-panel {

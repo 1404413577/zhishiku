@@ -39,6 +39,14 @@
       @change="saveDocument"
     />
 
+    <KnowledgeMetaPanel
+      v-show="!isFocusMode"
+      v-model:meta="knowledgeMeta"
+      :current-id="documentId"
+      :documents="documentsStore.documents"
+      @change="saveDocument"
+    />
+
     <div class="editor-container">
       <div
         v-show="editorMode !== 'preview'"
@@ -196,6 +204,7 @@ import { Close, MagicStick } from "@element-plus/icons-vue";
 import EditorToolbar from "@/components/Editor/EditorToolbar.vue";
 import EditorTags from "@/components/Editor/EditorTags.vue";
 import EditorToc from "@/components/Editor/EditorToc.vue";
+import KnowledgeMetaPanel from "@/components/Editor/KnowledgeMetaPanel.vue";
 import { useAutoSave } from "@/composables/editor/useAutoSave";
 import { createEditorExtensions } from "@/composables/editor/editorExtensions";
 import { useEditorActions } from "@/composables/editor/useEditorActions";
@@ -259,6 +268,7 @@ const {
   documentTitle,
   documentContent,
   documentTags,
+  knowledgeMeta,
   saving,
   lastSaved,
   loadDocument,

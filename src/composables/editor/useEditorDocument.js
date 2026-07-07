@@ -12,6 +12,15 @@ export function useEditorDocument({
   const documentTitle = ref('')
   const documentContent = ref('')
   const documentTags = ref([])
+  const knowledgeMeta = ref({
+    knowledgeType: 'note',
+    knowledgeStatus: 'draft',
+    confidence: 'medium',
+    aliases: [],
+    sourceUrl: '',
+    relatedIds: [],
+    reviewedAt: null,
+  })
   const saving = ref(false)
   const lastSaved = ref(null)
 
@@ -20,6 +29,15 @@ export function useEditorDocument({
       documentTitle.value = '新文档'
       documentContent.value = ''
       documentTags.value = []
+      knowledgeMeta.value = {
+        knowledgeType: 'note',
+        knowledgeStatus: 'draft',
+        confidence: 'medium',
+        aliases: [],
+        sourceUrl: '',
+        relatedIds: [],
+        reviewedAt: null,
+      }
       if (editor.value) editor.value.commands.setContent('')
       return
     }
@@ -31,6 +49,15 @@ export function useEditorDocument({
       documentTitle.value = doc.title
       documentContent.value = doc.content || ''
       documentTags.value = doc.tags || []
+      knowledgeMeta.value = {
+        knowledgeType: doc.knowledgeType || 'note',
+        knowledgeStatus: doc.knowledgeStatus || 'draft',
+        confidence: doc.confidence || 'medium',
+        aliases: Array.isArray(doc.aliases) ? doc.aliases : [],
+        sourceUrl: doc.sourceUrl || '',
+        relatedIds: Array.isArray(doc.relatedIds) ? doc.relatedIds.map(String) : [],
+        reviewedAt: doc.reviewedAt || null,
+      }
 
       if (editor.value) {
         editor.value.commands.setContent(documentContent.value)
@@ -52,6 +79,7 @@ export function useEditorDocument({
         title: documentTitle.value,
         content,
         tags: documentTags.value,
+        ...knowledgeMeta.value,
       }
 
       if (documentId.value) {
@@ -79,6 +107,7 @@ export function useEditorDocument({
     documentTitle,
     documentContent,
     documentTags,
+    knowledgeMeta,
     saving,
     lastSaved,
     loadDocument,

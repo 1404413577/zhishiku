@@ -26,6 +26,33 @@ type GraphData = {
 
 const toId = (value: unknown) => String(value || '')
 
+const knowledgeGraphTypes = [
+  { type: 'note', name: '普通记录', color: '#409eff' },
+  { type: 'concept', name: '概念', color: '#0f9f6e' },
+  { type: 'guide', name: '指南', color: '#8b5cf6' },
+  { type: 'decision', name: '决策', color: '#f59e0b' },
+  { type: 'faq', name: '问答', color: '#06b6d4' },
+  { type: 'source', name: '资料', color: '#64748b' },
+  { type: 'case', name: '案例', color: '#ef4444' }
+]
+
+const categoryOffset = 2
+
+const resolveKnowledgeTypeStyle = (type: unknown) => {
+  const index = knowledgeGraphTypes.findIndex((item) => item.type === type)
+  const safeIndex = index === -1 ? 0 : index
+  return {
+    category: safeIndex + categoryOffset,
+    color: knowledgeGraphTypes[safeIndex].color
+  }
+}
+
+export const documentGraphCategories = [
+  { name: '文件夹' },
+  { name: '预设/动态生成' },
+  ...knowledgeGraphTypes.map((item) => ({ name: item.name }))
+]
+
 export const relationService = {
   buildDocumentGraph(documents: LegacyDocumentNode[], options: { isDark?: boolean } = {}): GraphData {
     const nodes: GraphNode[] = []
@@ -39,17 +66,18 @@ export const relationService = {
       const itemStyle: Record<string, unknown> = {}
 
       if (doc.isFolder) {
-        category = 1
+        category = 0
         symbolSize = 35
         itemStyle.color = '#e6a23c'
       } else if (doc.isPreset || doc.isDynamic) {
-        category = 2
+        category = 1
         symbolSize = 20
         itemStyle.color = '#909399'
       } else {
-        category = 0
+        const typeStyle = resolveKnowledgeTypeStyle(doc.knowledgeType)
+        category = typeStyle.category
         symbolSize = 25
-        itemStyle.color = '#409eff'
+        itemStyle.color = typeStyle.color
       }
 
       if (doc.isPinned || doc.isFavorited) {
