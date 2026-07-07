@@ -65,53 +65,59 @@ const onSend = () => {
 
 <style scoped>
 .chat-footer {
-  padding: 0 24px 24px;
-  max-width: 850px;
+  padding: 0 24px 20px;
+  max-width: 860px;
   margin: 0 auto;
   width: 100%;
   box-sizing: border-box;
+  background: linear-gradient(to top, var(--el-bg-color) 72%, rgba(255, 255, 255, 0));
 }
 .input-wrapper {
   position: relative;
-  background-color: var(--el-fill-color-light);
+  background-color: var(--el-bg-color-overlay);
   border: 1px solid var(--el-border-color);
-  border-radius: 20px;
-  padding: 4px;
+  border-radius: 14px;
+  padding: 5px;
   box-shadow: var(--el-box-shadow-lighter);
-  transition: border-color 0.2s;
+  transition: border-color 0.2s, box-shadow 0.2s, background-color 0.2s;
 }
 .input-wrapper:focus-within {
   border-color: var(--el-color-primary);
+  box-shadow: 0 0 0 3px var(--el-color-primary-light-9);
 }
 .chat-input :deep(.el-textarea__inner) {
   background-color: transparent;
   border: none !important;
   box-shadow: none !important;
-  padding: 12px 60px 12px 16px;
+  min-height: 44px !important;
+  padding: 12px 58px 12px 14px;
   font-size: 15px;
-  line-height: 1.5;
+  line-height: 1.55;
 }
 .input-actions {
   position: absolute;
-  right: 12px;
-  bottom: 8px;
+  right: 11px;
+  bottom: 10px;
   display: flex;
   align-items: center;
 }
 .send-btn {
-  width: 32px;
-  height: 32px;
+  width: 34px;
+  height: 34px;
 }
 .footer-hint {
   text-align: center;
   font-size: 12px;
   color: var(--el-text-color-secondary);
-  margin-top: 12px;
+  margin-top: 8px;
 }
 
 @media (max-width: 768px) {
   .chat-footer {
     padding: 0 12px 12px;
+  }
+  .footer-hint {
+    margin-top: 6px;
   }
 }
 </style>

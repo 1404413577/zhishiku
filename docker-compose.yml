@@ -1,0 +1,12 @@
+services:
+  zhishiku:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        BASE_REGISTRY: docker.m.daocloud.io/library
+    image: zhishiku:local
+    container_name: zhishiku
+    ports:
+      - "8080:80"
+    restart: unless-stopped

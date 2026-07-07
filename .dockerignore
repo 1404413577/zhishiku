@@ -1,0 +1,11 @@
+node_modules
+.git
+.github
+.vscode
+.agents
+.claude
+test-results
+stats.html
+npm-debug.log*
+Dockerfile
+docker-compose.yml

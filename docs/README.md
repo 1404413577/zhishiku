@@ -194,6 +194,9 @@ npm run test
 # 预览生产构建
 npm run preview
 
+# 本地 Docker 部署
+docker compose up -d --build
+
 # 生成 sitemap 后构建
 npm run seo:build
 
@@ -230,6 +233,8 @@ npm run analyze
 
 项目是纯前端应用，构建产物位于 `dist/`，可部署到任意静态站点服务。
 
+本地 Docker 部署会使用多阶段构建：先在 Node 镜像中执行 `npm run test` 和 `npm run build`，再由 Nginx 提供静态文件服务。默认访问地址为 `http://localhost:8080/`。
+
 `vite.config.js` 中会根据环境设置 `base`：
 
 - 默认使用 `/`。
@@ -242,3 +247,28 @@ npm run analyze
 - 数据默认保存在浏览器本地 IndexedDB 中，清理浏览器数据可能导致文档丢失，建议定期导出或配置 WebDAV。
 - 在线 AI API Key 保存在浏览器本地设置中，请只在可信设备上使用。
 - 本地 AI 模型首次运行需要下载模型文件，耗时和体积取决于所选模型。
+
+
+
+  访问地址：http://localhost:8080/
+
+  我做了两处本地部署调整：把 Dockerfile 改成直接把本机已构建的 dist 交给 Nginx 服务，并让 .dockerignore 不再排除 dist。原因是原来的容器内 npm ci 在安装 sharp 时需要从 GitHub 下载
+  libvips，构建被中断；现在本地先 npm run build，Docker 只负责打包和运行静态站，更稳定。
+
+  验证结果：
+
+  - npm run build 成功
+  - docker compose up -d --build 成功
+  - 容器 zhishiku 状态为 Up
+  - http://localhost:8080/ 返回 200 OK
+
+  常用命令：
+
+  docker compose ps
+  docker compose logs -f zhishiku
+  docker compose down
+
+  后续如果改了前端代码，重新部署执行：
+
+  npm run build
+  docker compose up -d --build

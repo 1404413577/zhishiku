@@ -307,7 +307,8 @@ onUnmounted(() => { if (previousAiEngine.value && previousAiEngine.value !== sel
 <style scoped>
 .chat-layout {
   display: flex;
-  height: calc(100vh - 60px);
+  height: calc(100dvh - 51px);
+  min-height: 0;
   background-color: var(--el-bg-color-page);
 }
 .sidebar-overlay {
@@ -394,5 +395,130 @@ onUnmounted(() => { if (previousAiEngine.value && previousAiEngine.value !== sel
   .chat-body-inner { padding: 16px 12px; }
   .message-row { gap: 10px; }
   .content-col { max-width: 90%; }
+}
+
+.sidebar-overlay {
+  inset: 0;
+  background: rgba(0, 0, 0, 0.36);
+}
+
+.chat-main {
+  min-width: 0;
+}
+
+.chat-body-container {
+  min-height: 0;
+  padding: 4px 0 18px;
+}
+
+.chat-body-inner {
+  max-width: 860px;
+  padding: 24px 24px 12px;
+}
+
+.empty-state {
+  min-height: 48vh;
+  height: auto;
+  padding: 24px 0;
+}
+
+.empty-icon-wrapper {
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  border: 1px solid var(--el-color-primary-light-7);
+  margin-bottom: 18px;
+}
+
+.empty-icon {
+  font-size: 28px;
+}
+
+.empty-state h3 {
+  margin: 0 0 10px;
+  font-weight: 650;
+}
+
+.sub-text {
+  max-width: 420px;
+  margin: 0;
+  line-height: 1.6;
+}
+
+.messages {
+  gap: 24px;
+}
+
+.message-row {
+  gap: 14px;
+}
+
+.ai-avatar {
+  border-radius: 8px;
+  background: var(--el-color-primary-light-9);
+  color: var(--el-color-primary);
+  border: 1px solid var(--el-color-primary-light-7);
+  font-size: 17px;
+}
+
+.content-col {
+  max-width: min(78%, 720px);
+}
+
+.message-bubble {
+  line-height: 1.7;
+}
+
+.message-row.user .message-bubble {
+  background-color: var(--el-color-primary-light-9);
+  border: 1px solid var(--el-color-primary-light-7);
+  padding: 10px 14px;
+  border-radius: 12px;
+  border-bottom-right-radius: 4px;
+}
+
+.markdown-body :deep(pre) {
+  border-radius: 8px;
+  border: 1px solid var(--el-border-color-lighter);
+}
+
+.markdown-body :deep(p:first-child) {
+  margin-top: 0;
+}
+
+.markdown-body :deep(p:last-child) {
+  margin-bottom: 0;
+}
+
+@media (max-width: 768px) {
+  .chat-layout {
+    height: calc(100dvh - 50px);
+  }
+
+  .chat-body-inner {
+    padding: 16px 12px 8px;
+  }
+
+  .avatar-col {
+    width: 28px;
+  }
+
+  .ai-avatar {
+    width: 28px;
+    height: 28px;
+    font-size: 15px;
+  }
+
+  .content-col {
+    max-width: 92%;
+  }
+
+  .messages {
+    gap: 20px;
+  }
+
+  .empty-state {
+    min-height: 42vh;
+  }
 }
 </style>

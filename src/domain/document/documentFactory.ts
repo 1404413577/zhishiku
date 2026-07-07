@@ -1,9 +1,12 @@
 import type {
   DocumentCreateInput,
   DocumentSource,
+  KnowledgeConfidence,
   KnowledgeDocument,
   KnowledgeFolder,
   KnowledgeNode,
+  KnowledgeStatus,
+  KnowledgeType,
   LegacyDocumentNode
 } from './types'
 
@@ -20,6 +23,36 @@ const normalizeTags = (tags: unknown): string[] => {
     .filter((tag) => typeof tag === 'string' || typeof tag === 'number' || typeof tag === 'boolean')
     .map((tag) => String(tag).trim())
     .filter(Boolean)
+}
+
+const normalizeStringArray = (value: unknown): string[] => {
+  if (!Array.isArray(value)) return []
+  return value
+    .filter((item) => typeof item === 'string' || typeof item === 'number' || typeof item === 'boolean')
+    .map((item) => String(item).trim())
+    .filter(Boolean)
+}
+
+const knowledgeTypes: KnowledgeType[] = ['note', 'concept', 'guide', 'decision', 'faq', 'source', 'case']
+const knowledgeStatuses: KnowledgeStatus[] = ['draft', 'verified', 'outdated', 'archived']
+const knowledgeConfidences: KnowledgeConfidence[] = ['low', 'medium', 'high']
+
+const normalizeKnowledgeType = (value: unknown): KnowledgeType => {
+  return knowledgeTypes.includes(value as KnowledgeType) ? (value as KnowledgeType) : 'note'
+}
+
+const normalizeKnowledgeStatus = (value: unknown): KnowledgeStatus => {
+  return knowledgeStatuses.includes(value as KnowledgeStatus) ? (value as KnowledgeStatus) : 'draft'
+}
+
+const normalizeKnowledgeConfidence = (value: unknown): KnowledgeConfidence => {
+  return knowledgeConfidences.includes(value as KnowledgeConfidence) ? (value as KnowledgeConfidence) : 'medium'
+}
+
+const normalizeOptionalDate = (value: unknown): string | null => {
+  if (!value) return null
+  const date = new Date(String(value))
+  return Number.isNaN(date.getTime()) ? null : date.toISOString()
 }
 
 export const createDocumentId = () => Date.now().toString()
@@ -63,6 +96,13 @@ export const normalizeKnowledgeNode = (node: LegacyDocumentNode): KnowledgeNode 
     type: 'document',
     content: String(node.content || ''),
     tags: normalizeTags(node.tags),
+    knowledgeType: normalizeKnowledgeType(node.knowledgeType),
+    knowledgeStatus: normalizeKnowledgeStatus(node.knowledgeStatus),
+    confidence: normalizeKnowledgeConfidence(node.confidence),
+    aliases: normalizeStringArray(node.aliases),
+    sourceUrl: String(node.sourceUrl || ''),
+    relatedIds: normalizeStringArray(node.relatedIds),
+    reviewedAt: normalizeOptionalDate(node.reviewedAt),
     summary: String(node.summary || ''),
     isFavorited: Boolean(node.isFavorited),
     isPreset: Boolean(node.isPreset)
@@ -89,6 +129,13 @@ export const toLegacyDocumentNode = (node: KnowledgeNode, extras: Record<string,
     ...base,
     content: node.content,
     tags: node.tags,
+    knowledgeType: node.knowledgeType,
+    knowledgeStatus: node.knowledgeStatus,
+    confidence: node.confidence,
+    aliases: node.aliases,
+    sourceUrl: node.sourceUrl,
+    relatedIds: node.relatedIds,
+    reviewedAt: node.reviewedAt,
     summary: node.summary,
     isFavorited: node.isFavorited,
     isPreset: node.isPreset,
@@ -108,6 +155,13 @@ export const createKnowledgeDocument = (input: DocumentCreateInput): KnowledgeDo
     title: input.title || '未命名文档',
     content: input.content || '',
     tags: [],
+    knowledgeType: 'note',
+    knowledgeStatus: 'draft',
+    confidence: 'medium',
+    aliases: [],
+    sourceUrl: '',
+    relatedIds: [],
+    reviewedAt: null,
     parentId: input.parentId || null,
     summary: '',
     createdAt: now,

@@ -51,7 +51,7 @@ const sortedSessions = computed(() => {
 
 <style scoped>
 .chat-sidebar {
-  width: 260px;
+  width: 240px;
   background-color: var(--el-bg-color);
   border-right: 1px solid var(--el-border-color-lighter);
   display: flex;
@@ -60,7 +60,7 @@ const sortedSessions = computed(() => {
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .sidebar-header {
-  padding: 16px;
+  padding: 12px;
   border-bottom: 1px solid var(--el-border-color-lighter);
   display: flex;
   align-items: center;
@@ -69,16 +69,18 @@ const sortedSessions = computed(() => {
 .new-chat-btn {
   flex: 1;
   font-weight: 500;
+  min-height: 36px;
 }
 .session-list {
   flex: 1;
-  padding: 8px;
+  padding: 8px 6px;
 }
 .session-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 14px;
+  gap: 8px;
+  padding: 10px 10px;
   margin-bottom: 4px;
   border-radius: 8px;
   cursor: pointer;
@@ -95,8 +97,9 @@ const sortedSessions = computed(() => {
 .session-info {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   overflow: hidden;
+  min-width: 0;
 }
 .session-icon { font-size: 16px; }
 .session-title {
@@ -105,11 +108,13 @@ const sortedSessions = computed(() => {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 140px;
+  max-width: 142px;
 }
 .delete-btn {
+  flex: 0 0 auto;
   opacity: 0;
   transform: scale(0.8);
+  transition: opacity 0.16s ease, transform 0.16s ease;
 }
 .session-item:hover .delete-btn {
   opacity: 1;
@@ -121,6 +126,7 @@ const sortedSessions = computed(() => {
     position: fixed;
     top: 0;
     left: 0;
+    width: min(82vw, 300px);
     height: 100%;
     z-index: 1000;
     transform: translateX(-100%);

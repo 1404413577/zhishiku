@@ -1,5 +1,25 @@
 export type DocumentId = string
 
+export type KnowledgeType =
+  | 'note'
+  | 'concept'
+  | 'guide'
+  | 'decision'
+  | 'faq'
+  | 'source'
+  | 'case'
+
+export type KnowledgeStatus =
+  | 'draft'
+  | 'verified'
+  | 'outdated'
+  | 'archived'
+
+export type KnowledgeConfidence =
+  | 'low'
+  | 'medium'
+  | 'high'
+
 export type DocumentSource =
   | { kind: 'indexeddb' }
   | { kind: 'local-fs'; path: string }
@@ -11,6 +31,13 @@ export interface KnowledgeDocument {
   title: string
   content: string
   tags: string[]
+  knowledgeType: KnowledgeType
+  knowledgeStatus: KnowledgeStatus
+  confidence: KnowledgeConfidence
+  aliases: string[]
+  sourceUrl: string
+  relatedIds: DocumentId[]
+  reviewedAt: string | null
   parentId: DocumentId | null
   summary: string
   createdAt: string
@@ -46,6 +73,13 @@ export interface LegacyDocumentNode {
   isPinned?: boolean
   isFavorited?: boolean
   isPreset?: boolean
+  knowledgeType?: KnowledgeType
+  knowledgeStatus?: KnowledgeStatus
+  confidence?: KnowledgeConfidence
+  aliases?: string[]
+  sourceUrl?: string
+  relatedIds?: string[]
+  reviewedAt?: string | null
   isFolder?: boolean
   isLocal?: boolean
   originalPath?: string

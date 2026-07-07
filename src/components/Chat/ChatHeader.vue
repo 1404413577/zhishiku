@@ -64,8 +64,9 @@ defineEmits(['update:selectedEngine', 'update:selectedModel', 'refresh', 'archiv
 .chat-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  padding: 14px 24px;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 12px 20px;
   background-color: var(--el-bg-color);
   border-bottom: 1px solid var(--el-border-color-lighter);
   z-index: 10;
@@ -74,35 +75,63 @@ defineEmits(['update:selectedEngine', 'update:selectedModel', 'refresh', 'archiv
   display: flex;
   align-items: center;
   gap: 12px;
+  min-height: 32px;
+  min-width: 120px;
 }
 .header-title {
   font-size: 16px;
-  font-weight: 600;
+  font-weight: 650;
   margin: 0;
   color: var(--el-text-color-primary);
+  line-height: 32px;
 }
 .header-right {
   display: flex;
   align-items: center;
-  gap: 12px;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+  min-width: 0;
 }
 .engine-selector, .model-selector {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.header-actions {
   display: flex;
   align-items: center;
 }
 
 @media (max-width: 768px) {
   .chat-header {
-    padding: 10px 12px;
-    flex-wrap: wrap;
-    gap: 12px;
+    padding: 10px 12px 12px;
+    gap: 10px;
+  }
+  .header-left {
+    width: 100%;
   }
   .header-right {
     width: 100%;
-    justify-content: space-between;
+    display: grid;
+    grid-template-columns: minmax(0, 110px) minmax(0, 1fr) auto;
+    gap: 8px;
+  }
+  .engine-selector,
+  .model-selector,
+  .header-actions {
+    width: 100%;
+  }
+  .engine-selector .el-select {
+    width: 100% !important;
   }
   .model-selector .el-select {
-    width: 140px !important;
+    width: 100% !important;
+  }
+  .header-actions .el-button {
+    padding-left: 10px;
+    padding-right: 10px;
   }
 }
 @media (min-width: 769px) {

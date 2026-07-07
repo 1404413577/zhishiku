@@ -3,6 +3,171 @@
  */
 export const templates = [
   {
+    id: 'knowledge-concept',
+    name: '概念卡片',
+    icon: '🧠',
+    content: `# 概念名称
+
+> 创建于 ${new Date().toLocaleDateString('zh-CN')}
+
+## 一句话解释
+
+
+## 详细说明
+
+
+## 适用场景
+
+-
+
+## 易混淆概念
+
+-
+
+## 相关知识
+
+-
+
+## 来源
+
+-`
+  },
+  {
+    id: 'knowledge-guide',
+    name: '操作指南',
+    icon: '🧭',
+    content: `# 指南标题
+
+> 创建于 ${new Date().toLocaleDateString('zh-CN')}
+
+## 目标
+
+
+## 前置条件
+
+-
+
+## 操作步骤
+
+1.
+
+## 验证方式
+
+-
+
+## 常见问题
+
+-
+
+## 相关知识
+
+-`
+  },
+  {
+    id: 'knowledge-decision',
+    name: '决策记录',
+    icon: '⚖️',
+    content: `# 决策标题
+
+**日期：** ${new Date().toLocaleDateString('zh-CN')}
+**状态：** 草稿
+
+## 背景
+
+
+## 备选方案
+
+### 方案一
+
+
+### 方案二
+
+
+## 决策
+
+
+## 理由
+
+
+## 影响
+
+
+## 后续复核
+
+-`
+  },
+  {
+    id: 'knowledge-faq',
+    name: 'FAQ',
+    icon: '❓',
+    content: `# 问题
+
+## 简短答案
+
+
+## 详细解释
+
+
+## 适用条件
+
+-
+
+## 相关问题
+
+-`
+  },
+  {
+    id: 'knowledge-source',
+    name: '资料摘录',
+    icon: '🔖',
+    content: `# 资料标题
+
+**来源：**
+**作者：**
+**阅读日期：** ${new Date().toLocaleDateString('zh-CN')}
+
+## 摘要
+
+
+## 关键摘录
+
+>
+
+## 我的理解
+
+
+## 可转化的知识点
+
+-`
+  },
+  {
+    id: 'knowledge-case',
+    name: '问题案例',
+    icon: '🧪',
+    content: `# 案例标题
+
+**日期：** ${new Date().toLocaleDateString('zh-CN')}
+
+## 场景
+
+
+## 问题
+
+
+## 原因
+
+
+## 解决方案
+
+
+## 验证结果
+
+
+## 经验沉淀
+
+-`
+  },
+  {
     id: 'meeting',
     name: '会议纪要',
     icon: '📋',

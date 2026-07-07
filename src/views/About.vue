@@ -1,84 +1,108 @@
 <template>
-  <div class="about-page">
-    <!-- 页面头部 -->
-    <div class="page-header">
-      <div class="header-content">
-        <div class="app-logo">
-          <el-icon size="60" color="var(--el-color-primary)">
-            <Document />
-          </el-icon>
-        </div>
-        <h1 class="app-title">知识库管理系统</h1>
-        <p class="app-subtitle">基于 Vue 3 的现代化知识管理解决方案</p>
-        <div class="version-info">
-          <el-tag type="success" size="large">v{{ appVersion }}</el-tag>
-        </div>
-      </div>
-    </div>
-
-    <!-- 主要内容区域 -->
-    <div class="content-sections">
-      <!-- 应用介绍 -->
-      <el-card class="section-card" shadow="hover">
-        <template #header>
-          <div class="card-header">
-            <el-icon><InfoFilled /></el-icon>
-            <span>应用介绍</span>
+  <main class="about-page">
+    <section class="about-hero">
+      <div class="hero-grid" aria-labelledby="about-title">
+        <div class="hero-copy">
+          <div class="system-chip">
+            <span class="chip-pulse"></span>
+            KNOWLEDGE OS / v{{ appVersion }}
           </div>
-        </template>
-
-        <div class="intro-content">
-          <p class="intro-text">
-            知识库管理系统是一个基于现代 Web 技术栈构建的纯前端知识管理应用。
-            它提供了完整的文档创建、编辑、组织和搜索功能，支持 Markdown 语法，
-            让您能够高效地管理和分享知识内容。
+          <h1 id="about-title">知识库管理系统</h1>
+          <p class="hero-lead">
+            一个运行在浏览器里的个人知识引擎，把 Markdown 写作、全文搜索、标签组织、AI 对话和本地数据管理收束到同一个工作台。
           </p>
+          <div class="hero-actions">
+            <el-button type="primary" size="large" @click="router.push('/')">
+              进入工作台
+            </el-button>
+            <el-button size="large" plain @click="router.push('/md-docs')">
+              查看文档
+            </el-button>
+          </div>
+        </div>
 
-          <div class="features-grid">
-            <div class="feature-item">
-              <el-icon color="var(--el-color-primary)"><Edit /></el-icon>
-              <div class="feature-content">
-                <h4>Markdown 编辑</h4>
-                <p>支持完整的 Markdown 语法，实时预览</p>
-              </div>
+        <aside class="system-console" aria-label="系统状态面板">
+          <div class="console-bar">
+            <span></span><span></span><span></span>
+            <strong>zhishiku.core</strong>
+          </div>
+          <div class="console-body">
+            <div class="console-line"><span>$</span> boot knowledge graph</div>
+            <div class="console-line success"><span>OK</span> indexed documents: {{ stats.total }}</div>
+            <div class="console-line"><span>AI</span> markdown / search / tags / chat</div>
+            <div class="signal-map">
+              <i></i><i></i><i></i><i></i><i></i><i></i>
             </div>
+          </div>
+        </aside>
+      </div>
+    </section>
 
-            <div class="feature-item">
-              <el-icon color="var(--el-color-success)"><Search /></el-icon>
-              <div class="feature-content">
-                <h4>智能搜索</h4>
-                <p>全文搜索，快速定位所需内容</p>
-              </div>
+    <section class="metrics-strip" aria-label="系统统计">
+      <div class="metric-card">
+        <span>文档总数</span>
+        <strong>{{ stats.total }}</strong>
+      </div>
+      <div class="metric-card">
+        <span>标签数量</span>
+        <strong>{{ stats.tags }}</strong>
+      </div>
+      <div class="metric-card">
+        <span>存储使用</span>
+        <strong>{{ formatFileSize(stats.storageUsed) }}</strong>
+      </div>
+      <div class="metric-card">
+        <span>使用天数</span>
+        <strong>{{ daysSinceFirstDoc }}</strong>
+      </div>
+    </section>
+
+    <section class="content-sections">
+      <section class="intro-panel panel-large">
+        <div class="section-heading">
+          <span>01 / SYSTEM</span>
+          <h2>为个人知识流设计的前端系统</h2>
+        </div>
+        <p class="intro-text">
+          知识库管理系统是一个基于现代 Web 技术栈构建的纯前端知识管理应用。它提供文档创建、编辑、组织和搜索能力，支持 Markdown 语法，让知识内容可以被持续沉淀、快速检索并重新组织。
+        </p>
+        <div class="features-grid">
+          <div class="feature-item">
+            <el-icon><Edit /></el-icon>
+            <div class="feature-content">
+              <h4>Markdown 编辑</h4>
+              <p>结构化写作、实时预览和代码高亮。</p>
             </div>
-
-            <div class="feature-item">
-              <el-icon color="var(--el-color-warning)"><Collection /></el-icon>
-              <div class="feature-content">
-                <h4>标签管理</h4>
-                <p>灵活的标签系统，便于分类组织</p>
-              </div>
+          </div>
+          <div class="feature-item">
+            <el-icon><Search /></el-icon>
+            <div class="feature-content">
+              <h4>智能搜索</h4>
+              <p>全文检索，快速回到关键内容。</p>
             </div>
-
-            <div class="feature-item">
-              <el-icon color="var(--el-color-info)"><Download /></el-icon>
-              <div class="feature-content">
-                <h4>数据导入导出</h4>
-                <p>支持数据备份和迁移</p>
-              </div>
+          </div>
+          <div class="feature-item">
+            <el-icon><Collection /></el-icon>
+            <div class="feature-content">
+              <h4>标签管理</h4>
+              <p>用轻量标签建立可演化的分类体系。</p>
+            </div>
+          </div>
+          <div class="feature-item">
+            <el-icon><Download /></el-icon>
+            <div class="feature-content">
+              <h4>数据导入导出</h4>
+              <p>支持备份、迁移和长期保管。</p>
             </div>
           </div>
         </div>
-      </el-card>
+      </section>
 
-      <!-- 技术栈 -->
-      <el-card class="section-card" shadow="hover">
-        <template #header>
-          <div class="card-header">
-            <el-icon><Tools /></el-icon>
-            <span>技术栈</span>
-          </div>
-        </template>
-
+      <section class="tech-panel">
+        <div class="section-heading compact">
+          <span>02 / STACK</span>
+          <h2>技术栈</h2>
+        </div>
         <div class="tech-stack">
           <div class="tech-category">
             <h4>前端框架</h4>
@@ -88,7 +112,6 @@
               </el-tag>
             </div>
           </div>
-
           <div class="tech-category">
             <h4>UI 组件库</h4>
             <div class="tech-items">
@@ -97,7 +120,6 @@
               </el-tag>
             </div>
           </div>
-
           <div class="tech-category">
             <h4>工具链</h4>
             <div class="tech-items">
@@ -107,69 +129,13 @@
             </div>
           </div>
         </div>
-      </el-card>
+      </section>
 
-      <!-- 系统统计 -->
-      <el-card class="section-card" shadow="hover">
-        <template #header>
-          <div class="card-header">
-            <el-icon><DataAnalysis /></el-icon>
-            <span>系统统计</span>
-          </div>
-        </template>
-
-        <div class="stats-grid">
-          <div class="stat-item">
-            <div class="stat-icon">
-              <el-icon size="24" color="var(--el-color-primary)"><Document /></el-icon>
-            </div>
-            <div class="stat-content">
-              <div class="stat-number">{{ stats.total }}</div>
-              <div class="stat-label">文档总数</div>
-            </div>
-          </div>
-
-          <div class="stat-item">
-            <div class="stat-icon">
-              <el-icon size="24" color="var(--el-color-success)"><Collection /></el-icon>
-            </div>
-            <div class="stat-content">
-              <div class="stat-number">{{ stats.tags }}</div>
-              <div class="stat-label">标签数量</div>
-            </div>
-          </div>
-
-          <div class="stat-item">
-            <div class="stat-icon">
-              <el-icon size="24" color="var(--el-color-warning)"><Clock /></el-icon>
-            </div>
-            <div class="stat-content">
-              <div class="stat-number">{{ formatFileSize(stats.storageUsed) }}</div>
-              <div class="stat-label">存储使用</div>
-            </div>
-          </div>
-
-          <div class="stat-item">
-            <div class="stat-icon">
-              <el-icon size="24" color="var(--el-color-info)"><Calendar /></el-icon>
-            </div>
-            <div class="stat-content">
-              <div class="stat-number">{{ daysSinceFirstDoc }}</div>
-              <div class="stat-label">使用天数</div>
-            </div>
-          </div>
+      <section class="feature-panel panel-large">
+        <div class="section-heading">
+          <span>03 / CAPABILITY</span>
+          <h2>核心特性矩阵</h2>
         </div>
-      </el-card>
-
-      <!-- 功能特性 -->
-      <el-card class="section-card" shadow="hover">
-        <template #header>
-          <div class="card-header">
-            <el-icon><Star /></el-icon>
-            <span>核心特性</span>
-          </div>
-        </template>
-
         <div class="features-list">
           <div v-for="feature in coreFeatures" :key="feature.title" class="feature-row">
             <div class="feature-icon">
@@ -188,42 +154,32 @@
             </div>
           </div>
         </div>
-      </el-card>
+      </section>
 
-      <!-- 快速入门 -->
-      <el-card class="section-card" shadow="hover">
-        <template #header>
-          <div class="card-header">
-            <el-icon><Guide /></el-icon>
-            <span>快速入门</span>
-          </div>
-        </template>
-
-        <div class="quick-start">
-          <div class="steps">
-            <div v-for="(step, index) in quickStartSteps" :key="index" class="step-item">
-              <div class="step-number">{{ index + 1 }}</div>
-              <div class="step-content">
-                <h4>{{ step.title }}</h4>
-                <p>{{ step.description }}</p>
-                <el-button v-if="step.action" size="small" type="primary" @click="step.action">
-                  {{ step.buttonText }}
-                </el-button>
-              </div>
+      <section class="quick-panel">
+        <div class="section-heading compact">
+          <span>04 / START</span>
+          <h2>快速入门</h2>
+        </div>
+        <div class="steps">
+          <div v-for="(step, index) in quickStartSteps" :key="index" class="step-item">
+            <div class="step-number">{{ String(index + 1).padStart(2, '0') }}</div>
+            <div class="step-content">
+              <h4>{{ step.title }}</h4>
+              <p>{{ step.description }}</p>
+              <el-button v-if="step.action" size="small" type="primary" @click="step.action">
+                {{ step.buttonText }}
+              </el-button>
             </div>
           </div>
         </div>
-      </el-card>
+      </section>
 
-      <!-- 更新日志 -->
-      <el-card class="section-card" shadow="hover">
-        <template #header>
-          <div class="card-header">
-            <el-icon><Notebook /></el-icon>
-            <span>更新日志</span>
-          </div>
-        </template>
-
+      <section class="changelog-panel panel-large">
+        <div class="section-heading">
+          <span>05 / RELEASE</span>
+          <h2>更新日志</h2>
+        </div>
         <el-timeline class="changelog">
           <el-timeline-item
             v-for="log in changelog"
@@ -239,45 +195,39 @@
             </div>
           </el-timeline-item>
         </el-timeline>
-      </el-card>
+      </section>
 
-      <!-- 联系信息 -->
-      <el-card class="section-card" shadow="hover">
-        <template #header>
-          <div class="card-header">
-            <el-icon><Message /></el-icon>
-            <span>联系我们</span>
-          </div>
-        </template>
-
+      <section class="contact-panel">
+        <div class="section-heading compact">
+          <span>06 / LINK</span>
+          <h2>联系我们</h2>
+        </div>
         <div class="contact-info">
           <div class="contact-item">
             <el-icon><Link /></el-icon>
-            <span>项目地址：</span>
+            <span>项目地址</span>
             <el-link href="git@github.com:1404413577/shizhiku.git" target="_blank" type="primary">
               GitHub Repository
             </el-link>
           </div>
-
           <div class="contact-item">
             <el-icon><ChatDotRound /></el-icon>
-            <span>问题反馈：</span>
+            <span>问题反馈</span>
             <el-link href="https://github.com/your-repo/issues" target="_blank" type="primary">
               提交 Issue
             </el-link>
           </div>
-
           <div class="contact-item">
             <el-icon><Document /></el-icon>
-            <span>使用文档：</span>
+            <span>使用文档</span>
             <el-link href="/md-docs" type="primary" @click="$router.push('/md-docs')">
               查看文档
             </el-link>
           </div>
         </div>
-      </el-card>
-    </div>
-  </div>
+      </section>
+    </section>
+  </main>
 </template>
 
 <script setup>
@@ -285,11 +235,8 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useDocumentsStore } from '@/stores/documents.js'
 import { usePageSEO } from '@/composables/useSEO.js'
-import { ElMessage } from 'element-plus'
 import {
-  Document, InfoFilled, Edit, Search, Collection, Download, Tools,
-  DataAnalysis, Clock, Calendar, Star, Guide, Notebook, Message,
-  Link, ChatDotRound
+  Document, Edit, Search, Collection, Download, Link, ChatDotRound
 } from '@element-plus/icons-vue'
 
 const router = useRouter()
@@ -439,154 +386,403 @@ onMounted(async () => {
 
 <style scoped>
 .about-page {
-  min-height: calc(100vh - 50px);
-  background: var(--el-bg-color-page);
-}
-
-/* 页面头部 */
-.page-header {
-  background: linear-gradient(135deg, var(--el-color-primary) 0%, var(--el-color-primary-light-3) 100%);
-  color: white;
-  padding: 60px 20px;
-  text-align: center;
-  position: relative;
+  min-height: calc(100dvh - 50px);
+  background:
+    radial-gradient(circle at 82% 6%, rgba(15, 159, 110, 0.12), transparent 28%),
+    radial-gradient(circle at 6% 18%, rgba(37, 99, 235, 0.08), transparent 24%),
+    linear-gradient(180deg, #f7f9fc 0%, #eef3f8 48%, #f8fafc 100%);
+  color: #17202a;
   overflow: hidden;
 }
 
-.page-header::before {
+.about-hero {
+  position: relative;
+  padding: 72px 32px 36px;
+  isolation: isolate;
+}
+
+.about-hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  background:
+    linear-gradient(rgba(23, 32, 42, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(23, 32, 42, 0.045) 1px, transparent 1px);
+  background-size: 44px 44px;
+  mask-image: linear-gradient(to bottom, black 0%, transparent 78%);
+}
+
+.about-hero::after {
+  content: '';
+  position: absolute;
+  width: 44vw;
+  height: 44vw;
+  right: -16vw;
+  top: -18vw;
+  z-index: -1;
+  background: radial-gradient(circle, rgba(15, 159, 110, 0.18), transparent 64%);
+  filter: blur(12px);
+}
+
+.hero-grid,
+.content-sections,
+.metrics-strip {
+  width: min(1280px, calc(100vw - 64px));
+  margin: 0 auto;
+}
+
+.hero-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(360px, 0.95fr);
+  gap: 36px;
+  align-items: center;
+}
+
+.hero-copy {
+  min-width: 0;
+}
+
+.system-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 34px;
+  padding: 6px 12px;
+  color: #087752;
+  background: rgba(15, 159, 110, 0.09);
+  border: 1px solid rgba(15, 159, 110, 0.22);
+  border-radius: 999px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+}
+
+.chip-pulse {
+  width: 8px;
+  height: 8px;
+  background: #0f9f6e;
+  border-radius: 999px;
+  box-shadow: 0 0 14px rgba(15, 159, 110, 0.48);
+}
+
+.hero-copy h1 {
+  max-width: 780px;
+  margin: 22px 0 18px;
+  color: #111827;
+  font-size: clamp(44px, 6vw, 84px);
+  font-weight: 760;
+  line-height: 0.98;
+  letter-spacing: 0;
+  text-wrap: balance;
+}
+
+.hero-lead {
+  max-width: 62ch;
+  margin: 0;
+  color: #536173;
+  font-size: 17px;
+  line-height: 1.75;
+  text-wrap: pretty;
+}
+
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 30px;
+}
+
+.hero-actions :deep(.el-button) {
+  min-height: 44px;
+  border-radius: 6px;
+  font-weight: 700;
+}
+
+.hero-actions :deep(.el-button--primary) {
+  color: #ffffff;
+  background: #0f9f6e;
+  border-color: #0f9f6e;
+  box-shadow: 0 12px 24px rgba(15, 159, 110, 0.2);
+}
+
+.hero-actions :deep(.el-button.is-plain) {
+  color: #1f2937;
+  background: rgba(255, 255, 255, 0.72);
+  border-color: rgba(96, 112, 131, 0.28);
+}
+
+.hero-actions :deep(.el-button:hover) {
+  transform: translateY(-1px);
+}
+
+.system-console {
+  position: relative;
+  min-height: 420px;
+  border: 1px solid rgba(96, 112, 131, 0.2);
+  border-radius: 10px;
+  background:
+    linear-gradient(135deg, rgba(15, 159, 110, 0.08), transparent 42%),
+    rgba(255, 255, 255, 0.9);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 32px 70px rgba(72, 91, 113, 0.16);
+  overflow: hidden;
+}
+
+.console-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 42px;
+  padding: 0 16px;
+  color: #607083;
+  border-bottom: 1px solid rgba(96, 112, 131, 0.16);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+}
+
+.console-bar span {
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  background: rgba(96, 112, 131, 0.35);
+}
+
+.console-bar span:first-child { background: #ff5f56; }
+.console-bar span:nth-child(2) { background: #ffbd2e; }
+.console-bar span:nth-child(3) { background: #27c93f; }
+.console-bar strong { margin-left: auto; font-weight: 500; }
+
+.console-body {
+  padding: 22px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+.console-line {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  min-height: 32px;
+  color: #536173;
+  font-size: 13px;
+}
+
+.console-line span {
+  min-width: 28px;
+  color: #0f9f6e;
+  font-weight: 700;
+}
+
+.console-line.success {
+  color: #17202a;
+}
+
+.signal-map {
+  position: relative;
+  height: 250px;
+  margin-top: 18px;
+  border: 1px solid rgba(96, 112, 131, 0.14);
+  border-radius: 8px;
+  background:
+    radial-gradient(circle at 20% 28%, rgba(15, 159, 110, 0.92) 0 4px, transparent 5px),
+    radial-gradient(circle at 70% 20%, rgba(37, 99, 235, 0.42) 0 3px, transparent 4px),
+    radial-gradient(circle at 48% 62%, rgba(15, 159, 110, 0.95) 0 5px, transparent 6px),
+    radial-gradient(circle at 84% 76%, rgba(37, 99, 235, 0.42) 0 3px, transparent 4px),
+    linear-gradient(135deg, #f8fafc, rgba(15, 159, 110, 0.06));
+  overflow: hidden;
+}
+
+.signal-map::before,
+.signal-map::after {
+  content: '';
+  position: absolute;
+  inset: 26px 40px;
+  border: 1px dashed rgba(15, 159, 110, 0.34);
+  transform: skewY(-9deg);
+}
+
+.signal-map::after {
+  inset: 72px 72px 44px 54px;
+  border-color: rgba(37, 99, 235, 0.18);
+  transform: skewY(12deg);
+}
+
+.signal-map i {
+  position: absolute;
+  width: 46px;
+  height: 2px;
+  background: #0f9f6e;
+  box-shadow: 0 0 16px rgba(15, 159, 110, 0.35);
+}
+
+.signal-map i:nth-child(1) { left: 18%; top: 38%; transform: rotate(24deg); }
+.signal-map i:nth-child(2) { left: 38%; top: 52%; transform: rotate(-18deg); }
+.signal-map i:nth-child(3) { left: 58%; top: 36%; transform: rotate(32deg); }
+.signal-map i:nth-child(4) { left: 68%; top: 68%; transform: rotate(-28deg); }
+.signal-map i:nth-child(5) { left: 26%; top: 74%; transform: rotate(8deg); }
+.signal-map i:nth-child(6) { left: 76%; top: 24%; transform: rotate(-8deg); }
+
+.metrics-strip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1px;
+  margin-top: 20px;
+  border: 1px solid rgba(96, 112, 131, 0.18);
+  background: rgba(96, 112, 131, 0.16);
+  box-shadow: 0 18px 42px rgba(72, 91, 113, 0.08);
+}
+
+.metric-card {
+  min-height: 116px;
+  padding: 22px;
+  background: rgba(255, 255, 255, 0.82);
+}
+
+.metric-card span {
+  display: block;
+  color: #607083;
+  font-size: 13px;
+}
+
+.metric-card strong {
+  display: block;
+  margin-top: 14px;
+  color: #0f9f6e;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: clamp(24px, 3vw, 38px);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.content-sections {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr);
+  gap: 22px;
+  padding: 54px 0 72px;
+}
+
+.content-sections > section {
+  position: relative;
+  min-width: 0;
+  padding: 28px;
+  border: 1px solid rgba(96, 112, 131, 0.16);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.84);
+  box-shadow: 0 20px 50px rgba(72, 91, 113, 0.09);
+  overflow: hidden;
+}
+
+.content-sections > section::before {
   content: '';
   position: absolute;
   top: 0;
   left: 0;
-  right: 0;
-  bottom: 0;
-  background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="white" opacity="0.1"/><circle cx="75" cy="75" r="1" fill="white" opacity="0.1"/><circle cx="50" cy="10" r="0.5" fill="white" opacity="0.1"/><circle cx="10" cy="60" r="0.5" fill="white" opacity="0.1"/><circle cx="90" cy="40" r="0.5" fill="white" opacity="0.1"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
-  pointer-events: none;
+  width: 13px;
+  height: 13px;
+  background: #0f9f6e;
 }
 
-.header-content {
-  position: relative;
-  z-index: 1;
-  max-width: 800px;
-  margin: 0 auto;
+.panel-large {
+  grid-column: span 1;
 }
 
-.app-logo {
-  margin-bottom: 20px;
-  animation: float 3s ease-in-out infinite;
-}
-
-@keyframes float {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-10px); }
-}
-
-.app-title {
-  font-size: 3rem;
-  font-weight: 700;
-  margin: 0 0 16px 0;
-  text-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-.app-subtitle {
-  font-size: 1.2rem;
-  margin: 0 0 24px 0;
-  opacity: 0.9;
-}
-
-.version-info {
-  display: inline-block;
-}
-
-/* 内容区域 */
-.content-sections {
-  max-width: 1200px;
-  margin: -40px auto 0;
-  padding: 0 20px 40px;
-  position: relative;
-  z-index: 2;
-}
-
-.section-card {
+.section-heading {
   margin-bottom: 24px;
-  border-radius: 12px;
-  overflow: hidden;
-  transition: all 0.3s ease;
 }
 
-.section-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+.section-heading span {
+  display: block;
+  margin-bottom: 10px;
+  color: #087752;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  letter-spacing: 0.08em;
 }
 
-.card-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--el-text-color-primary);
+.section-heading h2 {
+  margin: 0;
+  color: #17202a;
+  font-size: clamp(24px, 3vw, 38px);
+  line-height: 1.15;
+  text-wrap: balance;
 }
 
-/* 应用介绍 */
-.intro-content {
-  padding: 8px 0;
+.section-heading.compact h2 {
+  font-size: 24px;
 }
 
 .intro-text {
+  max-width: 78ch;
+  margin: 0 0 28px;
+  color: #536173;
   font-size: 16px;
   line-height: 1.8;
-  color: var(--el-text-color-regular);
-  margin-bottom: 32px;
 }
 
-.features-grid {
+.features-grid,
+.stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.feature-item,
+.stat-item,
+.feature-row,
+.step-item,
+.contact-item {
+  border: 1px solid rgba(96, 112, 131, 0.14);
+  background: rgba(248, 250, 252, 0.84);
+  border-radius: 8px;
 }
 
 .feature-item {
   display: flex;
-  align-items: flex-start;
-  gap: 12px;
+  gap: 14px;
   padding: 16px;
-  background: var(--el-bg-color-page);
-  border-radius: 8px;
-  transition: all 0.2s ease;
+  transition: transform 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
 }
 
-.feature-item:hover {
-  background: var(--el-color-primary-light-9);
+.feature-item:hover,
+.feature-row:hover,
+.step-item:hover {
   transform: translateY(-2px);
+  border-color: rgba(15, 159, 110, 0.34);
+  background: rgba(15, 159, 110, 0.055);
 }
 
-.feature-content h4 {
-  margin: 0 0 8px 0;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--el-text-color-primary);
+.feature-item .el-icon,
+.feature-icon .el-icon,
+.contact-item .el-icon {
+  color: #0f9f6e;
 }
 
-.feature-content p {
+.feature-content h4,
+.feature-details h4,
+.step-content h4,
+.tech-category h4,
+.changelog-item h4 {
+  margin: 0 0 8px;
+  color: #17202a;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.feature-content p,
+.feature-details p,
+.step-content p,
+.changelog-item li,
+.contact-item span {
   margin: 0;
+  color: #607083;
   font-size: 13px;
-  color: var(--el-text-color-regular);
-  line-height: 1.5;
+  line-height: 1.6;
 }
 
-/* 技术栈 */
 .tech-stack {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-}
-
-.tech-category h4 {
-  margin: 0 0 12px 0;
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--el-text-color-primary);
+  display: grid;
+  gap: 22px;
 }
 
 .tech-items {
@@ -595,259 +791,149 @@ onMounted(async () => {
   gap: 8px;
 }
 
-/* 系统统计 */
-.stats-grid {
+.tech-items :deep(.el-tag),
+.feature-status :deep(.el-tag) {
+  border-radius: 999px;
+  border-color: rgba(15, 159, 110, 0.22);
+  background: rgba(15, 159, 110, 0.08);
+  color: #087752;
+}
+
+.features-list,
+.steps,
+.contact-info {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 20px;
-}
-
-.stat-item {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 20px;
-  background: var(--el-bg-color-page);
-  border-radius: 8px;
-  transition: all 0.2s ease;
-}
-
-.stat-item:hover {
-  background: var(--el-color-primary-light-9);
-  transform: translateY(-2px);
-}
-
-.stat-icon {
-  flex-shrink: 0;
-}
-
-.stat-content {
-  flex: 1;
-}
-
-.stat-number {
-  font-size: 24px;
-  font-weight: 700;
-  color: var(--el-text-color-primary);
-  margin-bottom: 4px;
-}
-
-.stat-label {
-  font-size: 14px;
-  color: var(--el-text-color-secondary);
-}
-
-/* 功能特性 */
-.features-list {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
+  gap: 12px;
 }
 
 .feature-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  gap: 14px;
   align-items: center;
-  gap: 16px;
   padding: 16px;
-  background: var(--el-bg-color-page);
-  border-radius: 8px;
-  transition: all 0.2s ease;
-}
-
-.feature-row:hover {
-  background: var(--el-color-primary-light-9);
+  transition: transform 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
 }
 
 .feature-icon {
-  flex-shrink: 0;
-}
-
-.feature-details {
-  flex: 1;
-}
-
-.feature-details h4 {
-  margin: 0 0 8px 0;
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--el-text-color-primary);
-}
-
-.feature-details p {
-  margin: 0;
-  font-size: 14px;
-  color: var(--el-text-color-regular);
-  line-height: 1.5;
-}
-
-.feature-status {
-  flex-shrink: 0;
-}
-
-/* 快速入门 */
-.steps {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: rgba(15, 159, 110, 0.08);
 }
 
 .step-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 16px;
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
+  gap: 14px;
+  padding: 16px;
+  transition: transform 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
 }
 
 .step-number {
-  width: 32px;
-  height: 32px;
-  background: var(--el-color-primary);
-  color: white;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 600;
-  flex-shrink: 0;
+  color: #0f9f6e;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 22px;
+  font-weight: 700;
 }
 
-.step-content {
-  flex: 1;
+.step-content :deep(.el-button) {
+  margin-top: 12px;
+  color: #ffffff;
+  background: #0f9f6e;
+  border-color: #0f9f6e;
+  border-radius: 6px;
+  font-weight: 700;
 }
 
-.step-content h4 {
-  margin: 0 0 8px 0;
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--el-text-color-primary);
-}
-
-.step-content p {
-  margin: 0 0 12px 0;
-  font-size: 14px;
-  color: var(--el-text-color-regular);
-  line-height: 1.5;
-}
-
-/* 更新日志 */
 .changelog {
-  padding: 8px 0;
+  padding: 4px 0 0;
 }
 
-.changelog-item h4 {
-  margin: 0 0 12px 0;
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--el-text-color-primary);
+.changelog :deep(.el-timeline-item__tail) {
+  border-left-color: rgba(15, 159, 110, 0.24);
+}
+
+.changelog :deep(.el-timeline-item__timestamp) {
+  color: #7a8797;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
 
 .changelog-item ul {
   margin: 0;
-  padding-left: 20px;
-}
-
-.changelog-item li {
-  margin-bottom: 4px;
-  font-size: 14px;
-  color: var(--el-text-color-regular);
-  line-height: 1.5;
-}
-
-/* 联系信息 */
-.contact-info {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
+  padding-left: 18px;
 }
 
 .contact-item {
-  display: flex;
+  display: grid;
+  grid-template-columns: 24px auto minmax(0, 1fr);
+  gap: 10px;
   align-items: center;
-  gap: 8px;
-  font-size: 14px;
+  padding: 14px;
 }
 
-.contact-item span {
-  color: var(--el-text-color-regular);
+.contact-item :deep(.el-link) {
+  justify-self: end;
+  color: #087752;
 }
 
-/* 响应式设计 */
-@media (max-width: 768px) {
-  .app-title {
-    font-size: 2rem;
-  }
-
+@media (max-width: 1080px) {
+  .hero-grid,
   .content-sections {
-    margin-top: -20px;
-    padding: 0 16px 20px;
+    grid-template-columns: 1fr;
   }
 
+  .system-console {
+    min-height: 360px;
+  }
+}
+
+@media (max-width: 768px) {
+  .about-hero {
+    padding: 44px 16px 24px;
+  }
+
+  .hero-grid,
+  .content-sections,
+  .metrics-strip {
+    width: calc(100vw - 32px);
+  }
+
+  .hero-copy h1 {
+    font-size: 42px;
+  }
+
+  .metrics-strip,
   .features-grid {
     grid-template-columns: 1fr;
   }
 
-  .stats-grid {
-    grid-template-columns: repeat(2, 1fr);
+  .content-sections {
+    padding: 32px 0 48px;
   }
 
-  .tech-stack {
-    gap: 16px;
+  .content-sections > section {
+    padding: 22px;
   }
 
-  .feature-row {
-    flex-direction: column;
-    align-items: flex-start;
-    text-align: left;
-  }
-
-  .step-item {
-    flex-direction: column;
-    text-align: center;
-  }
-}
-
-@media (max-width: 480px) {
-  .page-header {
-    padding: 40px 16px;
-  }
-
-  .app-title {
-    font-size: 1.8rem;
-  }
-
-  .stats-grid {
+  .feature-row,
+  .contact-item {
     grid-template-columns: 1fr;
   }
 
-  .stat-item {
-    padding: 16px;
-  }
-
-  .feature-item {
-    padding: 12px;
+  .contact-item :deep(.el-link) {
+    justify-self: start;
   }
 }
 
-/* 动画效果 */
-.section-card {
-  animation: slideInUp 0.6s ease-out;
-}
-
-.section-card:nth-child(1) { animation-delay: 0.1s; }
-.section-card:nth-child(2) { animation-delay: 0.2s; }
-.section-card:nth-child(3) { animation-delay: 0.3s; }
-.section-card:nth-child(4) { animation-delay: 0.4s; }
-.section-card:nth-child(5) { animation-delay: 0.5s; }
-.section-card:nth-child(6) { animation-delay: 0.6s; }
-.section-card:nth-child(7) { animation-delay: 0.7s; }
-
-@keyframes slideInUp {
-  from {
-    opacity: 0;
-    transform: translateY(30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
+@media (prefers-reduced-motion: reduce) {
+  .feature-item,
+  .feature-row,
+  .step-item {
+    animation: none;
+    transition: none;
   }
 }
 </style>
